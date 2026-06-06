@@ -1,8 +1,8 @@
 # Showcase QA
 
-`/showcase` is the shared review entry for Stage 0 UI Prototype work and the current **v0.2 Interactive Event Playground**.
+`/showcase` is the shared review entry for Stage 0 UI Prototype work, the Stage 1 Interactive Event Playground, and the current mock Provider SDK demo path.
 
-The page is still mock-only. It must not depend on Tauri, real Providers, system APIs, tray behavior, or always-on-top windowing.
+The page is still mock-only. It may use mock providers and the Provider SDK adapter, but it must not depend on Tauri, real providers, system APIs, tray behavior, or always-on-top windowing.
 
 ## Run
 
@@ -24,14 +24,6 @@ Run state tests and production build:
 npm run qa
 ```
 
-Generate visual QA screenshots after the dev server is running:
-
-```bash
-npm run qa:showcase:screenshots
-```
-
-Screenshots are written to `output/playwright/`. This directory is a local QA artifact and should not be committed.
-
 Run the repeatable interaction check for the Provider Demo flow:
 
 ```bash
@@ -39,6 +31,14 @@ npm run qa:showcase:interactions
 ```
 
 The script verifies `/showcase`, Provider Demo source switching, Stop provider, Clear to idle, and console/page errors. It starts a local Vite server if one is not already available.
+
+Generate visual QA screenshots after the dev server is running:
+
+```bash
+npm run qa:showcase:screenshots
+```
+
+Screenshots are written to `output/playwright/`. This directory is a local QA artifact and should not be committed.
 
 ## Required Viewports
 
@@ -78,12 +78,23 @@ Resolver Visualization:
 - The page shows a compact Events -> Resolver -> Resolved Mode flow.
 - Notification priority and MultiTask resolution are understandable from the visualization.
 
+## v0.3 Mock Provider Demo Checks
+
+- Provider Demo Music feeds a mock provider event through the existing event bus/store/resolver path.
+- Provider Demo AI feeds a mock provider event through the existing event bus/store/resolver path.
+- Provider Demo Download feeds a mock provider event through the existing event bus/store/resolver path.
+- Provider Demo Notify feeds a mock provider event through the existing event bus/store/resolver path.
+- Stop provider stops the provider source without pretending to clear already visible events.
+- Clear to idle stops the provider source, clears active events, and resolves back to Idle.
+- The page still does not use real Windows APIs, system notification readers, media-session readers, file watchers, or Tauri IPC.
+
 ## Acceptance Checklist
 
 - `npm run qa` passes.
+- `npm run qa:showcase:interactions` passes.
 - `npm run qa:showcase:screenshots` can generate the 1366, 1440, and 1920 screenshots when the dev server is running.
-- `/showcase` remains mock-only and does not document or require Provider SDK, Tauri, or real Provider implementation.
-- Stage 1 behavior proves state transitions without claiming Stage 2-6 capabilities are implemented.
+- `/showcase` remains mock-only and does not require Tauri or real Provider implementation.
+- Stage 1 and Stage 2 mock behavior prove state transitions and provider boundaries without claiming Stage 3-6 capabilities are implemented.
 
 ## v0.2.1 Validation & Polish Gate
 
@@ -103,25 +114,28 @@ Resolver Visualization:
 | 1440x900 | 1 |
 | 1920x1080 | 1 |
 
-## README Asset Plan
+## v0.3.4 Demo Asset Plan
 
-Static screenshots:
+Keep this wave docs-only. Do not commit GIFs, videos, or generated binary assets.
 
-- `docs/screenshots/idle.png`
-- `docs/screenshots/music.png`
-- `docs/screenshots/ai.png`
-- `docs/screenshots/download.png`
-- `docs/screenshots/notification.png`
-- `docs/screenshots/multitask.png`
+Generate repeatable local screenshots with:
 
-Demo GIF:
+```bash
+npm run qa:showcase:screenshots
+```
 
-- `docs/demo/event-playground.gif`
+The generated files belong in `output/playwright/` and should be used for local review only unless explicitly selected for a later docs asset wave.
 
-Recommended GIF sequence:
+Static screenshot commit thresholds:
+
+- `<500KB`: may be considered for commit.
+- `500KB-1MB`: needs monitor approval before commit.
+- `>1MB`: should not be committed.
+
+Recommended demo review sequence:
 
 ```text
 Idle -> Music -> AI -> Notification -> MultiTask
 ```
 
-Recommended loop length: 10-15 seconds. Do not commit large generated binaries without reviewing file size first.
+Recommended loop length: 10-15 seconds for local capture review only.

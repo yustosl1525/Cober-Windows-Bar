@@ -1,49 +1,82 @@
 # Cober-Windows-Bar
 
-Windows 11 Unified Status Hub for lightweight, glanceable desktop status.
+Windows 11-style status hub showcase for proving glanceable desktop state flows before native integration work begins.
 
-Current release track: **v0.3.2 Showcase Provider Demo**.
+Current release track: **v0.3.4 README & Demo Asset Polish**.
 
-## Overview
+## Current Status
 
-Cober-Windows-Bar is a Windows 11-style Unified Status Hub. The long-term product idea is a small, native-feeling status surface above the taskbar that can summarize music, AI work, downloads, notifications, developer tasks, and agent activity without becoming a full dashboard.
+Cober-Windows-Bar is currently a mock-only `/showcase` experience. It demonstrates the product direction for a lightweight Windows 11 status surface, but it is not a native desktop app yet.
 
-The current implementation is still front-end only. It uses mock data, the local event playground, and a mock Provider SDK boundary to prove that the hub can move through meaningful states. It does not include Tauri, Windows/system APIs, real provider integrations, tray behavior, or always-on-top windowing.
+What exists today:
 
-## Current Capabilities
+- Win11/Mica/Acrylic showcase UI for core hub states.
+- Event Playground controls for publishing mock hub events.
+- Auto Demo flow for recording state transitions.
+- Resolver visualization for active events, resolver output, and current mode.
+- Mock Provider SDK demo that feeds provider-style events into the same resolver path.
 
-- Win11/Mica/Acrylic `/showcase` review page.
-- Six hub states: Idle, Music, AI Progress, Download, Notification, MultiTask.
-- v0.2 event controls for triggering mock status changes.
-- Auto Demo flow for recording a short state-transition demo.
-- Resolver visualization showing active events, resolver output, and current mode.
-- v0.3 mock Provider SDK contract, mock providers, and provider adapter validation.
-- QA commands for state tests, production build, and viewport screenshots.
+What does not exist yet:
 
-## Local Development
+- No Tauri shell, tray, always-on-top windowing, IPC, or native desktop packaging.
+- No Windows/system APIs, media-session readers, notification readers, file watchers, or OS hooks.
+- No real providers or external integrations.
+
+## What It Proves
+
+The current showcase proves the front-end interaction model and provider boundary before the project commits to Windows-native implementation details.
+
+- The hub can present distinct, glanceable modes: Idle, Music, AI Progress, Download, Notification, and MultiTask.
+- Manual playground events and mock provider events travel through one shared flow.
+- Resolver behavior is visible enough to review, debug, and demo.
+- The Win11 visual direction is stable enough for screenshots and demo capture.
+
+Event flow:
+
+```text
+Mock Provider / Event Playground
+  -> publishHubEvent()
+  -> store
+  -> resolver
+  -> showcased Hub UI
+```
+
+## Try It
+
+Install dependencies and run the local app:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Showcase entry:
+Open:
 
 ```text
 http://localhost:5173/showcase
 ```
 
-Open the showcase directly:
+Or start the showcase directly:
 
 ```bash
 npm run dev:showcase
 ```
 
-Build and QA:
+Use the Event Playground controls to trigger hub states, clear back to Idle, or run the Auto Demo sequence.
+
+## QA Commands
+
+Build and run the main QA checks:
 
 ```bash
 npm run build
 npm run qa
+```
+
+Run the repeatable Provider Demo interaction check:
+
+```bash
+npm run qa:showcase:interactions
 ```
 
 Generate showcase screenshots after the dev server is running:
@@ -52,102 +85,17 @@ Generate showcase screenshots after the dev server is running:
 npm run qa:showcase:screenshots
 ```
 
-Screenshots are written to `output/playwright/` and are local QA artifacts only.
+Screenshots are written to `output/playwright/` as local QA artifacts and are not committed by default.
 
-## v0.2 Interactive Event Playground
+## Roadmap
 
-The current v0.2 goal is to prove "this thing moves" before any provider or desktop-shell work.
-
-Required controls:
-
-- Music
-- AI
-- Download
-- Notification
-- MultiTask
-- Clear / Idle
-- Start Demo
-
-Expected data flow:
-
-```text
-Event Controls -> publishHubEvent() -> store -> resolver -> resolved UI mode
-```
-
-Auto Demo should move through:
-
-```text
-Idle -> Music -> AI -> Notification -> Download -> MultiTask -> Idle
-```
-
-The resolver visualization should show:
-
-- Active Events
-- Current Mode
-- A compact Events -> Resolver -> Resolved Mode flow
-
-## v0.2.1 Validation & Polish
-
-v0.2.1 focuses on making the playground ready for README/GitHub/demo capture. It does not add Provider SDK, Tauri, or real system integrations.
-
-Planned lightweight showcase assets:
-
-- `docs/screenshots/idle.png`
-- `docs/screenshots/music.png`
-- `docs/screenshots/ai.png`
-- `docs/screenshots/download.png`
-- `docs/screenshots/notification.png`
-- `docs/screenshots/multitask.png`
-- `docs/demo/event-playground.gif`
-
-The GIF should loop a 10-15 second sequence:
-
-```text
-Idle -> Music -> AI -> Notification -> MultiTask
-```
-
-Large GIF/video binaries should not be committed without checking their size first.
-
-## v0.3.2 Showcase Provider Demo
-
-v0.3.2 demonstrates the mock Provider SDK path in the showcase flow. It keeps the provider contract small and proves that provider-emitted events can travel through the same resolver path as the event playground.
-
-Provider SDK scope:
-
-- Provider lifecycle contract: `start()`, `stop()`, and `subscribe(listener)`.
-- Mock Music, Download, AI Task, and Notification providers only.
-- Provider adapter that forwards provider output into the existing event bus.
-- Tests that prove provider-emitted `HubEvent` objects resolve to the expected hub modes.
-
-Event flow:
-
-```text
-Mock Provider
-  -> provider adapter
-  -> publishHubEvent()
-  -> store
-  -> resolver
-  -> existing Hub UI
-```
-
-Current limitations:
-
-- No Tauri shell, IPC, tray, always-on-top, or desktop-window behavior.
-- No Windows/system APIs, media-session readers, file watchers, or notification-center readers.
-- No real providers or external integrations.
-- No `/showcase` visual redesign; the Win11/Mica/Acrylic review page remains intentionally stable.
-
-See [Provider SDK](docs/PROVIDER_SDK.md) for the concise contract and flow reference.
-
-## Product Route
-
-- **Stage 0: UI Prototype** - done and pushed as v0.1.
-- **Stage 1: Event Playground** - done as v0.2; mock controls, auto demo, resolver visualization.
-- **Stage 2: Provider SDK** - current v0.3/v0.3.2 work; interfaces, mock providers, adapter validation, no system integration.
-- **Stage 3: Tauri Shell** - later; desktop shell and window behavior.
-- **Stage 4: Real Providers** - later; system, music, download, notification, and AI task providers.
-- **Stage 5: Developer Hub** - later; Git, Docker, WSL, Maven, Gradle, and related developer surfaces.
-- **Stage 6: AI Agent Hub** - later; agent status, queue state, and long-running AI work visibility.
+- **Stage 0: UI prototype** - Win11/Mica showcase with the core hub states.
+- **Stage 1: Event Playground** - mock event controls, resolver visualization, and Auto Demo.
+- **Stage 2: Provider SDK** - mock providers and adapter validation, still without real system integration.
+- **v0.3.x: Showcase polish** - keep `/showcase`, demo capture, and mock Provider SDK reviewable.
+- **Stage 3: Tauri shell** - add desktop shell behavior, native windowing, tray, IPC, and packaging.
+- **Stage 4: Real providers** - connect system, music, download, notification, and AI task sources.
+- **Stage 5+: Developer and agent hub** - add Git, Docker, WSL, build tool, and long-running AI work status surfaces.
 
 ## Documentation
 
