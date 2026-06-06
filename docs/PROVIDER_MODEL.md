@@ -19,7 +19,8 @@ interface ProviderMetadata {
 }
 
 interface ProviderStatus {
-  state: "idle" | "starting" | "running" | "stopping" | "stopped" | "error";
+  lifecycle: "Registered" | "Started" | "Publishing" | "Paused" | "Stopped" | "Failed";
+  health: "Healthy" | "Degraded" | "Unhealthy";
   message?: string;
   lastStartedAt?: number;
   lastEventAt?: number;
@@ -52,8 +53,8 @@ Provider metadata should be static after construction.
 
 `start()` connects the provider to its data source or begins deterministic mock playback. It must be idempotent.
 
-- Calling `start()` while already `starting` or `running` should not create duplicate timers, watchers, listeners, processes, or subscriptions.
-- A failed start should move status to `error` with a short diagnostic message.
+- Calling `start()` while already `Started` or `Publishing` should not create duplicate timers, watchers, listeners, processes, or subscriptions.
+- A failed start should move lifecycle to `Failed`, set health to `Unhealthy`, and include a short diagnostic message.
 - Providers should not publish events until their internal setup is complete enough to produce coherent output.
 - Startup work should stay provider-owned; adapters should not know source-specific setup details.
 
@@ -61,7 +62,7 @@ Provider metadata should be static after construction.
 
 `stop()` disconnects the provider from its data source and releases all resources. It must be idempotent.
 
-- Calling `stop()` while already `stopping` or `stopped` should be a no-op.
+- Calling `stop()` while already `Stopped` should be a no-op.
 - Stop must clear timers, detach source listeners, abort pending reads, and close provider-owned handles.
 - Stop should not emit fresh domain events unless a future provider explicitly needs a terminal event and the resolver contract supports it.
 - Stop should leave the provider reusable so a later `start()` can begin cleanly.
@@ -76,27 +77,30 @@ Provider metadata should be static after construction.
 - Providers should catch listener errors so one bad listener does not break other listeners or provider lifecycle.
 - Event delivery should use arrays even for single events so batching can be introduced without changing the contract.
 
-### Status
+### Lifecycle And Health
 
 `status()` returns a lightweight snapshot for tests, diagnostics, future settings UI, and provider supervision.
 
 - Status must not perform I/O.
 - Status should be safe to call frequently.
-- Status should expose lifecycle state and recent timestamps, not source-specific private data.
-- Error status should help debugging without leaking secrets, message content, file contents, command output, or credentials.
+- Status should expose provider lifecycle, provider health, and recent timestamps, not source-specific private data.
+- Lifecycle must use only `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, or `Failed`.
+- Health must use only `Healthy`, `Degraded`, or `Unhealthy`.
+- Event delivery status, task progress, download state, AI task state, and other domain statuses belong in HubEvents, not provider lifecycle.
+- Failure diagnostics should help debugging without leaking secrets, message content, file contents, command output, or credentials.
 
 ## Lifecycle Model
 
 Providers move through a small lifecycle:
 
 ```text
-stopped -> starting -> running -> stopping -> stopped
-                  \-> error
+Registered -> Started -> Publishing -> Paused -> Stopped
+                         \-> Failed
 ```
 
-Recovery from `error` should be explicit:
+Recovery from `Failed` should be explicit:
 
-- `stop()` clears active resources and moves the provider toward `stopped`.
+- `stop()` clears active resources and moves the provider toward `Stopped`.
 - A later `start()` may retry setup.
 - Automatic restart policy belongs to a future provider supervisor, not individual provider implementations.
 
@@ -127,27 +131,30 @@ Every provider must own and clean up the resources it creates.
 
 ## Event Output Rules
 
-Providers output `HubEvent` objects only. They do not update React state, choose hub modes, or render UI.
+Providers output canonical `HubEvent` objects only. They do not update React state, choose hub modes, render UI, or emit UI-specific view models.
 
 ```text
-Provider -> provider adapter -> publishHubEvent() -> store -> resolver -> Hub UI
+Provider -> Event Bus -> Store -> Resolver -> UI
 ```
 
 Rules:
 
-- Events should be normalized before leaving the provider.
+- Events should be normalized to the canonical HubEvent contract before leaving the provider boundary.
 - Events should include stable source identity so diagnostics can trace them back to provider metadata.
 - Providers may emit empty batches only if the adapter explicitly treats them as no-ops.
 - Providers should avoid sending private payloads when a derived status is enough.
 - Providers should prefer semantic status events over raw logs or source dumps.
 - Resolver priority remains centralized; providers may suggest event priority, but they do not decide final hub mode.
 - Mock providers must emit deterministic event sequences for tests and showcase capture.
+- A runtime or adapter may supervise, batch, validate, or forward HubEvents, but it must not bypass the Event Bus, Store, or Resolver.
+- UI-specific conversion happens after Store and Resolver processing, not inside providers.
 
 ## Error Handling Principles
 
 Provider errors should degrade the integration without taking down the hub.
 
-- Source errors move provider status to `error`.
+- Source failures move provider lifecycle to `Failed` when the provider can no longer produce reliable events.
+- Recoverable source glitches may degrade provider health without changing lifecycle away from `Started` or `Publishing`.
 - Listener errors are isolated from provider lifecycle.
 - Recoverable source glitches should be summarized, rate-limited, and kept out of the main hub unless they affect user-visible status.
 - Errors must not include secrets, private notification text, full paths beyond what is needed, command output dumps, or credentials.
@@ -179,8 +186,8 @@ Mock-first goals:
 
 Promotion path:
 
-1. Define mock metadata, status, and event fixtures.
-2. Add lifecycle tests for start, stop, subscribe, unsubscribe, and status.
+1. Define mock metadata, lifecycle, health, and event fixtures.
+2. Add lifecycle and health tests for start, stop, subscribe, unsubscribe, and status.
 3. Validate adapter output into the existing event bus and resolver.
 4. Document privacy, permissions, and source risk for the real provider.
 5. Only then consider real data-source implementation in a later phase.

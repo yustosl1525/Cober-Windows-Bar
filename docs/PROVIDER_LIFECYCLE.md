@@ -2,16 +2,22 @@
 
 v0.5.0 is a planning-only milestone for the Mock Provider SDK lifecycle. It defines the lifecycle contract that future mock providers should follow, but it does not implement providers, adapters, Tauri, Rust, IPC, Windows APIs, background services, or system integrations.
 
-v0.5.1 may implement mock providers after this lifecycle contract is reviewed and accepted. Until then, this document is the source of planning expectations only.
+v0.5.3 is documentation alignment only. v0.6 may implement mock providers only after v0.5.4 Review & Freeze accepts the aligned lifecycle, registry, event contract, and runtime path. Until then, this document is the source of planning expectations only.
 
 ## Lifecycle States
 
 The provider lifecycle should be explicit, observable, and safe to call from tests, demo controls, future settings UI, and future desktop-shell hooks.
 
 ```text
-Registered -> Started -> Publishing Events -> Paused -> Stopped
-                         \-> Error
+Registered -> Started -> Publishing -> Paused -> Stopped
+                         \-> Failed
 ```
+
+Lifecycle is intentionally separate from provider health and from event or task status:
+
+- Lifecycle values are only `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, and `Failed`.
+- Health values are only `Healthy`, `Degraded`, and `Unhealthy`.
+- Event delivery status, download progress, notification state, AI task state, and other domain statuses belong in HubEvents, not provider lifecycle.
 
 ### Registered
 
@@ -27,20 +33,21 @@ Registered -> Started -> Publishing Events -> Paused -> Stopped
 
 `Started` means `start()` has completed enough setup for the provider to produce coherent event output.
 
-- `start()` should move the provider from registered or stopped into started behavior.
+- `start()` should move the provider from `Registered` or `Stopped` into `Started` behavior.
 - `start()` must be idempotent.
 - Calling `start()` while already started or publishing should be a no-op.
 - Calling `start()` while paused should resume active production only if the future contract defines `start()` as a resume alias; otherwise callers should use `resume()`.
 - `start()` should not create duplicate timers, source listeners, subscriptions, handles, or pending work.
-- A failed start should move the provider into `Error` with a short diagnostic status.
+- A failed start should move the provider into `Failed` with a short diagnostic summary and `Unhealthy` health.
 
-### Publishing Events
+### Publishing
 
-`Publishing Events` means the provider is actively emitting normalized `HubEvent` batches to current subscribers.
+`Publishing` means the provider is actively emitting canonical `HubEvent` batches to current subscribers.
 
 - Providers should publish arrays of events, even when a batch contains one event.
 - Providers should not update React state, choose hub modes, or render UI.
 - Providers should include enough source identity for diagnostics to trace events back to provider metadata.
+- Providers should emit canonical HubEvents, not UI-specific state or view models.
 - Mock providers should emit deterministic sequences so tests and screenshots are reproducible.
 - A provider must not publish after stop, unsubscribe, or cleanup has taken effect.
 - A provider should isolate listener failures so one broken listener does not break provider lifecycle or other listeners.
@@ -51,34 +58,44 @@ Registered -> Started -> Publishing Events -> Paused -> Stopped
 
 - `pause()` must be idempotent.
 - Calling `pause()` while already paused should be a no-op.
-- Calling `pause()` while stopped or only registered should be a no-op unless a future supervisor chooses to report it as an invalid transition.
+- Calling `pause()` while `Stopped` or only `Registered` should be a no-op unless a future supervisor chooses to report it as an invalid transition.
 - Paused providers should not emit fresh domain events.
 - Paused providers may keep lightweight reusable state, but they must not keep expensive work running if that work only exists to publish events.
 - `resume()` must be idempotent and should return a paused provider to started or publishing behavior without duplicate resources.
 - Calling `resume()` while already started or publishing should be a no-op.
-- Calling `resume()` while stopped should not implicitly allocate resources unless the future contract explicitly defines `resume()` as a `start()` alias.
+- Calling `resume()` while `Stopped` should not implicitly allocate resources unless the future contract explicitly defines `resume()` as a `start()` alias.
 
 ### Stopped
 
 `Stopped` means the provider has released active resources and will not publish more events until started again.
 
 - `stop()` must be idempotent.
-- Calling `stop()` while stopped or registered should be a no-op.
-- Calling `stop()` while started, publishing, paused, or error should release resources and settle the provider into stopped.
+- Calling `stop()` while `Stopped` or `Registered` should be a no-op.
+- Calling `stop()` while `Started`, `Publishing`, `Paused`, or `Failed` should release resources and settle the provider into `Stopped`.
 - Stop should clear timers, detach listeners, abort or ignore pending async work, close provider-owned handles, and remove source subscriptions.
 - Stop should leave the provider reusable so a later `start()` can begin from a clean baseline.
 - Stop should not publish fresh domain events unless a future resolver contract explicitly supports terminal lifecycle events.
 
-### Error
+### Failed
 
-`Error` means the provider failed to start, failed while publishing, or encountered an unrecoverable source problem.
+`Failed` means the provider failed to start, failed while publishing, or encountered an unrecoverable source problem.
 
-- Error state should include a short diagnostic message and timestamp suitable for tests and future settings UI.
-- Error messages must not include secrets, credentials, full private content, notification bodies, command dumps, or unnecessary file paths.
-- Entering error should stop event production from the failed source path.
-- `stop()` from error should clean up active resources and settle the provider into stopped.
-- `start()` after error may retry setup after cleanup rules have run.
+- Failed state should include a short diagnostic message and timestamp suitable for tests and future settings UI.
+- Failure messages must not include secrets, credentials, full private content, notification bodies, command dumps, or unnecessary file paths.
+- Entering failed should stop event production from the failed source path.
+- `stop()` from `Failed` should clean up active resources and settle the provider into `Stopped`.
+- `start()` after `Failed` may retry setup after cleanup rules have run.
 - Automatic restart policy belongs to a future provider supervisor, not individual mock providers.
+
+## Health Model
+
+Provider health describes reliability, not lifecycle phase.
+
+- `Healthy`: The provider is operating normally for its current lifecycle.
+- `Degraded`: The provider is still usable but has recoverable source issues, partial capability loss, stale data, or rate-limited output.
+- `Unhealthy`: The provider cannot reliably run or publish and may need explicit recovery.
+
+Health must not be used for task progress or domain event state. For example, a download can be `failed` as a HubEvent payload while the download provider remains `Healthy`.
 
 ## Idempotent Operations
 
@@ -87,7 +104,7 @@ Lifecycle operations must be safe under repeated calls. This protects future tes
 | Operation | Required behavior |
 | --- | --- |
 | `start()` | Repeated calls must not create duplicate timers, watchers, listeners, handles, subscriptions, promises, or event streams. |
-| `stop()` | Repeated calls must be safe and leave the provider stopped with resources released. |
+| `stop()` | Repeated calls must be safe and leave the provider `Stopped` with resources released. |
 | `pause()` | Repeated calls must keep the provider paused without changing counters, timers, or subscriptions unexpectedly. |
 | `resume()` | Repeated calls must not duplicate publishing loops or replay unintended stale events. |
 | `unsubscribe()` | Repeated calls must remove the listener once and then become no-ops. |
@@ -161,9 +178,9 @@ v0.5.0 does not include:
 
 The only v0.5.0 output intended by this document is lifecycle planning.
 
-## v0.5.1 Implementation Candidates
+## v0.6 Implementation Candidates
 
-If v0.5.1 implements mock providers, it should begin with lifecycle tests before provider behavior grows.
+If v0.5.4 approves the freeze, v0.6 implementation should begin with lifecycle tests before provider behavior grows.
 
 Suggested first implementation checks:
 
@@ -173,6 +190,6 @@ Suggested first implementation checks:
 4. Pause after publish and prove no events emit while paused.
 5. Resume twice and prove deterministic continuation without duplicate events.
 6. Stop after publish and prove cleanup prevents later events.
-7. Trigger a mock error and prove stop cleans up and a later start can retry.
+7. Trigger a mock failure and prove stop cleans up and a later start can retry.
 
-The v0.5.1 mock provider list, event fixtures, adapter shape, and test files should be planned separately before any source implementation begins.
+The v0.6 mock provider list, event fixtures, adapter shape, and test files should remain blocked until v0.5.4 confirms there are no open documentation contradictions.

@@ -4,14 +4,14 @@ Status: v0.5.0 planning-only. This document describes the intended provider regi
 
 ## Purpose
 
-The provider registry is the planned coordination layer for discovering, storing, querying, and lifecycle-controlling providers exposed through the Mock Provider SDK. It is intended to give the app a single conceptual place to ask which providers exist, what they can do, and whether they should be running.
+The provider registry is the planned coordination layer for discovering, storing, querying, and lifecycle-controlling providers exposed through the Mock Provider SDK. It is intended to give the app a single conceptual place to ask which providers exist, what they can do, what lifecycle phase they are in, and how healthy they are.
 
 The registry is a local SDK concept. It should remain independent from platform integration details so future provider implementations can be mocked, simulated, or replaced without changing registry semantics.
 
 ## Responsibilities
 
 - Store registered provider records by stable provider id.
-- Expose provider metadata, capabilities, privacy declarations, and runtime state.
+- Expose provider id, name, group, capabilities, lifecycle, health, metadata, privacy declarations, and registration order.
 - Provide lookup and listing APIs for UI, orchestration, and tests.
 - Coordinate conceptual lifecycle transitions such as start, stop, pause, and resume.
 - Support bulk lifecycle operations across all registered providers.
@@ -28,6 +28,8 @@ The registry is a local SDK concept. It should remain independent from platform 
 - Own user authentication, secret storage, permission prompts, or account linking.
 - Decide final production provider contracts beyond the v0.5.0 planning scope.
 - Replace domain-specific provider logic; providers still own their own behavior.
+- Convert provider output into UI-specific state.
+- Bypass the Provider -> Event Bus -> Store -> Resolver -> UI runtime path.
 
 ## Conceptual API
 
@@ -49,7 +51,7 @@ Removes a provider record from the registry.
 
 Expected planning behavior:
 
-- Stop or mark inactive any provider that is currently running before removal.
+- Stop or mark inactive any provider that is currently `Started`, `Publishing`, or `Paused` before removal.
 - Remove the provider from lookup and list results.
 - Treat unknown ids as a no-op or typed result, depending on the final SDK error model.
 
@@ -69,27 +71,27 @@ Returns registered provider records.
 Expected planning behavior:
 
 - Support listing all providers.
-- Support filtering by group, capability, privacy attribute, availability, and runtime status.
-- Preserve deterministic ordering, likely by group and display name or by registration order.
+- Support filtering by group, capability, privacy attribute, availability, lifecycle, and health.
+- Preserve deterministic ordering, with registration order available as the stable fallback.
 
 ### `start(providerId)`
 
-Requests that one provider enter a running state.
+Requests that one provider enter an active lifecycle state.
 
 Expected planning behavior:
 
 - Validate that the provider is registered.
-- Transition eligible providers from `stopped` or `paused` into `running`.
+- Transition eligible providers from `Stopped` or `Paused` into `Started` or `Publishing`.
 - Surface unsupported, unavailable, or failed starts through typed results in the future SDK.
 
 ### `stop(providerId)`
 
-Requests that one provider enter a stopped state.
+Requests that one provider enter the `Stopped` lifecycle state.
 
 Expected planning behavior:
 
 - Validate that the provider is registered.
-- Transition running or paused providers to `stopped`.
+- Transition started, publishing, paused, or failed providers to `Stopped`.
 - Allow repeated stop calls to be idempotent.
 
 ### `pause(providerId)`
@@ -99,7 +101,7 @@ Requests that one provider temporarily suspend active work.
 Expected planning behavior:
 
 - Validate that the provider is registered and supports pause.
-- Transition eligible running providers to `paused`.
+- Transition eligible started or publishing providers to `Paused`.
 - Leave unsupported providers unchanged and report the unsupported operation through the future result model.
 
 ### `resume(providerId)`
@@ -109,8 +111,8 @@ Requests that one paused provider continue active work.
 Expected planning behavior:
 
 - Validate that the provider is registered.
-- Transition eligible paused providers to `running`.
-- Treat resume on stopped or unavailable providers as a typed no-op or error, to be finalized later.
+- Transition eligible paused providers to `Started` or `Publishing`.
+- Treat resume on `Stopped` or unavailable providers as a typed no-op or failure result, to be finalized later.
 
 ### `startAll(filter?)`
 
@@ -134,7 +136,29 @@ Expected planning behavior:
 
 ## Provider Record Shape
 
-Provider records should be explicit enough for UI and tests to reason about provider identity, supported behavior, privacy posture, and current runtime status.
+Provider records should be explicit enough for UI and tests to reason about provider identity, supported behavior, privacy posture, lifecycle, health, and deterministic ordering.
+
+## Registry Matrix
+
+The registry should know these details for every provider:
+
+| Area | Registry-owned details |
+| --- | --- |
+| Identity | Stable `id`, human-readable `name`, primary `group`, and deterministic `registrationOrder`. |
+| Capabilities | Capability ids, optional features, conceptual commands, conceptual events, pause support, and bulk lifecycle support. |
+| Lifecycle | One lifecycle value: `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, or `Failed`. |
+| Health | One health value: `Healthy`, `Degraded`, or `Unhealthy`. |
+| Metadata | Description, version, author, homepage, tags, mock/real declaration, and review-facing metadata. |
+| Privacy | Declared data access, writes, network access, local storage, sensitive data, and privacy notes. |
+
+These details remain provider-private:
+
+- Source handles, watchers, timers, sockets, processes, IPC handles, subscriptions, and file descriptors.
+- Raw notification text, transcript content, command output, filenames, paths, credentials, tokens, and account details.
+- Mock fixture internals, scenario cursors, retry counters, parser state, cache contents, and source-specific client objects.
+- UI-specific derived state, view models, layout choices, and final hub mode decisions.
+
+The registry may expose summaries and diagnostics, but it should not leak provider internals. Providers emit canonical HubEvents into the runtime path, and the Event Bus, Store, and Resolver remain responsible for application state flow after that boundary.
 
 ### Metadata Fields
 
@@ -176,15 +200,18 @@ Privacy fields are declarations, not enforcement, in the v0.5.0 planning model.
 
 ### Runtime Fields
 
-- `status`: Conceptual lifecycle state, such as `stopped`, `starting`, `running`, `pausing`, `paused`, `stopping`, `failed`, or `unavailable`.
+- `lifecycle`: Conceptual lifecycle state, limited to `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, or `Failed`.
+- `health`: Provider health, limited to `Healthy`, `Degraded`, or `Unhealthy`.
 - `enabled`: Whether the provider is allowed to participate in lifecycle operations.
 - `available`: Whether the provider can currently run in the active environment.
+- `registrationOrder`: Monotonic order assigned when the provider is registered.
 - `lastStartedAt`: Optional timestamp for the most recent successful start.
 - `lastStoppedAt`: Optional timestamp for the most recent stop.
 - `lastError`: Optional structured error summary.
-- `health`: Optional health value such as `unknown`, `ok`, `degraded`, or `failed`.
 
 Runtime fields are intended for mockable state transitions. They should not imply real process, service, or OS lifecycle management in v0.5.0.
+
+Lifecycle and health must remain separate from event or task status. Download progress, notification delivery state, AI task state, and other domain statuses belong in HubEvents, not registry lifecycle.
 
 ## Duplicate Id Handling
 

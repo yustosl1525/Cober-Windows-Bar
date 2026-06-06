@@ -4,7 +4,7 @@
 
 Cober-Windows-Bar is a **Windows 11 Unified Status Hub**. It starts as a visual and interaction prototype, then gradually grows into a native-feeling desktop surface for status, developer work, and AI agent activity.
 
-The current planning scope is **v0.5.1 Mock Provider SDK Implementation Plan**. It defines the first provider runtime implementation slice as documentation only. It does not implement provider code, tests, Tauri, Rust, IPC, real providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
+The current planning scope is **v0.5.3 Documentation Alignment**. It aligns the provider event contract, runtime path, lifecycle vocabulary, registry matrix, and v0.6 slice boundary as documentation only. It does not implement provider code, tests, Tauri, Rust, IPC, real providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
 
 ## 2. Stage Route
 
@@ -141,31 +141,37 @@ Current v0.5 sequence:
 - **v0.5.0 Mock Provider SDK Planning** - provider lifecycle, registry, and mock strategy docs.
 - **v0.5.1 Implementation Plan docs-only** - provider runtime and test strategy docs. Code changes: **0**.
 - **v0.5.2 Review & Freeze** - review the provider docs and freeze the first implementation slice.
-- **v0.6 Mock Provider SDK Implementation** - implement the first mock provider runtime slice after the planning freeze.
+- **v0.5.3 Documentation Alignment** - resolve event contract, runtime path, lifecycle, registry matrix, and v0.6 scope contradictions.
+- **v0.5.4 Review & Freeze** - re-review the aligned provider docs before implementation.
+- **v0.6 Mock Provider SDK Implementation** - implement the first mock provider runtime slice only after v0.5.4 approves the freeze.
 
-Provider output must follow the existing path:
+The canonical runtime path is:
 
 ```text
-Mock Provider -> provider adapter -> publishHubEvent() -> store -> resolver -> existing Hub UI
+Provider -> Event Bus -> Store -> Resolver -> UI
 ```
 
-Current scope:
+Provider registry and provider adapter layers may assist with metadata, health, lifecycle supervision, and event forwarding, but they must not bypass the Event Bus, Store, Resolver, or UI boundary.
 
-- `src/providers/types.ts` defines the provider lifecycle and listener contract.
-- `src/providers/mockProviders.ts` emits mock Music, Download, AI Task, and Notification events.
-- `src/providers/providerAdapter.ts` forwards provider events into the existing event bus.
-- `src/providers/provider.test.ts` verifies provider output resolves to the expected hub modes.
-- `docs/PROVIDER_RUNTIME.md` documents the v0.5.1 runtime plan.
-- `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan.
+v0.6 planned implementation scope after v0.5.4 approval:
+
+- `src/providers/types.ts` may define the provider lifecycle and listener contract.
+- `src/providers/mockProviders.ts` may emit mock Music, Download, AI, and Notification events.
+- `src/providers/providerAdapter.ts` may forward provider events into the existing event bus.
+- `src/providers/provider.test.ts` may verify provider output resolves to the expected hub modes.
+- `docs/PROVIDER_RUNTIME.md` documents the v0.5.3 aligned runtime plan.
+- `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan that v0.5.3 keeps as planning input.
 - `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
 
-Do not implement these in v0.5.1:
+Do not implement these in v0.5.3:
 
 - Windows APIs, media sessions, file watchers, or system notification readers
 - Tauri, IPC, tray, or always-on-top behavior
 - Real provider implementations
 - `/showcase` visual redesigns
 - Provider runtime code, mock provider code, registry code, adapter code, or tests
+
+v0.6 implementation remains unauthorized until v0.5.4 Review & Freeze confirms that no documentation contradictions remain.
 
 ## 8. Boundaries
 

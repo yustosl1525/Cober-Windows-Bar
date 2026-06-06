@@ -2,7 +2,7 @@
 
 This document is the v0.5.0 planning note for the mock Provider SDK path. v0.5.0 is documentation and design planning only. It does not implement mock providers, provider adapters, timers, Tauri APIs, Rust code, IPC, Windows integrations, or runtime behavior.
 
-Implementation belongs to v0.6 or later, after the provider contract, runtime plan, event quality rules, deterministic timing strategy, and test expectations are agreed. v0.5.1 is still planning-only.
+Implementation belongs to v0.6 or later, after the provider contract, runtime plan, event quality rules, deterministic timing strategy, and test expectations are agreed. v0.5.3 is still documentation alignment only.
 
 ## Scope
 
@@ -23,12 +23,12 @@ v0.5.0 does not add:
 
 ## Provider Behavior Table
 
-| Provider | Planned mock behavior | Event shape intention | Cleanup expectation |
+| Provider | Planned mock behavior | Canonical event shape intention | Cleanup expectation |
 | --- | --- | --- | --- |
-| `MockMusicProvider` | Emits a stable active music event for a fake track, then optional paused or cleared updates in scripted scenarios. | `kind: "music"`, stable `id`, provider `source`, track title, optional artist/album metadata in `payload`. | Stops interval work, clears listeners, and emits no further events after `stop()`. |
-| `MockAIProvider` | Emits deterministic progress for a fake long-running AI task, then complete or error depending on the scenario. | `kind: "ai"`, stable task `id`, monotonic `progress`, lifecycle `status` values such as `progress`, `complete`, or `error`. | Cancels pending ticks and prevents stale completion events after unsubscribe or stop. |
-| `MockDownloadProvider` | Emits a fake download with predictable progress steps from start to completion. | `kind: "download"`, stable download `id`, file title, byte or phase metadata in `payload` only when needed. | Stops progress ticks and clears active download events when the scenario ends. |
-| `MockNotificationProvider` | Emits short-lived notification events with deterministic expiration timestamps. | `kind: "notification"`, unique notification `id`, short `title`, optional `expiresAt`, and minimal non-private `payload`. | Ensures expired notifications disappear and no late notification events fire after cleanup. |
+| `MockMusicProvider` | Emits a stable active music event for a fake track, then optional paused or cleared updates in scripted scenarios. | `type: "music"`, stable `id`, provider `source`, `createdAt`, optional `metadata`, and display text inside `payload`. | Stops interval work, clears listeners, and emits no further events after `stop()`. |
+| `MockAIProvider` | Emits deterministic progress for a fake long-running AI task, then complete or error depending on the scenario. | `type: "ai"`, stable task `id`, provider `source`, `createdAt`, monotonic top-level `progress`, and task status inside `payload`. | Cancels pending ticks and prevents stale completion events after unsubscribe or stop. |
+| `MockDownloadProvider` | Emits a fake download with predictable progress steps from start to completion. | `type: "download"`, stable download `id`, provider `source`, `createdAt`, monotonic top-level `progress`, and file/byte metadata inside `payload`. | Stops progress ticks and clears active download events when the scenario ends. |
+| `MockNotificationProvider` | Emits short-lived notification events with deterministic expiration timestamps. | `type: "notification"`, unique notification `id`, provider `source`, `createdAt`, optional `expiresAt`, and minimal non-private display text inside `payload`. | Ensures expired notifications disappear and no late notification events fire after cleanup. |
 
 ## Design Example Events
 
@@ -37,17 +37,18 @@ These are design examples only. They are not implementation fixtures and should 
 ```ts
 const musicEventExample = {
   id: "mock-music:session",
-  kind: "music",
+  type: "music",
   source: "MockMusicProvider",
-  status: "active",
-  title: "Night Window",
-  subtitle: "Demo Artist",
-  priority: 20,
   createdAt: 1_700_000_000_000,
-  updatedAt: 1_700_000_000_000,
   payload: {
+    title: "Night Window",
+    subtitle: "Demo Artist",
     album: "Mock Sessions",
+    status: "active",
     playbackState: "playing",
+  },
+  metadata: {
+    providerId: "mock.music",
   },
 };
 ```
@@ -55,16 +56,17 @@ const musicEventExample = {
 ```ts
 const aiEventExample = {
   id: "mock-ai:task",
-  kind: "ai",
+  type: "ai",
   source: "MockAIProvider",
-  status: "progress",
-  title: "Summarizing notes",
-  progress: 45,
-  priority: 40,
   createdAt: 1_700_000_000_000,
-  updatedAt: 1_700_000_004_000,
+  progress: 45,
   payload: {
+    title: "Summarizing notes",
+    status: "progress",
     phase: "drafting",
+  },
+  metadata: {
+    providerId: "mock.ai",
   },
 };
 ```
@@ -72,17 +74,18 @@ const aiEventExample = {
 ```ts
 const downloadEventExample = {
   id: "mock-download:installer",
-  kind: "download",
+  type: "download",
   source: "MockDownloadProvider",
-  status: "progress",
-  title: "Cober-Setup.exe",
-  progress: 72,
-  priority: 30,
   createdAt: 1_700_000_000_000,
-  updatedAt: 1_700_000_006_000,
+  progress: 72,
   payload: {
+    title: "Cober-Setup.exe",
+    status: "progress",
     receivedBytes: 72_000_000,
     totalBytes: 100_000_000,
+  },
+  metadata: {
+    providerId: "mock.download",
   },
 };
 ```
@@ -90,19 +93,22 @@ const downloadEventExample = {
 ```ts
 const notificationEventExample = {
   id: "mock-notification:calendar-reminder",
-  kind: "notification",
+  type: "notification",
   source: "MockNotificationProvider",
-  status: "active",
-  title: "Design review in 10 minutes",
-  priority: 90,
   createdAt: 1_700_000_000_000,
-  updatedAt: 1_700_000_000_000,
   expiresAt: 1_700_000_010_000,
   payload: {
+    title: "Design review in 10 minutes",
+    status: "active",
     category: "calendar",
+  },
+  metadata: {
+    providerId: "mock.notification",
   },
 };
 ```
+
+Canonical v0.6 examples use only `id`, `type`, `source`, `createdAt`, optional `expiresAt`, optional `progress`, optional `payload`, and optional `metadata` as top-level fields. Display strings, task status, byte counts, phase labels, and other provider-specific details belong in `payload` or `metadata`, not in additional top-level event contract fields.
 
 ## Mock-to-Real Swap Principle
 
@@ -166,9 +172,9 @@ Provider failures should emit a concise `error` status event when the user or di
 
 Provider adapters should be able to drop, coalesce, or defer low-priority events if a future runtime produces too many updates. Backpressure should preserve the latest state for stable IDs and should not drop terminal `complete`, `error`, or `cleared` events.
 
-## v0.5.1 Planning Section
+## v0.5.3 Alignment Section
 
-v0.5.1 narrows the implementation plan without adding runtime code. It defines the first implementation slice, confirms test expectations, and prepares the handoff to v0.6.
+v0.5.3 aligns the implementation plan without adding runtime code. It defines the first implementation slice, confirms test expectations, and prepares the handoff to v0.5.4 Review & Freeze.
 
 The mock provider matrix remains limited to:
 
@@ -177,7 +183,7 @@ The mock provider matrix remains limited to:
 - `MockDownloadProvider`
 - `MockNotificationProvider`
 
-Do not expand v0.5.1 into Git, Docker, WSL, build tools, system status, or AI agent providers. Those belong to later product stages after the first mock provider runtime is proven.
+Do not expand v0.5.3 into Git, Docker, WSL, build tools, system status, or AI agent providers. Those belong to later product stages after the first mock provider runtime is proven.
 
 ## Future Test Plan
 

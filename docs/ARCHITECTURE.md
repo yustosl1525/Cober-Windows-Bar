@@ -1,6 +1,6 @@
 # Cober-Windows-Bar Architecture
 
-This document describes the v0.4 architecture plan for new contributors. v0.4 is planning only: the current runtime remains mock-only and does not include Tauri, Rust, IPC, Windows/system APIs, real providers, tray behavior, or always-on-top desktop behavior.
+This document describes the v0.5.3 architecture alignment for new contributors. v0.5.3 is documentation-only: the current runtime remains mock-only and does not include Tauri, Rust, IPC, Windows/system APIs, real providers, tray behavior, always-on-top desktop behavior, or v0.6 provider/runtime implementation.
 
 ## Product Shape
 
@@ -39,10 +39,31 @@ Mock Provider or Event Controls -> event path -> store/resolver -> existing Hub 
 Future real runtime:
 
 ```text
-Real Provider -> adapter -> Event Bus -> Store -> Resolver -> Hub UI
+Real Provider -> Event Bus -> Store -> Resolver -> Hub UI
 ```
 
-The future runtime is a design direction, not a v0.4 implementation commitment.
+Provider registries and adapters may help with discovery, lifecycle, and integration, but they are auxiliary to the canonical path. They must not bypass the Event Bus, Store, or Resolver when changing hub UI state.
+
+The future runtime is a design direction, not a v0.5.3 implementation commitment.
+
+## HubEvent Contract
+
+For v0.6 documentation, the canonical `HubEvent` top-level field set is:
+
+```ts
+interface HubEvent {
+  id: string;
+  type: "music" | "ai" | "download" | "notification" | "system" | "developer";
+  source: string;
+  createdAt: number;
+  expiresAt?: number;
+  progress?: number;
+  payload?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+```
+
+Non-canonical top-level fields are deferred or payload-only: `kind`, event-level `status`, `title`, `subtitle`, `priority`, and `updatedAt`. In particular, task status belongs in `payload` unless a later contract promotes it.
 
 ## Layer Responsibilities
 
@@ -64,7 +85,20 @@ Boundary:
 
 - Providers do not decide the current hub mode.
 - Providers do not render React components.
-- Providers do not call Windows/system APIs in v0.4.
+- Providers do not call Windows/system APIs in v0.5.3.
+
+Provider lifecycle terms such as starting, running, stopping, or failed startup describe whether a provider process or integration is operating. They are separate from registry health and separate from event/task status in `payload`.
+
+### Provider Registry
+
+A Provider Registry may track provider discovery, registration, health, and availability in a later stage.
+
+Boundary:
+
+- Registry health or availability does not mean an emitted event is active, complete, failed, or cleared.
+- Registry state does not decide the current hub mode.
+- Registry paths must publish `HubEvent` objects through the Event Bus before hub UI state changes.
+- The Registry does not bypass the Event Bus, Store, or Resolver.
 
 ### Event Bus
 
@@ -99,6 +133,7 @@ Boundary:
 - The Store should not fetch provider data.
 - The Store should not render UI.
 - The Store should not contain domain-specific provider code.
+- The Store should not treat provider lifecycle or registry availability as event/task status.
 
 ### Resolver
 
@@ -117,6 +152,7 @@ Boundary:
 - The Resolver should not mutate provider state.
 - The Resolver should not depend on timers except through event timestamps or store expiry.
 - The Resolver should not import React components.
+- The Resolver reads canonical event fields and approved payload semantics; it does not infer provider lifecycle or registry health as event/task status.
 
 ### UI
 
@@ -141,8 +177,9 @@ Boundary:
 - Add or change resolver behavior with tests because priority changes affect the whole hub.
 - Keep provider contracts small; prefer adapters over provider-specific UI paths.
 - Document future integrations as proposals unless the roadmap stage explicitly includes implementation.
-- Do not add Tauri, Rust, IPC, Windows/system APIs, real providers, tray behavior, or always-on-top behavior as part of v0.4 planning.
+- Keep provider lifecycle state, registry health/availability, and event/task status as separate concepts.
+- Do not add Tauri, Rust, IPC, Windows/system APIs, real providers, tray behavior, or always-on-top behavior as part of v0.5.3 alignment.
 
-## Current v0.4 Status
+## Current v0.5.3 Status
 
-v0.4 should clarify architecture before expanding runtime capability. The current app remains a React/Vite/Tailwind showcase with mock events and mock providers only.
+v0.5.3 aligns documentation before expanding runtime capability. The current app remains a React/Vite/Tailwind showcase with mock events and mock providers only.
