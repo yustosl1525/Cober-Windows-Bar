@@ -32,7 +32,7 @@ Planned responsibilities:
 - Supervise or forward canonical HubEvents emitted by providers.
 - Forward HubEvents through the Event Bus to the Store.
 - Track provider health and availability.
-- Surface provider failures as failure HubEvents.
+- Surface user-visible provider failures through canonical HubEvents with error details in `payload` or `metadata` when the UI needs to know.
 - Mark providers `Unhealthy` after crashes or unrecoverable failures.
 - Preserve a mock-first interface that can later be backed by real providers.
 
@@ -80,18 +80,18 @@ Provider lifecycle is separate from health and event or task status:
 The planned failure path is:
 
 ```text
-Provider Crash -> Failure HubEvent -> Registry Marks Unhealthy
+Provider Crash -> Registry Marks Unhealthy -> Optional Canonical HubEvent
 ```
 
 When a provider crashes or throws an unrecoverable runtime failure:
 
 1. The runtime captures the failure.
-2. The failure is normalized into a failure HubEvent.
-3. The failure HubEvent is forwarded through the Event Bus to the Store.
-4. ProviderRegistry marks provider health as `Unhealthy` and lifecycle as `Failed` if the provider can no longer run.
+2. ProviderRegistry marks provider health as `Unhealthy` and lifecycle as `Failed` if the provider can no longer run.
+3. If the failure must be user-visible, the runtime forwards a canonical HubEvent through the Event Bus to the Store.
+4. That HubEvent uses an existing canonical top-level `type`; failure details live in `payload` or `metadata`, not in a new top-level failure type or lifecycle/status field.
 5. The unhealthy provider is excluded from future automatic selection until a future recovery policy marks it `Healthy` again.
 
-The Store should receive the failure as application-visible state, but the Registry remains the source of truth for provider health. The runtime should not silently swallow provider failures or keep routing work to a provider after a crash.
+The Registry remains the source of truth for provider health. The Store should receive failure information only when it is relevant to application-visible state. The runtime should not silently swallow provider failures or keep routing work to a provider after a crash.
 
 ## Mock-To-Real Boundary
 

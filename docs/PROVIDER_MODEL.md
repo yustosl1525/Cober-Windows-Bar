@@ -14,7 +14,6 @@ interface ProviderMetadata {
   name: string;
   kind: ProviderKind;
   version: string;
-  priority: number;
   mock: boolean;
 }
 
@@ -46,8 +45,8 @@ Provider metadata should be static after construction.
 - `name` is the readable provider label for debug and future settings UI.
 - `kind` groups providers by product surface, such as music, download, notification, system, developer, or AI-agent.
 - `version` tracks provider contract compatibility, not app release version.
-- `priority` gives the resolver a stable input when multiple providers emit related events.
 - `mock` makes test/demo sources explicit and prevents fake sources from being mistaken for real integrations.
+- Provider metadata must not contain resolver priority, display priority, or other fields that influence final hub-mode selection. Priority policy is resolver-owned.
 
 ### Start
 
@@ -144,7 +143,7 @@ Rules:
 - Providers may emit empty batches only if the adapter explicitly treats them as no-ops.
 - Providers should avoid sending private payloads when a derived status is enough.
 - Providers should prefer semantic status events over raw logs or source dumps.
-- Resolver priority remains centralized; providers may suggest event priority, but they do not decide final hub mode.
+- Resolver priority remains centralized. Providers do not suggest resolver priority, display priority, or final hub mode through metadata or emitted events.
 - Mock providers must emit deterministic event sequences for tests and showcase capture.
 - A runtime or adapter may supervise, batch, validate, or forward HubEvents, but it must not bypass the Event Bus, Store, or Resolver.
 - UI-specific conversion happens after Store and Resolver processing, not inside providers.

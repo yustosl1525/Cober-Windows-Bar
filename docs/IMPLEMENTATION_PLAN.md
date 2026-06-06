@@ -121,9 +121,9 @@ Planning scope:
 
 - `docs/TAURI_STRATEGY.md` documents v0.4 as planning only.
 - The Tauri shell is described through architecture requirements: windowing, IPC, packaging, startup, always-on-top, and docking behavior.
-- The v0.6 spike should prove a Tauri shell and minimal IPC with mock or fixture data.
-- Real Windows providers are deferred until v0.7 or later.
-- Provider sequencing remains mock-first: Mock Provider SDK in v0.5, Tauri Spike in v0.6, First Real Provider in v0.7.
+- The Tauri shell spike is deferred until after the v0.6 Mock Provider SDK Implementation slice.
+- Real Windows providers are deferred until after the Tauri shell spike.
+- Provider sequencing remains mock-first: Mock Provider SDK planning in v0.5, Mock Provider SDK Implementation in v0.6, Tauri shell spike after v0.6, and first real provider after the shell boundary is proven.
 
 Do not implement these in v0.4:
 
@@ -162,6 +162,8 @@ v0.6 planned implementation scope after v0.5.4 approval:
 - `docs/PROVIDER_RUNTIME.md` documents the v0.5.3 aligned runtime plan.
 - `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan that v0.5.3 keeps as planning input.
 - `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
+
+v0.6 does not include Tauri, IPC, Rust, Windows APIs, real providers, media sessions, notification center readers, download monitoring, tray behavior, always-on-top behavior, or packaging work. Those remain later-stage planning or implementation items after the mock provider runtime slice is proven.
 
 Do not implement these in v0.5.3:
 
