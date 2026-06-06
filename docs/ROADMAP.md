@@ -1,67 +1,128 @@
 # Cober-Windows-Bar Roadmap
 
-## Phase 0: UI Prototype
+Cober-Windows-Bar is a Windows 11 Unified Status Hub. The roadmap proves the product in layers: visual quality first, then state flow, then extension contracts, then desktop shell, then real data.
 
-目标：完成可运行的 React UI 展示页。
+## Stage 0: UI Prototype
 
-内容：
+Goal: prove the hub looks credible.
 
-- 六种状态卡片
-- 展示页面
-- Mock 数据
-- Fluent 风格
-- 基础动画
+Status: done and pushed as v0.1.
 
-## Phase 1: Mock State System
+Delivered:
 
-目标：从静态展示升级为 Mock 事件驱动。
+- Win11/Mica/Acrylic `/showcase` review page
+- Six visible states: Idle, Music, AI Progress, Download, Notification, MultiTask
+- Fluent-style components, animation, and responsive desktop layouts
+- QA commands for build, state tests, and showcase screenshots
 
-内容：
+## Stage 1: Event Playground
 
-- HubEvent 类型
-- Event Bus
-- Store
-- Mode Resolver
-- 事件过期清理
-- 自动进入 Notification / Multi Task 等模式
+Goal: prove the status flow is reasonable and the hub can move.
 
-## Phase 2: Tauri Desktop Shell
+Status: current v0.2 work.
 
-目标：把 UI 放进 Windows 桌面悬浮窗。
+Scope:
 
-内容：
+- Mock events only
+- Event Controls: Music, AI, Download, Notification, MultiTask, Clear / Idle
+- Auto Demo: Idle -> Music -> AI -> Notification -> Download -> MultiTask -> Idle
+- Resolver Visualization: Active Events -> Resolver -> Current Mode
+- Event path: mock event -> event bus -> store -> resolver -> Hub UI
 
-- Tauri 2
-- 透明窗口
-- 无边框
-- 始终置顶
-- 右下角任务栏上方 10px 停靠
-- 多显示器处理
+Out of scope:
 
-## Phase 3: Real Providers
+- Provider SDK
+- Tauri
+- IPC
+- Real system APIs
+- Tray or always-on-top behavior
 
-目标：逐步接入真实数据。
+## Stage 2: Provider SDK
 
-优先级：
+Goal: prove future integrations can be added cleanly.
 
-1. System Provider：CPU、RAM、网络、电池
-2. Download Provider：监听 Downloads 文件夹
-3. Music Provider：Windows Media Session API
-4. AI Provider：本地事件接口优先
+Scope:
 
-## Phase 4: Ecosystem Providers
+- Define provider interfaces and lifecycle contracts
+- Add fake providers only
+- Keep all data mocked
 
-目标：扩展为开发者和效率工具状态中心。
+Example contract:
 
-候选方向：
+```ts
+interface Provider {
+  start(): void;
+  stop(): void;
+  subscribe(listener: (events: HubEvent[]) => void): () => void;
+}
+```
 
-- Git 状态
-- Docker 状态
-- WSL 状态
-- Maven / Gradle 构建状态
-- 系统通知聚合
-- Codex / Claude / Gemini / OpenAI 状态
+Candidate fake providers:
+
+- MusicProvider
+- DownloadProvider
+- NotificationProvider
+- AITaskProvider
+
+## Stage 3: Tauri Shell
+
+Goal: turn the web prototype into a desktop application.
+
+Scope:
+
+- Tauri v2 shell
+- Transparent or acrylic-feeling window
+- Right-bottom docking above the taskbar
+- Startup behavior
+- Always-on-top behavior
+
+Real providers are still optional at this stage.
+
+## Stage 4: Real Providers
+
+Goal: connect real system data for the first time.
+
+Priority:
+
+1. System information and music status
+2. System notifications without reading private message content
+3. Downloads folder/file-change status
+
+Candidate sources:
+
+- CPU, RAM, network
+- Windows Media Session-compatible apps
+- Windows notification center
+- Downloads directory watcher
+
+## Stage 5: Developer Hub
+
+Goal: become a daily developer status center.
+
+Candidate surfaces:
+
+- Git working tree status
+- Docker builds and containers
+- WSL status
+- Maven and Gradle builds
+- npm, pnpm, and Cargo tasks
+
+This stage is one of the strongest differentiation points because developer workflows create persistent, glanceable status.
+
+## Stage 6: AI Agent Hub
+
+Goal: summarize long-running AI work and multi-agent activity.
+
+Candidate surfaces:
+
+- Codex
+- Claude
+- GPT/OpenCode/Gemini-style agent sessions
+- Running, waiting, analyzing, generating, and reviewing states
+- Multi-agent progress summaries
+
+This stage turns the product from a notification surface into a unified status layer for modern AI-assisted work.
 
 ## Product Principle
 
-视觉完成度优先于功能数量。每个新增 Provider 都必须服务于“低打扰、一眼扫过、像系统原生功能”的核心体验。
+Prefer clear status flow over early real-data breadth. A beautiful, understandable event-driven playground proves the architecture better than a half-integrated provider stack with confusing state transitions.

@@ -1,5 +1,11 @@
 import { strict as assert } from "node:assert";
 import type { HubEvent } from "../types/hub";
+import {
+  createAutoDemoSequence,
+  createHubDemoScenario,
+  createHubDemoScenarios,
+  playHubDemoScenario,
+} from "./hubScenarios";
 import { createHubEventBus, createHubStoreState, getActiveHubEvents, resolveHubMode } from "./hubState";
 
 const now = Date.UTC(2026, 5, 6, 8, 20, 0);
@@ -84,4 +90,41 @@ test("event bus publishes latest state and replaces events by id", () => {
   assert.equal(bus.getState(now + 1000).tasks[0]?.progress, 80);
 
   unsubscribe();
+});
+
+test("event demo scenarios resolve to their expected hub modes", () => {
+  for (const scenario of createHubDemoScenarios(now)) {
+    assert.equal(resolveHubMode(scenario.events, now), scenario.expectedMode);
+  }
+});
+
+test("event demo notification expires back to idle", () => {
+  const scenario = createHubDemoScenario("notification", now);
+
+  assert.equal(resolveHubMode(scenario.events, now), "notification");
+  assert.equal(resolveHubMode(scenario.events, now + 4000), "idle");
+});
+
+test("event demo can clear the event bus back to idle", () => {
+  const bus = createHubEventBus();
+
+  playHubDemoScenario(bus, createHubDemoScenario("download", now), now);
+  assert.equal(bus.getState(now).mode, "download");
+
+  const state = playHubDemoScenario(bus, createHubDemoScenario("idle", now), now);
+  assert.equal(state.mode, "idle");
+  assert.equal(state.events.length, 0);
+});
+
+test("event demo auto sequence follows the v0.2 playback order", () => {
+  const sequence = createAutoDemoSequence(now);
+
+  assert.deepEqual(
+    sequence.map((step) => step.id),
+    ["idle", "music", "ai", "notification", "download", "multiTask", "idle"],
+  );
+  assert.deepEqual(
+    sequence.map((step) => step.expectedMode),
+    ["idle", "music", "aiProgress", "notification", "download", "multiTask", "idle"],
+  );
 });

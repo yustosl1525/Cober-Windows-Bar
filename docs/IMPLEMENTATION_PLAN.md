@@ -1,10 +1,24 @@
 # Cober-Windows-Bar Implementation Plan
 
-## 1. 当前阶段
+## 1. Product Narrative
 
-当前阶段是 UI-only prototype。目标是先做出可运行、可展示、可截图的前端页面。
+Cober-Windows-Bar is a **Windows 11 Unified Status Hub**. It starts as a visual and interaction prototype, then gradually grows into a native-feeling desktop surface for status, developer work, and AI agent activity.
 
-## 2. 技术栈
+The current implementation scope is **v0.2 Interactive Event Playground**. It proves that the hub can move through meaningful states using mock events. It does not implement Provider SDKs, Tauri, real Providers, system tray behavior, or always-on-top windowing.
+
+## 2. Stage Route
+
+- **Stage 0: UI Prototype** - done and pushed as v0.1. Delivered the Win11-style `/showcase` UI review page and six static hub states.
+- **Stage 1: Event Playground** - current v0.2. Prove state transitions with mock Event Controls, Auto Demo playback, and Resolver Visualization.
+- **Stage 2: Provider SDK** - later. Define provider interfaces and fake providers only; no Windows/system integration.
+- **Stage 3: Tauri Shell** - later. Turn the web UI into a native-feeling desktop shell after the playground is stable.
+- **Stage 4: Real Providers** - later. First real system integration: system info/music, then notifications, then downloads.
+- **Stage 5: Developer Hub** - later. Add Git, Docker, WSL, Maven, Gradle, npm/pnpm, Cargo, and developer workflow surfaces.
+- **Stage 6: AI Agent Hub** - later. Add Codex, Claude, GPT/OpenCode/Gemini-style agent status, queue state, progress, and multi-agent visibility.
+
+The long-term product ceiling is a Windows 11 **Unified Status Hub**, not only a Dynamic Island clone. Stages 5 and 6 are the strongest differentiation bets, but they must wait until Stage 1-4 prove the interaction model and desktop shell.
+
+## 3. Current Technical Stack
 
 - React
 - TypeScript
@@ -12,70 +26,98 @@
 - TailwindCSS
 - Framer Motion
 - lucide-react
+- Playwright CLI for showcase screenshots
 
-## 3. 目录结构
+## 4. Current Source Shape
 
 ```text
 src/
-├─ App.tsx
-├─ main.tsx
-├─ styles/
-│  └─ globals.css
-├─ components/
-│  ├─ hub/
-│  ├─ showcase/
-│  └─ ui/
-├─ data/
-│  └─ mockHubData.ts
-└─ types/
-   └─ hub.ts
+|-- App.tsx
+|-- main.tsx
+|-- styles/
+|   `-- globals.css
+|-- components/
+|   |-- hub/
+|   |-- showcase/
+|   `-- ui/
+|-- data/
+|   `-- mockHubData.ts
+|-- pages/
+|   `-- ShowcasePage.tsx
+|-- state/
+|   |-- hubScenarios.ts
+|   |-- hubState.ts
+|   `-- hubState.test.ts
+`-- types/
+    `-- hub.ts
 ```
 
-## 4. 开发顺序
+## 5. v0.2 Interactive Event Playground Scope
 
-1. 初始化 Vite React TypeScript 项目。
-2. 配置 TailwindCSS、Framer Motion、lucide-react。
-3. 定义 Hub 类型。
-4. 编写 Mock 数据。
-5. 实现通用 UI 组件。
-6. 实现六种 Hub 状态组件。
-7. 实现 Showcase 页面组件。
-8. 添加点击切换状态。
-9. 构建验证。
-10. 浏览器视觉 QA。
+### Event Controls
 
-## 5. 组件职责
+Controls should publish mock events through the existing event path:
 
-### hub
+```text
+Event Controls -> publishHubEvent() -> store -> resolver -> resolved UI mode
+```
 
-核心状态栏组件：
+Required controls:
 
-- `HubShell`
-- `IdleHub`
-- `MusicHub`
-- `AiProgressHub`
-- `DownloadHub`
-- `NotificationHub`
-- `MultiTaskHub`
+- Music
+- AI
+- Download
+- Notification
+- MultiTask
+- Start Demo
+- Clear / Idle
 
-### showcase
+### Auto Demo
 
-展示页面组件：
+`Start Demo` should automatically play:
 
-- `ModeSidebar`
-- `StatusFlow`
-- `TaskbarFusionDemo`
-- `FluentStyleGuide`
+```text
+Idle -> Music -> AI -> Notification -> Download -> MultiTask -> Idle
+```
 
-### ui
+The demo should be stable enough for README, GitHub, or Bilibili GIF capture.
 
-通用基础组件：
+Implementation notes:
 
-- `GlassPanel`
-- `ProgressBar`
-- `StatusIcon`
+- Keep the sequence deterministic for QA and repeatable screenshots.
+- Keep manual controls usable after the sequence completes.
+- Prefer a small scenario helper in `src/state/hubScenarios.ts` over provider-like abstractions.
 
-## 6. 测试计划
+### Resolver Visualization
+
+The showcase should display:
+
+- Active Events
+- Current Mode
+- Events -> Resolver -> Resolved Mode
+
+The visualization should make notification priority and MultiTask resolution easy to verify.
+
+### Current Integration Files
+
+- `src/state/hubScenarios.ts` defines deterministic mock scenarios and the auto-demo sequence.
+- `src/state/hubState.ts` remains the event bus/store/resolver boundary.
+- `src/state/hubState.test.ts` protects scenario resolution, expiry, clear-to-idle, and playback order.
+- `src/components/showcase/EventPlaygroundPanel.tsx` is the showcase control and visualization surface.
+- `src/pages/ShowcasePage.tsx` integrates the panel while preserving the Stage 0 Win11/Mica shell.
+
+## 6. Boundaries
+
+Do not implement these in v0.2:
+
+- Provider SDK
+- MusicProvider, DownloadProvider, NotificationProvider, or AITaskProvider
+- Tauri, IPC, tray, or always-on-top behavior
+- Real system, music, download, notification, or AI provider integration
+
+Stage 2-6 items may be described as future direction only.
+
+## 7. QA Plan
 
 ### Build
 
@@ -83,51 +125,30 @@ src/
 npm run build
 ```
 
-### Visual QA
+### Full QA
 
-检查：
+```bash
+npm run qa
+```
 
-- Idle 状态
-- Music 状态
-- AI Progress 状态
-- Download 状态
-- Notification 状态
-- Multi Task 状态
-- 1366、1440、1920 宽度
-- 文字截断
-- 卡片阴影
-- 进度条位置
-- 动画是否自然
+### Showcase Screenshots
 
-## 7. 下一步
+Run after the dev server is available:
 
-UI 原型稳定后，再进入 Phase 1：Mock Event Bus 和状态解析系统。不要提前加入 Tauri 或真实 Provider，以免影响当前 UI 验证节奏。
+```bash
+npm run qa:showcase:screenshots
+```
 
-Phase 1 的最小接口预备已包含：
-
-- `HubEvent`
-- `HubStoreState`
-- `resolveHubMode(events)`
-- `createHubEventBus(initialEvents)`
-- `mockHubEvents`
-
-这些能力只服务 mock 状态演示，不接真实 Provider。
-
-## 8. Phase 0 Deliverable
-
-`/showcase` 是现阶段交付页面，也是后续所有 UI 验收入口。
-
-必须展示：
-
-- Idle
-- Music
-- AI Progress
-- Download
-- Notification
-- MultiTask
-
-必须检查：
+Required visual widths:
 
 - 1366 x 768
 - 1440 x 900
 - 1920 x 1080
+
+### Manual Acceptance
+
+- `/showcase` keeps the Windows 11/Mica/Acrylic style from v0.1.
+- Event Controls update the active events and current resolved mode.
+- Auto Demo plays the full Stage 1 sequence and returns to Idle.
+- Resolver Visualization explains why the current mode is selected.
+- The page remains mock-only and does not require Provider SDK, Tauri, or real Providers.

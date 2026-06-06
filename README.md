@@ -1,25 +1,23 @@
 # Cober-Windows-Bar
 
-Windows 11 Fluent Design 风格的智能状态悬浮栏 UI 原型。
+Windows 11 Unified Status Hub for lightweight, glanceable desktop status.
 
-当前阶段：`UI Prototype`
+Current release track: **v0.2 Interactive Event Playground**.
 
 ## Overview
 
-Cober-Windows-Bar 目标是做一个看起来像 Windows 11 官方系统功能的 Smart Status Hub。它常驻屏幕右下角任务栏上方，用紧凑、低打扰的方式展示音乐、AI 生成、下载进度和重要通知。
+Cober-Windows-Bar is a Windows 11-style Unified Status Hub. The long-term product idea is a small, native-feeling status surface above the taskbar that can summarize music, AI work, downloads, notifications, developer tasks, and agent activity without becoming a full dashboard.
 
-首版只做前端 UI 原型，不接真实系统数据，也不包含 Tauri/Rust 桌面壳。
+The current implementation is still front-end only. It uses mock data and the local event playground to prove that the hub can move through meaningful states. It does not include Tauri, real system APIs, provider integrations, tray behavior, or always-on-top windowing.
 
-## Features
+## Current Capabilities
 
-- Idle 收缩状态
-- Music 播放状态
-- AI Progress 任务进度
-- Download 下载进度
-- Notification 消息通知
-- Multi Task 多任务堆叠
-- Windows 11 Fluent / Acrylic / Mica 视觉风格
-- Mock 数据驱动的展示页面
+- Win11/Mica/Acrylic `/showcase` review page.
+- Six hub states: Idle, Music, AI Progress, Download, Notification, MultiTask.
+- v0.2 event controls for triggering mock status changes.
+- Auto Demo flow for recording a short state-transition demo.
+- Resolver visualization showing active events, resolver output, and current mode.
+- QA commands for state tests, production build, and viewport screenshots.
 
 ## Local Development
 
@@ -28,47 +26,74 @@ npm install
 npm run dev
 ```
 
-Showcase 验收入口：
+Showcase entry:
 
 ```text
 http://localhost:5173/showcase
 ```
 
-也可以直接启动并打开：
+Open the showcase directly:
 
 ```bash
 npm run dev:showcase
 ```
 
-Build:
+Build and QA:
 
 ```bash
 npm run build
-```
-
-Phase 0 QA:
-
-```bash
 npm run qa
 ```
 
-## Screenshots
+Generate showcase screenshots after the dev server is running:
 
-Phase 0 的截图统一从 `/showcase` 页面生成。验收宽度：
+```bash
+npm run qa:showcase:screenshots
+```
 
-- 1366 x 768
-- 1440 x 900
-- 1920 x 1080
+Screenshots are written to `output/playwright/` and are local QA artifacts only.
 
-页面必须同时展示 Idle、Music、AI Progress、Download、Notification、MultiTask 六种状态。
+## v0.2 Interactive Event Playground
 
-## Roadmap
+The current v0.2 goal is to prove "this thing moves" before any provider or desktop-shell work.
 
-- Phase 0: UI showcase prototype
-- Phase 1: Mock event bus and state resolver
-- Phase 2: Tauri 2 floating desktop shell
-- Phase 3: Real providers for system, music, downloads, and AI states
-- Phase 4: Ecosystem providers for Git, Docker, WSL, Maven, Gradle, and notifications
+Required controls:
+
+- Music
+- AI
+- Download
+- Notification
+- MultiTask
+- Clear / Idle
+- Start Demo
+
+Expected data flow:
+
+```text
+Event Controls -> publishHubEvent() -> store -> resolver -> resolved UI mode
+```
+
+Auto Demo should move through:
+
+```text
+Idle -> Music -> AI -> Notification -> Download -> MultiTask -> Idle
+```
+
+The resolver visualization should show:
+
+- Active Events
+- Current Mode
+- A compact Events -> Resolver -> Resolved Mode flow
+
+## Product Route
+
+- **Stage 0: UI Prototype** - done and pushed as v0.1.
+- **Stage 1: Event Playground** - current v0.2 work; mock controls, auto demo, resolver visualization.
+- **Stage 2: Provider SDK** - later; interfaces and fake providers only, no system integration.
+- **Stage 3: Tauri Shell** - later; desktop shell and window behavior.
+- **Stage 4: Real Providers** - later; system, music, download, notification, and AI task providers.
+- **Stage 5: Developer Hub** - later; Git, Docker, WSL, Maven, Gradle, and related developer surfaces.
+- **Stage 6: AI Agent Hub** - later; agent status, queue state, and long-running AI work visibility.
 
 ## Documentation
 

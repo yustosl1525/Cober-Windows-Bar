@@ -1,6 +1,8 @@
 # Showcase QA
 
-`/showcase` 是 Phase 0 以及后续所有 UI 变更的统一验收入口。
+`/showcase` is the shared review entry for Stage 0 UI Prototype work and the current **v0.2 Interactive Event Playground**.
+
+The page is still mock-only. It must not depend on Tauri, real Providers, system APIs, tray behavior, or always-on-top windowing.
 
 ## Run
 
@@ -8,7 +10,7 @@
 npm run dev:showcase
 ```
 
-或启动 dev server 后打开：
+Or start the dev server and open:
 
 ```text
 http://localhost:5173/showcase
@@ -16,26 +18,19 @@ http://localhost:5173/showcase
 
 ## Automated Checks
 
+Run state tests and production build:
+
 ```bash
 npm run qa
 ```
 
-在 dev server 已启动时生成三种验收宽度截图：
+Generate visual QA screenshots after the dev server is running:
 
 ```bash
 npm run qa:showcase:screenshots
 ```
 
-截图输出到 `output/playwright/`，该目录只作为本地验收产物，不纳入 git。
-
-## Required States
-
-- Idle
-- Music
-- AI Progress
-- Download
-- Notification
-- MultiTask
+Screenshots are written to `output/playwright/`. This directory is a local QA artifact and should not be committed.
 
 ## Required Viewports
 
@@ -43,13 +38,41 @@ npm run qa:showcase:screenshots
 - 1440 x 900
 - 1920 x 1080
 
+## Stage 0 UI Prototype Checks
+
+- `/showcase` renders with a Windows 11/Mica/Acrylic visual direction.
+- The six hub states are visible and reviewable: Idle, Music, AI Progress, Download, Notification, MultiTask.
+- The layout does not overflow horizontally at 1366, 1440, or 1920 widths.
+- Text, icons, progress bars, shadows, and borders remain readable on the desktop background.
+- The taskbar fusion demo feels aligned with Windows 11 spacing and centered taskbar behavior.
+
+## v0.2 Interactive Event Playground Checks
+
+Event Controls:
+
+- Music publishes a mock event and resolves to Music mode.
+- AI publishes a mock event and resolves to AI Progress mode.
+- Download publishes a mock event and resolves to Download mode.
+- Notification publishes a mock event and demonstrates notification priority.
+- MultiTask creates a multi-event condition and resolves to MultiTask mode.
+- Clear / Idle removes active events and resolves to Idle mode.
+
+Auto Demo:
+
+- Start Demo plays a readable sequence: Idle -> Music -> AI -> Notification -> Download -> MultiTask -> Idle.
+- The sequence is suitable for a README/GitHub/Bilibili GIF capture.
+- Manual controls remain usable after the demo finishes.
+
+Resolver Visualization:
+
+- Active Events are visible.
+- Current Mode is visible.
+- The page shows a compact Events -> Resolver -> Resolved Mode flow.
+- Notification priority and MultiTask resolution are understandable from the visualization.
+
 ## Acceptance Checklist
 
-- 六种状态在页面中同时可见。
-- 左侧模式切换可以更新当前悬浮栏预览。
-- Notification 预览触发后 3 秒回到 Idle。
-- Hub 文本在目标宽度内不重叠、不溢出。
-- 进度条、图标、阴影和边框在深色背景上清晰可辨。
-- 任务栏融合示例在 1366 宽度下不压住右侧系统状态区。
-- `npm run qa` 通过。
-- `npm run qa:showcase:screenshots` 可生成 1366、1440、1920 三张截图。
+- `npm run qa` passes.
+- `npm run qa:showcase:screenshots` can generate the 1366, 1440, and 1920 screenshots when the dev server is running.
+- `/showcase` remains mock-only and does not document or require Provider SDK, Tauri, or real Provider implementation.
+- Stage 1 behavior proves state transitions without claiming Stage 2-6 capabilities are implemented.

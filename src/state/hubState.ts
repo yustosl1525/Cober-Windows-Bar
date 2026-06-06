@@ -76,7 +76,15 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
   };
 }
 
-export function createHubEventBus(initialEvents: HubEvent[] = []) {
+export type HubEventBus = {
+  getState(now?: number): HubStoreState;
+  publishHubEvent(event: HubEvent): void;
+  clearHubEvents(): void;
+  clearExpiredEvents(now?: number): void;
+  subscribe(subscriber: (state: HubStoreState) => void): () => void;
+};
+
+export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
   let events = [...initialEvents];
   const subscribers = new Set<(state: HubStoreState) => void>();
 
@@ -93,6 +101,10 @@ export function createHubEventBus(initialEvents: HubEvent[] = []) {
     getState: snapshot,
     publishHubEvent(event: HubEvent) {
       events = [event, ...events.filter((item) => item.id !== event.id)];
+      notify();
+    },
+    clearHubEvents() {
+      events = [];
       notify();
     },
     clearExpiredEvents(now = Date.now()) {
