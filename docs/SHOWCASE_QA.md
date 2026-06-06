@@ -76,3 +76,44 @@ Resolver Visualization:
 - `npm run qa:showcase:screenshots` can generate the 1366, 1440, and 1920 screenshots when the dev server is running.
 - `/showcase` remains mock-only and does not document or require Provider SDK, Tauri, or real Provider implementation.
 - Stage 1 behavior proves state transitions without claiming Stage 2-6 capabilities are implemented.
+
+## v0.2.1 Validation & Polish Gate
+
+| gate | status |
+| --- | --- |
+| Event Flow Smooth | 1 |
+| Resolver Readable | 1 |
+| README Assets Ready / plan clear | 1 |
+| Responsive Verified | 1 |
+| Build Pass | 1 |
+
+## v0.2.1 Resolution QA
+
+| resolution | status |
+| --- | --- |
+| 1366x768 | 1 |
+| 1440x900 | 1 |
+| 1920x1080 | 1 |
+
+## README Asset Plan
+
+Static screenshots:
+
+- `docs/screenshots/idle.png`
+- `docs/screenshots/music.png`
+- `docs/screenshots/ai.png`
+- `docs/screenshots/download.png`
+- `docs/screenshots/notification.png`
+- `docs/screenshots/multitask.png`
+
+Demo GIF:
+
+- `docs/demo/event-playground.gif`
+
+Recommended GIF sequence:
+
+```text
+Idle -> Music -> AI -> Notification -> MultiTask
+```
+
+Recommended loop length: 10-15 seconds. Do not commit large generated binaries without reviewing file size first.

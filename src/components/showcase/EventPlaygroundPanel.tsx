@@ -51,6 +51,15 @@ const toneClass = {
   slate: "border-white/10 bg-white/[0.07] text-slate-100 hover:bg-white/[0.105]",
 };
 
+const priorityLabel: Record<HubMode, string> = {
+  idle: "None",
+  music: "Music",
+  aiProgress: "AI > Music",
+  download: "Download",
+  notification: "Notification > tasks",
+  multiTask: "MultiTask",
+};
+
 export function EventPlaygroundPanel({
   activeEvents,
   currentMode,
@@ -173,13 +182,13 @@ export function EventPlaygroundPanel({
               <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-white">Resolver Flow</span>
                 <span className="rounded-full border border-white/10 bg-white/[0.075] px-2.5 py-1 text-xs font-medium text-sky-100">
-                  {activeEvents.length} active
+                  Active: {activeEvents.length}
                 </span>
               </div>
               <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
-                <FlowPill label="Events" value={`${activeEvents.length}`} />
+                <FlowPill label="Active" value={`${activeEvents.length}`} />
                 <FlowArrow />
-                <FlowPill label="Resolver" value="priority rules" />
+                <FlowPill label="Priority" value={priorityLabel[currentMode]} />
                 <FlowArrow />
                 <FlowPill label="Mode" value={modeLabel[currentMode]} isActive />
               </div>

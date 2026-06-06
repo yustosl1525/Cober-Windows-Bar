@@ -85,6 +85,28 @@ The resolver visualization should show:
 - Current Mode
 - A compact Events -> Resolver -> Resolved Mode flow
 
+## v0.2.1 Validation & Polish
+
+v0.2.1 focuses on making the playground ready for README/GitHub/demo capture. It does not add Provider SDK, Tauri, or real system integrations.
+
+Planned lightweight showcase assets:
+
+- `docs/screenshots/idle.png`
+- `docs/screenshots/music.png`
+- `docs/screenshots/ai.png`
+- `docs/screenshots/download.png`
+- `docs/screenshots/notification.png`
+- `docs/screenshots/multitask.png`
+- `docs/demo/event-playground.gif`
+
+The GIF should loop a 10-15 second sequence:
+
+```text
+Idle -> Music -> AI -> Notification -> MultiTask
+```
+
+Large GIF/video binaries should not be committed without checking their size first.
+
 ## Product Route
 
 - **Stage 0: UI Prototype** - done and pushed as v0.1.
