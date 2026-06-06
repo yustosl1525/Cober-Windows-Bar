@@ -12,7 +12,8 @@
     "qa:showcase:interactions": "node scripts/qa-showcase-interactions.mjs",
     "test:state": "tsx src/state/hubState.test.ts",
     "test:providers": "tsx src/providers/provider.test.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
@@ -24,6 +25,7 @@
     "vite": "^7.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "autoprefixer": "^10.4.20",
