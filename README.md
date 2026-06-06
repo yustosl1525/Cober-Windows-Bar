@@ -28,15 +28,39 @@ npm install
 npm run dev
 ```
 
+Showcase 验收入口：
+
+```text
+http://localhost:5173/showcase
+```
+
+也可以直接启动并打开：
+
+```bash
+npm run dev:showcase
+```
+
 Build:
 
 ```bash
 npm run build
 ```
 
+Phase 0 QA:
+
+```bash
+npm run qa
+```
+
 ## Screenshots
 
-UI 完成后将在这里补充截图。
+Phase 0 的截图统一从 `/showcase` 页面生成。验收宽度：
+
+- 1366 x 768
+- 1440 x 900
+- 1920 x 1080
+
+页面必须同时展示 Idle、Music、AI Progress、Download、Notification、MultiTask 六种状态。
 
 ## Roadmap
 
@@ -50,6 +74,7 @@ UI 完成后将在这里补充截图。
 
 - [PRD](docs/PRD.md)
 - [UI Spec](docs/UI_SPEC.md)
+- [Showcase QA](docs/SHOWCASE_QA.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
 

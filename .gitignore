@@ -6,9 +6,13 @@ dist
 Thumbs.db
 .vite
 .cache
+.codegraph/
+.nezha/
+output/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
+CLAUDE.md

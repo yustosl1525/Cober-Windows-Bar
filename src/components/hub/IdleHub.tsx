@@ -2,7 +2,7 @@ import { StatusIcon } from "../ui/StatusIcon";
 
 export function IdleHub() {
   return (
-    <div className="relative flex h-16 w-[196px] items-center justify-center gap-4 rounded-[24px]">
+    <div className="hub-idle relative flex h-16 items-center justify-center gap-4 rounded-[24px]">
       <StatusIcon type="music" />
       <StatusIcon type="ai" />
       <StatusIcon type="download" />

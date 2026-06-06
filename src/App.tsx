@@ -1,43 +1,33 @@
 import { useEffect, useState } from "react";
-import type { HubMode } from "./types/hub";
-import { HubShell } from "./components/hub/HubShell";
-import { FluentStyleGuide } from "./components/showcase/FluentStyleGuide";
-import { ModeSidebar } from "./components/showcase/ModeSidebar";
-import { StatusFlow } from "./components/showcase/StatusFlow";
-import { TaskbarFusionDemo } from "./components/showcase/TaskbarFusionDemo";
+import { ShowcasePage } from "./pages/ShowcasePage";
 
 export default function App() {
-  const [activeMode, setActiveMode] = useState<HubMode>("idle");
+  const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
-    if (activeMode !== "notification") {
-      return;
+    if (window.location.pathname === "/") {
+      window.history.replaceState(null, "", "/showcase");
+      setPath("/showcase");
     }
+  }, []);
 
-    const timer = window.setTimeout(() => setActiveMode("idle"), 3000);
-    return () => window.clearTimeout(timer);
-  }, [activeMode]);
+  if (path !== "/showcase") {
+    return <ShowcaseNotFound />;
+  }
 
+  return <ShowcasePage />;
+}
+function ShowcaseNotFound() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#06111f] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_76%_22%,rgba(59,130,246,0.16),transparent_30%),linear-gradient(135deg,#071324,#06101d_44%,#091a2a)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-200/30 to-transparent" />
-
-      <div className="relative mx-auto grid max-w-[1600px] gap-8 px-6 py-8 lg:grid-cols-[420px_1fr]">
-        <ModeSidebar activeMode={activeMode} onModeChange={setActiveMode} />
-
-        <div className="space-y-8">
-          <section className="flex min-h-[210px] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.035] p-8">
-            <div className="text-center">
-              <div className="mb-7 text-sm font-semibold text-sky-300">当前悬浮栏预览</div>
-              <HubShell mode={activeMode} />
-            </div>
-          </section>
-
-          <StatusFlow activeMode={activeMode} />
-          <TaskbarFusionDemo />
-          <FluentStyleGuide />
-        </div>
+    <main className="grid min-h-screen place-items-center bg-[#06111f] px-6 text-white">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">Showcase 页面未找到</h1>
+        <a
+          className="mt-5 inline-flex rounded-full border border-sky-300/40 bg-sky-300/10 px-5 py-2 text-sm text-sky-100 transition hover:bg-sky-300/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+          href="/showcase"
+        >
+          打开 /showcase
+        </a>
       </div>
     </main>
   );

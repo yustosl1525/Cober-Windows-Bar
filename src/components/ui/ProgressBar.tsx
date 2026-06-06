@@ -10,11 +10,19 @@ const toneClass = {
 };
 
 export function ProgressBar({ value, tone = "blue" }: ProgressBarProps) {
+  const safeValue = Math.max(0, Math.min(value, 100));
+
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-500/25">
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-slate-500/25"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={safeValue}
+    >
       <div
         className={`h-full rounded-full bg-gradient-to-r ${toneClass[tone]}`}
-        style={{ width: `${Math.max(0, Math.min(value, 100))}%` }}
+        style={{ width: `${safeValue}%` }}
       />
     </div>
   );

@@ -23,7 +23,7 @@ const toneMap = {
 export function StatusIcon({ type, compact = false }: StatusIconProps) {
   const Icon = iconMap[type];
   return (
-    <div className={`icon-tile ${compact ? "h-9 w-9 rounded-xl" : ""} ${toneMap[type]}`}>
+    <div className={`icon-tile ${compact ? "h-9 w-9 rounded-xl" : ""} ${toneMap[type]}`} aria-hidden="true">
       <Icon size={compact ? 18 : 23} strokeWidth={2.4} />
     </div>
   );

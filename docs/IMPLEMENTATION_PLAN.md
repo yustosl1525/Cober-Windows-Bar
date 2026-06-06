@@ -102,3 +102,32 @@ npm run build
 ## 7. 下一步
 
 UI 原型稳定后，再进入 Phase 1：Mock Event Bus 和状态解析系统。不要提前加入 Tauri 或真实 Provider，以免影响当前 UI 验证节奏。
+
+Phase 1 的最小接口预备已包含：
+
+- `HubEvent`
+- `HubStoreState`
+- `resolveHubMode(events)`
+- `createHubEventBus(initialEvents)`
+- `mockHubEvents`
+
+这些能力只服务 mock 状态演示，不接真实 Provider。
+
+## 8. Phase 0 Deliverable
+
+`/showcase` 是现阶段交付页面，也是后续所有 UI 验收入口。
+
+必须展示：
+
+- Idle
+- Music
+- AI Progress
+- Download
+- Notification
+- MultiTask
+
+必须检查：
+
+- 1366 x 768
+- 1440 x 900
+- 1920 x 1080

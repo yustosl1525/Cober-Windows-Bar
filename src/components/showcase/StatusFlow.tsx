@@ -8,32 +8,54 @@ type StatusFlowProps = {
 
 export function StatusFlow({ activeMode }: StatusFlowProps) {
   return (
-    <section className="space-y-6">
+    <section className="space-y-5 font-['Segoe_UI','Microsoft_YaHei',system-ui,sans-serif]">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-sky-300">状态展示：悬浮模式示例</h2>
+          <h2 className="text-xl font-semibold text-white">状态展示：悬浮模式示例</h2>
           <p className="mt-2 text-sm text-slate-300">点击左侧模式可切换当前主状态。</p>
         </div>
-        <div className="rounded-full border border-sky-200/20 bg-sky-200/10 px-4 py-2 text-sm text-sky-100">
+        <div className="rounded-full border border-white/12 bg-white/[0.08] px-4 py-2 text-sm font-medium text-sky-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl">
           当前：{activeMode}
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-3">
-        {showcaseSteps.map((step) => (
-          <div key={step.id} className="min-h-[180px] rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="grid gap-4 xl:grid-cols-2 min-[1700px]:grid-cols-3">
+        {showcaseSteps.map((step) => {
+          const selected = activeMode === step.mode;
+          return (
+          <div
+            key={step.id}
+            className={`group relative min-h-[180px] overflow-hidden rounded-[18px] border p-4 transition duration-200 ${
+              selected
+                ? "border-[#60cdff]/45 bg-[rgba(235,247,255,0.115)] shadow-[0_18px_50px_rgba(3,105,161,0.22),inset_0_1px_0_rgba(255,255,255,0.16)]"
+                : "border-white/10 bg-[rgba(235,247,255,0.055)] shadow-[0_14px_34px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.11)] hover:border-white/16 hover:bg-[rgba(235,247,255,0.085)]"
+            } backdrop-blur-2xl`}
+          >
+            <div
+              className={`absolute left-0 top-5 h-8 w-[3px] rounded-r-full transition ${
+                selected ? "bg-[#60cdff]" : "bg-white/0 group-hover:bg-white/24"
+              }`}
+            />
+            <div className="mb-4 flex items-start justify-between gap-3 pl-2">
               <div>
-                <div className="font-semibold text-white">{step.label}</div>
+                <div className="text-[15px] font-semibold text-white">{step.label}</div>
                 <div className="mt-1 text-sm text-slate-400">{step.caption}</div>
               </div>
-              {activeMode === step.mode && <span className="h-2 w-2 rounded-full bg-sky-300 shadow-glow" />}
+              <span
+                className={`mt-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  selected
+                    ? "bg-[#60cdff]/18 text-[#a8e5ff]"
+                    : "bg-white/[0.055] text-slate-400 group-hover:text-slate-300"
+                }`}
+              >
+                {selected ? "正在预览" : "可切换"}
+              </span>
             </div>
-            <div className="flex min-h-24 items-center justify-center">
+            <div className="flex min-h-24 items-center justify-center rounded-[14px] border border-white/[0.07] bg-black/[0.08] px-3 py-4">
               <HubShell mode={step.mode} />
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </section>
   );

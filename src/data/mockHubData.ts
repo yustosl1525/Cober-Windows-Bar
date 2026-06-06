@@ -1,4 +1,4 @@
-import type { HubTask, MusicState, NotificationState, ShowcaseStep } from "../types/hub";
+import type { HubEvent, HubTask, MusicState, NotificationState, ShowcaseStep } from "../types/hub";
 
 export const musicState: MusicState = {
   title: "星穹铁道 OST",
@@ -51,4 +51,49 @@ export const showcaseSteps: ShowcaseStep[] = [
   { id: "download", mode: "download", label: "4. 下载进行中", caption: "文件进度" },
   { id: "notification", mode: "notification", label: "5. 收到消息通知", caption: "3秒后自动收起" },
   { id: "multi", mode: "multiTask", label: "6. 多任务堆叠", caption: "展开" },
+];
+
+const demoStart = Date.UTC(2026, 5, 6, 8, 20, 0);
+
+export const mockHubEvents: HubEvent[] = [
+  {
+    id: "event-music",
+    type: "music",
+    source: "mock",
+    title: musicState.title,
+    subtitle: musicState.time,
+    createdAt: demoStart,
+    progress: musicState.progress,
+    payload: musicState,
+  },
+  {
+    id: aiTask.id,
+    type: "ai",
+    source: "mock",
+    title: aiTask.title,
+    subtitle: aiTask.subtitle,
+    createdAt: demoStart + 1000,
+    progress: aiTask.progress,
+    payload: aiTask,
+  },
+  {
+    id: downloadTask.id,
+    type: "download",
+    source: "mock",
+    title: downloadTask.title,
+    subtitle: downloadTask.subtitle,
+    createdAt: demoStart + 2000,
+    progress: downloadTask.progress,
+    payload: downloadTask,
+  },
+  {
+    id: "event-notification",
+    type: "notification",
+    source: "mock",
+    title: notificationState.sender,
+    subtitle: notificationState.message,
+    createdAt: demoStart + 3000,
+    expiresAt: demoStart + 6000,
+    payload: notificationState,
+  },
 ];

@@ -8,6 +8,10 @@ export type HubMode =
 
 export type HubTaskType = "music" | "ai" | "download" | "notification";
 
+export type HubEventType = HubTaskType;
+
+export type HubEventSource = "mock" | "system" | "music" | "download" | "ai" | "notification";
+
 export type HubTask = {
   id: string;
   type: HubTaskType;
@@ -15,6 +19,26 @@ export type HubTask = {
   subtitle: string;
   progress?: number;
   accent: "pink" | "blue" | "green" | "cyan";
+};
+
+export type HubEvent = {
+  id: string;
+  type: HubEventType;
+  source: HubEventSource;
+  title: string;
+  subtitle: string;
+  createdAt: number;
+  expiresAt?: number;
+  progress?: number;
+  payload?: MusicState | NotificationState | HubTask;
+};
+
+export type HubStoreState = {
+  events: HubEvent[];
+  mode: HubMode;
+  tasks: HubTask[];
+  notification?: NotificationState;
+  music?: MusicState;
 };
 
 export type MusicState = {
