@@ -3,6 +3,7 @@ import { createHubEventBus } from "../state/hubState";
 import type { HubMode } from "../types/hub";
 import {
   createMockNotificationEvent,
+  createMockAIProvider,
   createMockAiTaskProvider,
   createMockDownloadProvider,
   createMockMusicProvider,
@@ -16,6 +17,38 @@ const now = Date.UTC(2026, 5, 6, 11, 0, 0);
 function test(name: string, run: () => void) {
   run();
   console.log(`ok ${name}`);
+}
+
+function collectObjectKeys(value: unknown): string[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  return Object.entries(value).flatMap(([key, childValue]) => [
+    key,
+    ...collectObjectKeys(childValue),
+  ]);
+}
+
+function assertNoPriorityOrModeHints(value: unknown) {
+  const forbidden = new Set([
+    "resolverPriority",
+    "displayPriority",
+    "priority",
+    "finalHubMode",
+    "mode",
+    "hubMode",
+    "uiMode",
+    "ui",
+    "store",
+    "resolver",
+    "ranking",
+    "rank",
+  ]);
+
+  for (const key of collectObjectKeys(value)) {
+    assert.equal(forbidden.has(key), false, `${key} must not be provider metadata`);
+  }
 }
 
 function collectModes(provider: HubProvider): HubMode[] {
@@ -44,6 +77,12 @@ test("adapter publishes AI task provider events through the event bus", () => {
   assert.deepEqual(modes, ["idle", "aiProgress"]);
 });
 
+test("canonical AI provider alias publishes events through the event bus", () => {
+  const modes = collectModes(createMockAIProvider({ now }));
+
+  assert.deepEqual(modes, ["idle", "aiProgress"]);
+});
+
 test("adapter publishes download provider events through the event bus", () => {
   const modes = collectModes(createMockDownloadProvider({ now }));
 
@@ -67,6 +106,71 @@ test("mock provider events use canonical top-level fields", () => {
   assert.equal(bus.getState(now).tasks[0]?.title, "Midnight City");
 
   connection.disconnect();
+});
+
+test("mock providers expose stable metadata and matching capabilities", () => {
+  const providers = [
+    createMockMusicProvider({ now }),
+    createMockAIProvider({ now }),
+    createMockDownloadProvider({ now }),
+    createMockNotificationProvider({ now }),
+  ];
+
+  assert.deepEqual(
+    providers.map((provider) => provider.metadata),
+    [
+      {
+        id: "mock-music-provider",
+        name: "Mock Music Provider",
+        kind: "music",
+        version: "0.6.0",
+        mock: true,
+      },
+      {
+        id: "mock-ai-task-provider",
+        name: "Mock AI Provider",
+        kind: "ai",
+        version: "0.6.0",
+        mock: true,
+      },
+      {
+        id: "mock-download-provider",
+        name: "Mock Download Provider",
+        kind: "download",
+        version: "0.6.0",
+        mock: true,
+      },
+      {
+        id: "mock-notification-provider",
+        name: "Mock Notification Provider",
+        kind: "notification",
+        version: "0.6.0",
+        mock: true,
+      },
+    ],
+  );
+
+  for (const provider of providers) {
+    assert.equal(provider.id, provider.metadata.id);
+    assert.equal(provider.label, provider.metadata.name);
+    assert.deepEqual(provider.capabilities, [
+      {
+        id: provider.metadata.kind,
+        kind: provider.metadata.kind,
+      },
+    ]);
+    assertNoPriorityOrModeHints(provider.metadata);
+    assertNoPriorityOrModeHints(provider.capabilities);
+  }
+});
+
+test("canonical AI provider alias preserves existing AI task provider compatibility", () => {
+  const canonical = createMockAIProvider({ now });
+  const legacy = createMockAiTaskProvider({ now });
+
+  assert.equal(canonical.id, legacy.id);
+  assert.deepEqual(canonical.metadata, legacy.metadata);
+  assert.deepEqual(canonical.capabilities, legacy.capabilities);
 });
 
 test("mock providers start with stopped lifecycle and healthy health", () => {

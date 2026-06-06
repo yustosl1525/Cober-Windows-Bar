@@ -15,6 +15,21 @@ export type HubProviderStatus = {
   health: HubProviderHealth;
 };
 
+export type HubProviderKind = "music" | "ai" | "download" | "notification";
+
+export type HubProviderMetadata = {
+  id: string;
+  name: string;
+  kind: HubProviderKind;
+  version: string;
+  mock: boolean;
+};
+
+export type HubProviderCapability = {
+  id: HubProviderKind;
+  kind: HubProviderKind;
+};
+
 export type HubProviderListener = (events: HubEvent[]) => void;
 
 export type MockProviderOptions = {
@@ -24,6 +39,8 @@ export type MockProviderOptions = {
 export type HubProvider = {
   id: string;
   label: string;
+  metadata: HubProviderMetadata;
+  capabilities: HubProviderCapability[];
   start(): void;
   stop(): void;
   subscribe(listener: HubProviderListener): () => void;

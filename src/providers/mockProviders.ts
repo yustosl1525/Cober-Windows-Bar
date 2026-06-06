@@ -1,14 +1,16 @@
 import type { HubEvent } from "../types/hub";
 import type {
   HubProvider,
+  HubProviderCapability,
   HubProviderLifecycle,
   HubProviderListener,
+  HubProviderMetadata,
   MockProviderOptions,
 } from "./types";
 
 type MockProviderConfig = {
-  id: string;
-  label: string;
+  metadata: HubProviderMetadata;
+  capabilities: HubProviderCapability[];
   events: () => HubEvent[];
 };
 
@@ -98,7 +100,7 @@ export const createMockNotificationEvent = (options: MockProviderOptions = {}): 
   };
 };
 
-const createMockProvider = ({ id, label, events }: MockProviderConfig): HubProvider => {
+const createMockProvider = ({ metadata, capabilities, events }: MockProviderConfig): HubProvider => {
   let lifecycle: HubProviderLifecycle = "Stopped";
   const listeners = new Set<HubProviderListener>();
 
@@ -112,8 +114,10 @@ const createMockProvider = ({ id, label, events }: MockProviderConfig): HubProvi
   };
 
   return {
-    id,
-    label,
+    id: metadata.id,
+    label: metadata.name,
+    metadata,
+    capabilities,
     start() {
       if (lifecycle === "Publishing") {
         return;
@@ -141,37 +145,60 @@ const createMockProvider = ({ id, label, events }: MockProviderConfig): HubProvi
   };
 };
 
+const createMockMetadata = (
+  kind: HubProviderMetadata["kind"],
+  name: string,
+  id = `mock-${kind}-provider`,
+): HubProviderMetadata => ({
+  id,
+  name,
+  kind,
+  version: "0.6.0",
+  mock: true,
+});
+
+const createMockCapabilities = (
+  kind: HubProviderCapability["kind"],
+): HubProviderCapability[] => [
+  {
+    id: kind,
+    kind,
+  },
+];
+
 export const createMockMusicProvider = (options: MockProviderOptions = {}) =>
   createMockProvider({
-    id: "mock-music-provider",
-    label: "Mock Music Provider",
+    metadata: createMockMetadata("music", "Mock Music Provider"),
+    capabilities: createMockCapabilities("music"),
     events: () => [createMockMusicEvent(options)],
   });
 
 export const createMockDownloadProvider = (options: MockProviderOptions = {}) =>
   createMockProvider({
-    id: "mock-download-provider",
-    label: "Mock Download Provider",
+    metadata: createMockMetadata("download", "Mock Download Provider"),
+    capabilities: createMockCapabilities("download"),
     events: () => [createMockDownloadEvent(options)],
   });
 
-export const createMockAiTaskProvider = (options: MockProviderOptions = {}) =>
+export const createMockAIProvider = (options: MockProviderOptions = {}) =>
   createMockProvider({
-    id: "mock-ai-task-provider",
-    label: "Mock AI Task Provider",
+    metadata: createMockMetadata("ai", "Mock AI Provider", "mock-ai-task-provider"),
+    capabilities: createMockCapabilities("ai"),
     events: () => [createMockAiTaskEvent(options)],
   });
 
+export const createMockAiTaskProvider = createMockAIProvider;
+
 export const createMockNotificationProvider = (options: MockProviderOptions = {}) =>
   createMockProvider({
-    id: "mock-notification-provider",
-    label: "Mock Notification Provider",
+    metadata: createMockMetadata("notification", "Mock Notification Provider"),
+    capabilities: createMockCapabilities("notification"),
     events: () => [createMockNotificationEvent(options)],
   });
 
 export const createMockProviders = () => [
   createMockMusicProvider(),
   createMockDownloadProvider(),
-  createMockAiTaskProvider(),
+  createMockAIProvider(),
   createMockNotificationProvider(),
 ];
