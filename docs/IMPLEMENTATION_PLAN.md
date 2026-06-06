@@ -4,15 +4,15 @@
 
 Cober-Windows-Bar is a **Windows 11 Unified Status Hub**. It starts as a visual and interaction prototype, then gradually grows into a native-feeling desktop surface for status, developer work, and AI agent activity.
 
-The current planning scope is **v0.4 Architecture Planning**. It documents the runtime path from Mock Runtime to Tauri Runtime to Windows Runtime, including shell, IPC, packaging, and provider sequencing needs. It does not implement Tauri, Rust, IPC, real providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
+The current planning scope is **v0.5.1 Mock Provider SDK Implementation Plan**. It defines the first provider runtime implementation slice as documentation only. It does not implement provider code, tests, Tauri, Rust, IPC, real providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
 
 ## 2. Stage Route
 
 - **Stage 0: UI Prototype** - done and pushed as v0.1. Delivered the Win11-style `/showcase` UI review page and six static hub states.
 - **Stage 1: Event Playground** - done as v0.2. Proved state transitions with mock Event Controls, Auto Demo playback, and Resolver Visualization.
 - **Stage 2: Architecture Planning** - current v0.4. Document runtime boundaries and future Tauri/Windows architecture needs only.
-- **Stage 3: Mock Provider SDK** - v0.5. Define provider interfaces, mock providers, and an adapter into the existing event bus; no Windows/system integration.
-- **Stage 4: Tauri Spike** - v0.6. Turn the web UI into a native-feeling desktop shell and prove minimal IPC with mock or fixture data.
+- **Stage 3: Mock Provider SDK Planning** - v0.5. Define provider lifecycle, registry, runtime, test strategy, and implementation scope as docs only.
+- **Stage 4: Mock Provider SDK Implementation** - v0.6. Implement the first mock provider runtime slice; no Windows/system integration.
 - **Stage 5: First Real Provider** - v0.7. First real system integration after the runtime boundary is proven.
 - **Stage 6: Developer Hub** - v0.8. Add Git, Docker, WSL, Maven, Gradle, npm/pnpm, Cargo, and developer workflow surfaces.
 - **Stage 7: AI Agent Hub** - v1.0. Add Codex, Claude, GPT/OpenCode/Gemini-style agent status, queue state, progress, and multi-agent visibility.
@@ -132,9 +132,16 @@ Do not implement these in v0.4:
 - Real provider implementations
 - Source code, package, script, or binary asset changes
 
-## 7. v0.5 Mock Provider SDK Scope
+## 7. v0.5 Mock Provider SDK Planning Scope
 
-Stage 3 adds a minimal Provider SDK boundary without connecting to the operating system. v0.5 should clarify the contract, event flow, tests, and README/docs expectations while keeping all provider data mocked.
+Stage 3 adds a minimal Provider SDK boundary without connecting to the operating system. v0.5 should clarify the contract, runtime execution, event flow, tests, and docs expectations while keeping all provider data mocked.
+
+Current v0.5 sequence:
+
+- **v0.5.0 Mock Provider SDK Planning** - provider lifecycle, registry, and mock strategy docs.
+- **v0.5.1 Implementation Plan docs-only** - provider runtime and test strategy docs. Code changes: **0**.
+- **v0.5.2 Review & Freeze** - review the provider docs and freeze the first implementation slice.
+- **v0.6 Mock Provider SDK Implementation** - implement the first mock provider runtime slice after the planning freeze.
 
 Provider output must follow the existing path:
 
@@ -148,14 +155,17 @@ Current scope:
 - `src/providers/mockProviders.ts` emits mock Music, Download, AI Task, and Notification events.
 - `src/providers/providerAdapter.ts` forwards provider events into the existing event bus.
 - `src/providers/provider.test.ts` verifies provider output resolves to the expected hub modes.
+- `docs/PROVIDER_RUNTIME.md` documents the v0.5.1 runtime plan.
+- `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan.
 - `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
 
-Do not implement these in v0.5:
+Do not implement these in v0.5.1:
 
 - Windows APIs, media sessions, file watchers, or system notification readers
 - Tauri, IPC, tray, or always-on-top behavior
 - Real provider implementations
 - `/showcase` visual redesigns
+- Provider runtime code, mock provider code, registry code, adapter code, or tests
 
 ## 8. Boundaries
 

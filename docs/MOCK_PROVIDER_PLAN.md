@@ -2,7 +2,7 @@
 
 This document is the v0.5.0 planning note for the mock Provider SDK path. v0.5.0 is documentation and design planning only. It does not implement mock providers, provider adapters, timers, Tauri APIs, Rust code, IPC, Windows integrations, or runtime behavior.
 
-Implementation belongs to v0.5.1 or later, after the provider contract, event quality rules, deterministic timing strategy, and test expectations are agreed.
+Implementation belongs to v0.6 or later, after the provider contract, runtime plan, event quality rules, deterministic timing strategy, and test expectations are agreed. v0.5.1 is still planning-only.
 
 ## Scope
 
@@ -166,9 +166,22 @@ Provider failures should emit a concise `error` status event when the user or di
 
 Provider adapters should be able to drop, coalesce, or defer low-priority events if a future runtime produces too many updates. Backpressure should preserve the latest state for stable IDs and should not drop terminal `complete`, `error`, or `cleared` events.
 
+## v0.5.1 Planning Section
+
+v0.5.1 narrows the implementation plan without adding runtime code. It defines the first implementation slice, confirms test expectations, and prepares the handoff to v0.6.
+
+The mock provider matrix remains limited to:
+
+- `MockMusicProvider`
+- `MockAIProvider`
+- `MockDownloadProvider`
+- `MockNotificationProvider`
+
+Do not expand v0.5.1 into Git, Docker, WSL, build tools, system status, or AI agent providers. Those belong to later product stages after the first mock provider runtime is proven.
+
 ## Future Test Plan
 
-These tests are planned for v0.5.1 implementation or later:
+These tests are planned for v0.6 implementation or later:
 
 | Test area | Expected coverage |
 | --- | --- |
@@ -191,7 +204,7 @@ These tests are planned for v0.5.1 implementation or later:
 | Long-running tasks | AI or download mocks may never complete if progress sequencing is unclear. | Fixed progress sequences with terminal `complete` or `error` states. |
 | Unsubscribe leaks | Listener cleanup bugs could multiply event delivery over time. | Double-unsubscribe and multi-listener tests. |
 
-## v0.5.1 Handoff Notes
+## v0.6 Handoff Notes
 
 When implementation begins, keep the first runtime slice small:
 
