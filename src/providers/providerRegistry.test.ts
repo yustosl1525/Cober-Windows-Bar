@@ -16,6 +16,7 @@ function test(name: string, run: () => void) {
 function providerWithSpies(
   id = "spy-provider",
   initialLifecycle: HubProviderLifecycle = "Stopped",
+  health: HubProviderStatus["health"] = "Healthy",
 ) {
   let lifecycle = initialLifecycle;
   let startCalls = 0;
@@ -48,7 +49,7 @@ function providerWithSpies(
     status(): HubProviderStatus {
       return {
         lifecycle,
-        health: "Healthy",
+        health,
       };
     },
   };
@@ -196,6 +197,22 @@ test("registry start and stop delegate and refresh status snapshots", () => {
   assert.equal(spy.stopCalls, 1);
   assert.equal(registry.start("missing-provider"), undefined);
   assert.equal(registry.stop("missing-provider"), undefined);
+});
+
+test("registry snapshots keep lifecycle and health separate", () => {
+  const registry = createProviderRegistry();
+  const failed = providerWithSpies("spy-failed", "Failed", "Unhealthy");
+
+  registry.register(failed.provider);
+
+  assert.deepEqual(registry.get(failed.provider.id)?.status, {
+    lifecycle: "Failed",
+    health: "Unhealthy",
+  });
+  assert.deepEqual(registry.list()[0]?.status, {
+    lifecycle: "Failed",
+    health: "Unhealthy",
+  });
 });
 
 test("registry snapshots do not expose mutable capability internals", () => {

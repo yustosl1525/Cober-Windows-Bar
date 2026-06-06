@@ -3,9 +3,11 @@ import "./providerRegistry.test";
 import { createHubEventBus } from "../state/hubState";
 import type { HubMode } from "../types/hub";
 import {
+  createMockAiTaskEvent,
   createMockNotificationEvent,
   createMockAIProvider,
   createMockAiTaskProvider,
+  createMockDownloadEvent,
   createMockDownloadProvider,
   createMockMusicProvider,
   createMockNotificationProvider,
@@ -66,6 +68,18 @@ function collectModes(provider: HubProvider): HubMode[] {
   return modes;
 }
 
+function collectProviderState(provider: HubProvider) {
+  const bus = createHubEventBus();
+  const connection = connectProviderToEventBus(provider, bus);
+
+  provider.start();
+  const state = bus.getState(now);
+
+  connection.disconnect();
+
+  return state;
+}
+
 test("adapter publishes music provider events through the event bus", () => {
   const modes = collectModes(createMockMusicProvider({ now }));
 
@@ -91,22 +105,59 @@ test("adapter publishes download provider events through the event bus", () => {
 });
 
 test("mock provider events use canonical top-level fields", () => {
-  const bus = createHubEventBus();
-  const provider = createMockMusicProvider({ now });
-  const connection = connectProviderToEventBus(provider, bus);
+  const cases = [
+    {
+      provider: createMockMusicProvider({ now }),
+      expectedEvent: {
+        id: "mock-music-music-1780743600000",
+        type: "music",
+        source: "music",
+      },
+      expectedTaskTitle: "Midnight City",
+    },
+    {
+      provider: createMockAIProvider({ now }),
+      expectedEvent: {
+        id: "mock-ai-ai-1780743600000",
+        type: "ai",
+        source: "ai",
+      },
+      expectedTaskTitle: "Codex is updating the provider SDK",
+    },
+    {
+      provider: createMockDownloadProvider({ now }),
+      expectedEvent: {
+        id: "mock-download-download-1780743600000",
+        type: "download",
+        source: "download",
+      },
+      expectedTaskTitle: "Windows SDK Preview.zip",
+    },
+    {
+      provider: createMockNotificationProvider({ now }),
+      expectedEvent: {
+        id: "mock-notification-notification-1780743600000",
+        type: "notification",
+        source: "notification",
+      },
+    },
+  ] as const;
 
-  provider.start();
-  const [event] = bus.getState(now).events;
+  for (const { provider, expectedEvent, expectedTaskTitle } of cases) {
+    const state = collectProviderState(provider);
+    const [event] = state.events;
 
-  assert.equal(event?.id, "mock-music-music-1780743600000");
-  assert.equal(event?.type, "music");
-  assert.equal(event?.source, "music");
-  assert.equal(event?.createdAt, now);
-  assert.equal("title" in (event ?? {}), false);
-  assert.equal("subtitle" in (event ?? {}), false);
-  assert.equal(bus.getState(now).tasks[0]?.title, "Midnight City");
+    assert.equal(event?.id, expectedEvent.id);
+    assert.equal(event?.type, expectedEvent.type);
+    assert.equal(event?.source, expectedEvent.source);
+    assert.equal(event?.createdAt, now);
+    assert.equal("title" in (event ?? {}), false);
+    assert.equal("subtitle" in (event ?? {}), false);
 
-  connection.disconnect();
+    if (expectedTaskTitle) {
+      assert.equal(state.tasks[0]?.title, expectedTaskTitle);
+    }
+  }
 });
 
 test("mock providers expose stable metadata and matching capabilities", () => {
@@ -232,6 +283,26 @@ test("stop sets provider stopped lifecycle and keeps health healthy", () => {
   });
 });
 
+test("duplicate stop keeps provider stopped without extra emissions", () => {
+  const provider = createMockMusicProvider({ now });
+  const emissions: string[][] = [];
+  const unsubscribe = provider.subscribe((events) =>
+    emissions.push(events.map((event) => event.id)),
+  );
+
+  provider.start();
+  provider.stop();
+  provider.stop();
+
+  assert.deepEqual(provider.status(), {
+    lifecycle: "Stopped",
+    health: "Healthy",
+  });
+  assert.deepEqual(emissions, [["mock-music-music-1780743600000"]]);
+
+  unsubscribe();
+});
+
 test("unsubscribe prevents provider listener calls", () => {
   const provider = createMockMusicProvider({ now });
   let calls = 0;
@@ -243,6 +314,18 @@ test("unsubscribe prevents provider listener calls", () => {
   provider.start();
 
   assert.equal(calls, 0);
+});
+
+test("AI and download mock fixtures keep deterministic fixed progress", () => {
+  const ai = createMockAiTaskEvent({ now });
+  const download = createMockDownloadEvent({ now });
+
+  assert.equal(ai.id, "mock-ai-ai-1780743600000");
+  assert.equal(ai.progress, 72);
+  assert.equal((ai.payload as { progress?: number } | undefined)?.progress, 72);
+  assert.equal(download.id, "mock-download-download-1780743600000");
+  assert.equal(download.progress, 45);
+  assert.equal((download.payload as { progress?: number } | undefined)?.progress, 45);
 });
 
 test("adapter preserves notification expiry behavior", () => {
