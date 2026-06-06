@@ -4,13 +4,13 @@
 
 Cober-Windows-Bar is a **Windows 11 Unified Status Hub**. It starts as a visual and interaction prototype, then gradually grows into a native-feeling desktop surface for status, developer work, and AI agent activity.
 
-The current implementation scope is **v0.3.1 Provider SDK Validation & Polish**. It proves that future integrations can emit `HubEvent` objects through a small provider contract while still using fake data only. It does not implement Tauri, real Providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
+The current implementation scope is **v0.3.2 Showcase Provider Demo**. It proves that mock providers can emit `HubEvent` objects through a small provider contract while still using fake data only. It does not implement Tauri, real providers, Windows/system APIs, system tray behavior, always-on-top windowing, or a `/showcase` visual redesign.
 
 ## 2. Stage Route
 
 - **Stage 0: UI Prototype** - done and pushed as v0.1. Delivered the Win11-style `/showcase` UI review page and six static hub states.
 - **Stage 1: Event Playground** - done as v0.2. Proved state transitions with mock Event Controls, Auto Demo playback, and Resolver Visualization.
-- **Stage 2: Provider SDK** - current v0.3/v0.3.1. Define provider interfaces, fake providers, and an adapter into the existing event bus; no Windows/system integration.
+- **Stage 2: Provider SDK** - current v0.3/v0.3.2. Define provider interfaces, mock providers, and an adapter into the existing event bus; no Windows/system integration.
 - **Stage 3: Tauri Shell** - later. Turn the web UI into a native-feeling desktop shell after the playground is stable.
 - **Stage 4: Real Providers** - later. First real system integration: system info/music, then notifications, then downloads.
 - **Stage 5: Developer Hub** - later. Add Git, Docker, WSL, Maven, Gradle, npm/pnpm, Cargo, and developer workflow surfaces.
@@ -106,29 +106,29 @@ The visualization should make notification priority and MultiTask resolution eas
 - `src/components/showcase/EventPlaygroundPanel.tsx` is the showcase control and visualization surface.
 - `src/pages/ShowcasePage.tsx` integrates the panel while preserving the Stage 0 Win11/Mica shell.
 
-## 6. v0.3/v0.3.1 Mock Provider SDK Scope
+## 6. v0.3/v0.3.2 Mock Provider SDK Scope
 
-Stage 2 adds a minimal Provider SDK boundary without connecting to the operating system. v0.3.1 is a validation and polish pass over that boundary: clarify the contract, event flow, tests, and README/docs expectations.
+Stage 2 adds a minimal Provider SDK boundary without connecting to the operating system. v0.3.2 adds the showcase provider demo path over that boundary: clarify the contract, event flow, tests, and README/docs expectations.
 
 Provider output must follow the existing path:
 
 ```text
-Fake Provider -> provider adapter -> publishHubEvent() -> store -> resolver -> existing Hub UI
+Mock Provider -> provider adapter -> publishHubEvent() -> store -> resolver -> existing Hub UI
 ```
 
 Current scope:
 
 - `src/providers/types.ts` defines the provider lifecycle and listener contract.
-- `src/providers/mockProviders.ts` emits fake Music, Download, AI Task, and Notification events.
+- `src/providers/mockProviders.ts` emits mock Music, Download, AI Task, and Notification events.
 - `src/providers/providerAdapter.ts` forwards provider events into the existing event bus.
 - `src/providers/provider.test.ts` verifies provider output resolves to the expected hub modes.
-- `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.3.1 limitations.
+- `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.3.2 limitations.
 
-Do not implement these in v0.3.1:
+Do not implement these in v0.3.2:
 
 - Windows APIs, media sessions, file watchers, or system notification readers
 - Tauri, IPC, tray, or always-on-top behavior
-- Real Provider implementations
+- Real provider implementations
 - `/showcase` visual redesigns
 
 ## 7. Boundaries
@@ -179,5 +179,5 @@ Required visual widths:
 - Event Controls update the active events and current resolved mode.
 - Auto Demo plays the full Stage 1 sequence and returns to Idle.
 - Resolver Visualization explains why the current mode is selected.
-- Provider SDK validation remains mock-only and does not require Tauri, Windows/system APIs, or real Providers.
-- v0.3.1 docs clearly state that there is no Tauri shell, no Windows/system API integration, no real providers, and no showcase visual redesign.
+- Provider SDK validation remains mock-only and does not require Tauri, Windows/system APIs, or real providers.
+- v0.3.2 docs clearly state that there is no Tauri shell, no Windows/system API integration, no real providers, and no showcase visual redesign.

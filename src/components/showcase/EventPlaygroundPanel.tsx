@@ -9,12 +9,14 @@ import {
   Play,
   Radio,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 type EventPlaygroundPanelProps = {
   activeEvents: HubEvent[];
   currentMode: HubMode;
   isAutoRunning: boolean;
+  activeProviderLabel?: string;
   onMusic: () => void;
   onAi: () => void;
   onDownload: () => void;
@@ -22,6 +24,12 @@ type EventPlaygroundPanelProps = {
   onMultiTask: () => void;
   onClear: () => void;
   onStartDemo: () => void;
+  onProviderMusic: () => void;
+  onProviderAi: () => void;
+  onProviderDownload: () => void;
+  onProviderNotification: () => void;
+  onProviderStop: () => void;
+  onProviderClear: () => void;
 };
 
 type EventAction = {
@@ -64,6 +72,7 @@ export function EventPlaygroundPanel({
   activeEvents,
   currentMode,
   isAutoRunning,
+  activeProviderLabel,
   onMusic,
   onAi,
   onDownload,
@@ -71,6 +80,12 @@ export function EventPlaygroundPanel({
   onMultiTask,
   onClear,
   onStartDemo,
+  onProviderMusic,
+  onProviderAi,
+  onProviderDownload,
+  onProviderNotification,
+  onProviderStop,
+  onProviderClear,
 }: EventPlaygroundPanelProps) {
   const actions: EventAction[] = [
     {
@@ -150,6 +165,32 @@ export function EventPlaygroundPanel({
             {isAutoRunning ? <Sparkles size={16} /> : <Play size={16} />}
             {isAutoRunning ? "Demo running" : "Start Demo"}
           </button>
+        </div>
+
+        <div className="border-b border-white/10 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="mr-1 min-w-[124px]">
+              <div className="text-xs font-semibold uppercase tracking-normal text-slate-400">Provider Demo</div>
+              <div className="truncate text-[12px] leading-4 text-slate-300">
+                {activeProviderLabel ?? "Stopped"}
+              </div>
+            </div>
+            <ProviderButton label="Music" icon={Music2} onClick={onProviderMusic} tone="rose" />
+            <ProviderButton label="AI" icon={Bot} onClick={onProviderAi} tone="sky" />
+            <ProviderButton label="Download" icon={Download} onClick={onProviderDownload} tone="emerald" />
+            <ProviderButton label="Notify" icon={Bell} onClick={onProviderNotification} tone="amber" />
+            <ProviderButton label="Stop" icon={CircleStop} onClick={onProviderStop} tone="slate" />
+            <ProviderButton label="Clear" icon={Trash2} onClick={onProviderClear} tone="slate" />
+            <span
+              className={`ml-auto rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                activeProviderLabel
+                  ? "border-emerald-200/20 bg-emerald-300/10 text-emerald-100"
+                  : "border-white/10 bg-white/[0.055] text-slate-300"
+              }`}
+            >
+              {activeProviderLabel ? "Running" : "Stopped"}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
@@ -247,6 +288,29 @@ function FlowPill({ label, value, isActive }: { label: string; value: string; is
       <div className="text-[11px] font-medium uppercase tracking-normal text-slate-400">{label}</div>
       <div className="truncate text-[13px] font-semibold">{value}</div>
     </div>
+  );
+}
+
+function ProviderButton({
+  label,
+  icon: Icon,
+  onClick,
+  tone,
+}: {
+  label: string;
+  icon: typeof Music2;
+  onClick: () => void;
+  tone: EventAction["tone"];
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-9 items-center gap-1.5 rounded-[10px] border px-2.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 ${toneClass[tone]}`}
+    >
+      <Icon size={14} strokeWidth={1.9} />
+      {label}
+    </button>
   );
 }
 

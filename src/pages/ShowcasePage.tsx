@@ -12,13 +12,30 @@ import {
   type HubDemoScenarioId,
 } from "../state/hubScenarios";
 import { createHubEventBus } from "../state/hubState";
+import {
+  createMockAiTaskProvider,
+  createMockDownloadProvider,
+  createMockMusicProvider,
+  createMockNotificationProvider,
+} from "../providers/mockProviders";
+import { connectProviderToEventBus, type ProviderConnection } from "../providers/providerAdapter";
+import type { HubProvider } from "../providers/types";
 import type { HubMode, HubStoreState } from "../types/hub";
+
+type ProviderDemoId = "music" | "ai" | "download" | "notification";
+
+type ActiveProviderDemo = {
+  provider: HubProvider;
+  connection: ProviderConnection;
+};
 
 export function ShowcasePage() {
   const eventBus = useMemo(() => createHubEventBus(), []);
   const [storeState, setStoreState] = useState<HubStoreState>(() => eventBus.getState());
   const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [activeProviderLabel, setActiveProviderLabel] = useState<string>();
   const demoTimers = useRef<number[]>([]);
+  const activeProviderDemo = useRef<ActiveProviderDemo | undefined>(undefined);
   const activeMode = storeState.mode;
 
   const clearDemoTimers = useCallback(() => {
@@ -26,13 +43,48 @@ export function ShowcasePage() {
     demoTimers.current = [];
   }, []);
 
+  const stopProviderDemo = useCallback(() => {
+    activeProviderDemo.current?.connection.disconnect();
+    activeProviderDemo.current?.provider.stop();
+    activeProviderDemo.current = undefined;
+    setActiveProviderLabel(undefined);
+  }, []);
+
+  const createProviderDemo = useCallback((id: ProviderDemoId) => {
+    const options = { now: () => Date.now() };
+    const providerById: Record<ProviderDemoId, () => HubProvider> = {
+      music: () => createMockMusicProvider(options),
+      ai: () => createMockAiTaskProvider(options),
+      download: () => createMockDownloadProvider(options),
+      notification: () => createMockNotificationProvider(options),
+    };
+
+    return providerById[id]();
+  }, []);
+
+  const triggerProviderDemo = useCallback(
+    (id: ProviderDemoId) => {
+      clearDemoTimers();
+      setIsAutoRunning(false);
+      stopProviderDemo();
+
+      const provider = createProviderDemo(id);
+      const connection = connectProviderToEventBus(provider, eventBus);
+      activeProviderDemo.current = { provider, connection };
+      setActiveProviderLabel(provider.label);
+      provider.start();
+    },
+    [clearDemoTimers, createProviderDemo, eventBus, stopProviderDemo],
+  );
+
   const playScenario = useCallback(
     (id: HubDemoScenarioId) => {
       clearDemoTimers();
+      stopProviderDemo();
       setIsAutoRunning(false);
       playHubDemoScenario(eventBus, createHubDemoScenario(id, Date.now()), Date.now());
     },
-    [clearDemoTimers, eventBus],
+    [clearDemoTimers, eventBus, stopProviderDemo],
   );
 
   const handleModeChange = useCallback(
@@ -53,6 +105,7 @@ export function ShowcasePage() {
 
   const startAutoDemo = useCallback(() => {
     clearDemoTimers();
+    stopProviderDemo();
     setIsAutoRunning(true);
 
     let delay = 0;
@@ -71,7 +124,7 @@ export function ShowcasePage() {
       demoTimers.current.push(timer);
       delay += step.durationMs;
     });
-  }, [clearDemoTimers, eventBus]);
+  }, [clearDemoTimers, eventBus, stopProviderDemo]);
 
   useEffect(() => {
     return eventBus.subscribe(setStoreState);
@@ -99,8 +152,11 @@ export function ShowcasePage() {
   }, [eventBus, storeState.events]);
 
   useEffect(() => {
-    return () => clearDemoTimers();
-  }, [clearDemoTimers]);
+    return () => {
+      clearDemoTimers();
+      stopProviderDemo();
+    };
+  }, [clearDemoTimers, stopProviderDemo]);
 
   return (
     <main className="showcase-desktop relative min-h-screen overflow-x-hidden text-slate-50">
@@ -143,6 +199,16 @@ export function ShowcasePage() {
                 onMultiTask={() => playScenario("multiTask")}
                 onClear={() => playScenario("idle")}
                 onStartDemo={startAutoDemo}
+                activeProviderLabel={activeProviderLabel}
+                onProviderMusic={() => triggerProviderDemo("music")}
+                onProviderAi={() => triggerProviderDemo("ai")}
+                onProviderDownload={() => triggerProviderDemo("download")}
+                onProviderNotification={() => triggerProviderDemo("notification")}
+                onProviderStop={stopProviderDemo}
+                onProviderClear={() => {
+                  stopProviderDemo();
+                  eventBus.clearHubEvents();
+                }}
               />
 
               <StatusFlow activeMode={activeMode} />

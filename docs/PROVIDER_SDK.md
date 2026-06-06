@@ -1,6 +1,6 @@
 # Provider SDK
 
-The Provider SDK is the Stage 2 boundary for future integrations. In v0.3.1 it is validation and polish only: fake providers emit mock `HubEvent` objects through the existing event path so the resolver and UI can be tested without desktop or system integration.
+The Provider SDK is the Stage 2 boundary for future integrations. In v0.3.2 it is still a showcase demo path only: mock providers emit fake `HubEvent` objects through the existing event path so the resolver and Hub UI can be tested without desktop or system integration.
 
 ## Contract
 
@@ -24,7 +24,7 @@ The contract keeps provider ownership separate from hub rendering:
 ## Event Flow
 
 ```text
-Fake Provider
+Mock Provider
   -> provider adapter
   -> publishHubEvent()
   -> store
@@ -35,22 +35,22 @@ Fake Provider
 Validation target:
 
 ```text
-MusicProvider mock event -> adapter -> event bus -> resolver -> Music mode
-DownloadProvider mock event -> adapter -> event bus -> resolver -> Download mode
-AITaskProvider mock event -> adapter -> event bus -> resolver -> AI Progress mode
-NotificationProvider mock event -> adapter -> event bus -> resolver -> Notification mode
+Mock MusicProvider event -> adapter -> event bus -> resolver -> Music mode
+Mock DownloadProvider event -> adapter -> event bus -> resolver -> Download mode
+Mock AITaskProvider event -> adapter -> event bus -> resolver -> AI Progress mode
+Mock NotificationProvider event -> adapter -> event bus -> resolver -> Notification mode
 ```
 
-## v0.3.1 Scope
+## v0.3.2 Showcase Demo Scope
 
 - Clarify provider lifecycle and event ownership.
-- Keep fake providers deterministic for tests and demo capture.
-- Verify provider output resolves through the same path used by event controls.
+- Keep mock providers deterministic for tests and demo capture.
+- Demonstrate the provider path: provider adapter -> event bus -> store/resolver -> existing Hub UI.
 - Preserve the existing `/showcase` visual design.
 
 ## Current Limitations
 
-v0.3.1 does not add:
+v0.3.2 does not add:
 
 - Tauri, IPC, tray, always-on-top, or desktop-shell behavior.
 - Windows/system APIs.

@@ -117,3 +117,15 @@ test("disconnect stops forwarding provider emissions", () => {
 
   assert.equal(bus.getState(now).mode, "idle");
 });
+
+test("disconnect cleanup is safe to call more than once", () => {
+  const bus = createHubEventBus();
+  const provider = createMockMusicProvider({ now });
+  const connection = connectProviderToEventBus(provider, bus);
+
+  connection.disconnect();
+  connection.disconnect();
+  provider.start();
+
+  assert.equal(bus.getState(now).mode, "idle");
+});

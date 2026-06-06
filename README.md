@@ -2,7 +2,7 @@
 
 Windows 11 Unified Status Hub for lightweight, glanceable desktop status.
 
-Current release track: **v0.3.1 Provider SDK Validation & Polish**.
+Current release track: **v0.3.2 Showcase Provider Demo**.
 
 ## Overview
 
@@ -17,7 +17,7 @@ The current implementation is still front-end only. It uses mock data, the local
 - v0.2 event controls for triggering mock status changes.
 - Auto Demo flow for recording a short state-transition demo.
 - Resolver visualization showing active events, resolver output, and current mode.
-- v0.3 mock Provider SDK contract, fake providers, and provider adapter validation.
+- v0.3 mock Provider SDK contract, mock providers, and provider adapter validation.
 - QA commands for state tests, production build, and viewport screenshots.
 
 ## Local Development
@@ -108,21 +108,21 @@ Idle -> Music -> AI -> Notification -> MultiTask
 
 Large GIF/video binaries should not be committed without checking their size first.
 
-## v0.3.1 Provider SDK Validation & Polish
+## v0.3.2 Showcase Provider Demo
 
-v0.3.1 validates and documents the mock Provider SDK from v0.3. It is a polish pass over the provider contract, event flow, and test/readme clarity.
+v0.3.2 demonstrates the mock Provider SDK path in the showcase flow. It keeps the provider contract small and proves that provider-emitted events can travel through the same resolver path as the event playground.
 
 Provider SDK scope:
 
 - Provider lifecycle contract: `start()`, `stop()`, and `subscribe(listener)`.
-- Fake Music, Download, AI Task, and Notification providers only.
+- Mock Music, Download, AI Task, and Notification providers only.
 - Provider adapter that forwards provider output into the existing event bus.
 - Tests that prove provider-emitted `HubEvent` objects resolve to the expected hub modes.
 
 Event flow:
 
 ```text
-Fake Provider
+Mock Provider
   -> provider adapter
   -> publishHubEvent()
   -> store
@@ -143,7 +143,7 @@ See [Provider SDK](docs/PROVIDER_SDK.md) for the concise contract and flow refer
 
 - **Stage 0: UI Prototype** - done and pushed as v0.1.
 - **Stage 1: Event Playground** - done as v0.2; mock controls, auto demo, resolver visualization.
-- **Stage 2: Provider SDK** - current v0.3/v0.3.1 work; interfaces, fake providers, adapter validation, no system integration.
+- **Stage 2: Provider SDK** - current v0.3/v0.3.2 work; interfaces, mock providers, adapter validation, no system integration.
 - **Stage 3: Tauri Shell** - later; desktop shell and window behavior.
 - **Stage 4: Real Providers** - later; system, music, download, notification, and AI task providers.
 - **Stage 5: Developer Hub** - later; Git, Docker, WSL, Maven, Gradle, and related developer surfaces.
