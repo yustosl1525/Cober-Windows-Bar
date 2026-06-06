@@ -37,11 +37,31 @@ Out of scope:
 - Real system APIs
 - Tray or always-on-top behavior
 
-## Stage 2: Provider SDK
+## Stage 2: Architecture Planning
 
-Goal: prove future integrations can be added cleanly.
+Goal: plan the runtime boundary before desktop work begins.
 
-Status: current v0.3/v0.3.1 work. v0.3.1 is validation and polish only.
+Status: current v0.4 planning work.
+
+Scope:
+
+- Document the runtime sequence: Mock Runtime -> Tauri Runtime -> Windows Runtime
+- Define Tauri shell needs as architecture requirements only
+- Capture IPC, windowing, packaging, and provider sequencing decisions
+- Keep all data mocked and all desktop/native work out of scope
+
+Out of scope for v0.4:
+
+- Tauri, Rust, IPC, tray, always-on-top, or desktop-shell implementation
+- Windows/system APIs
+- Real provider implementations
+- Source code or package/script changes
+
+## Stage 3: Mock Provider SDK
+
+Goal: prove future integrations can be added cleanly without native dependencies.
+
+Target: v0.5.
 
 Scope:
 
@@ -74,16 +94,18 @@ Event flow:
 Fake Provider -> provider adapter -> publishHubEvent() -> store -> resolver -> existing Hub UI
 ```
 
-Out of scope for v0.3.1:
+Out of scope for v0.5:
 
 - Tauri, IPC, tray, always-on-top, or desktop-shell behavior
 - Windows/system APIs
 - Real provider implementations
 - Showcase visual redesign
 
-## Stage 3: Tauri Shell
+## Stage 4: Tauri Spike
 
 Goal: turn the web prototype into a desktop application.
+
+Target: v0.6.
 
 Scope:
 
@@ -92,12 +114,15 @@ Scope:
 - Right-bottom docking above the taskbar
 - Startup behavior
 - Always-on-top behavior
+- Minimal IPC bridge using mock or fixture events
 
-Real providers are still optional at this stage.
+Real providers remain out of scope unless a later spike explicitly changes that boundary.
 
-## Stage 4: Real Providers
+## Stage 5: First Real Provider
 
 Goal: connect real system data for the first time.
+
+Target: v0.7.
 
 Priority:
 
@@ -112,9 +137,11 @@ Candidate sources:
 - Windows notification center
 - Downloads directory watcher
 
-## Stage 5: Developer Hub
+## Stage 6: Developer Hub
 
 Goal: become a daily developer status center.
+
+Target: v0.8.
 
 Candidate surfaces:
 
@@ -126,9 +153,11 @@ Candidate surfaces:
 
 This stage is one of the strongest differentiation points because developer workflows create persistent, glanceable status.
 
-## Stage 6: AI Agent Hub
+## Stage 7: AI Agent Hub
 
 Goal: summarize long-running AI work and multi-agent activity.
+
+Target: v1.0.
 
 Candidate surfaces:
 
