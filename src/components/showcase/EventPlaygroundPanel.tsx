@@ -70,6 +70,15 @@ const priorityLabel: Record<HubMode, string> = {
   multiTask: "MultiTask",
 };
 
+const eventTypeLabel: Record<HubEvent["type"], string> = {
+  music: "Music",
+  ai: "AI task",
+  download: "Download",
+  notification: "Notification",
+};
+
+const mockProviderSources = new Set<HubEvent["source"]>(["music", "download", "ai", "notification"]);
+
 export function EventPlaygroundPanel({
   activeEvents,
   currentMode,
@@ -339,6 +348,26 @@ function FlowArrow() {
   return <div className="hidden px-1 text-center text-slate-400 sm:block">-&gt;</div>;
 }
 
+function isTauriFixtureEvent(event: HubEvent) {
+  return event.metadata?.runtime === "tauri" || event.metadata?.fixture === true;
+}
+
+function getEventSourceLabel(event: HubEvent) {
+  if (isTauriFixtureEvent(event)) {
+    return "Tauri fixture";
+  }
+
+  if (mockProviderSources.has(event.source)) {
+    return "Mock provider";
+  }
+
+  if (event.source === "mock") {
+    return "Mock scenario";
+  }
+
+  return "Fixture event";
+}
+
 function getEventDisplayText(event: HubEvent) {
   const payload = event.payload;
 
@@ -365,16 +394,19 @@ function getEventDisplayText(event: HubEvent) {
 function EventRow({ event }: { event: HubEvent }) {
   const progress = typeof event.progress === "number" ? Math.max(0, Math.min(event.progress, 100)) : undefined;
   const display = getEventDisplayText(event);
+  const sourceLabel = getEventSourceLabel(event);
 
   return (
     <div className="rounded-[12px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white/[0.075] px-2 py-0.5 text-[11px] font-semibold text-sky-100">
-              {event.type}
+            <span className="whitespace-nowrap rounded-full bg-white/[0.075] px-2 py-0.5 text-[11px] font-semibold text-sky-100">
+              {eventTypeLabel[event.type]}
             </span>
-            <span className="text-[11px] text-slate-500">{event.source}</span>
+            <span className="whitespace-nowrap rounded-full border border-white/10 bg-white/[0.045] px-2 py-0.5 text-[11px] font-semibold text-slate-300">
+              {sourceLabel}
+            </span>
           </div>
           <div className="mt-1 truncate text-sm font-semibold text-white">{display.title}</div>
           <div className="truncate text-xs leading-5 text-slate-400">{display.subtitle}</div>
