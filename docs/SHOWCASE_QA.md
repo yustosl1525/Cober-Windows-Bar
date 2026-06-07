@@ -32,6 +32,51 @@ npm run qa:showcase:interactions
 
 The script verifies `/showcase`, Provider Demo source switching, Stop provider, Clear to idle, and console/page errors. It starts a local Vite server if one is not already available.
 
+### Interaction QA server paths on Windows
+
+The interaction harness has two supported local paths. Both are QA harness behavior only; they do not imply that real providers, native Windows APIs, Tauri tray behavior, always-on-top behavior, or production packaging are implemented.
+
+Self-start path:
+
+1. Confirm no project Vite server is already serving `http://127.0.0.1:5173/showcase`.
+2. Run:
+
+   ```bash
+   npm run qa:showcase:interactions
+   ```
+
+3. Expected result: the success output includes `(started Vite)`, the command exits naturally, and no Vite/npm/node process tree started by that QA run remains afterward.
+
+Existing-server path:
+
+1. Start the external Vite server yourself:
+
+   ```bash
+   npm run dev -- --host 127.0.0.1
+   ```
+
+2. Confirm `http://127.0.0.1:5173/showcase` returns 200.
+3. In another terminal, run:
+
+   ```bash
+   npm run qa:showcase:interactions
+   ```
+
+4. Expected result: the success output does not include `(started Vite)`, the command exits naturally, and `http://127.0.0.1:5173/showcase` still returns 200 afterward.
+5. Stop only the external Vite server process tree you started for this verification.
+
+Cleanup safety boundary:
+
+- Do not kill by port, process name, or global node/npm/vite process search.
+- Do not use broad cleanup such as killing all `node.exe`, `npm.exe`, or `vite` processes.
+- The interaction script may clean up only the Vite/npm process tree it spawned and recorded.
+
+Windows sandbox note:
+
+- In restricted sandboxes, Vite/esbuild can fail while resolving the project with an error like `Cannot read directory "../../..": Access is denied`.
+- Treat that as an environment reproduction risk. If the same command passes in a normal local Windows environment, do not change product code for the sandbox-only failure.
+- If both local paths fail in a normal environment, capture stdout/stderr and stop for investigation instead of widening cleanup or changing product behavior.
+
 Generate visual QA screenshots after the dev server is running:
 
 ```bash
