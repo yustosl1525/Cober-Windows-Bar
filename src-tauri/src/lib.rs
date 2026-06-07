@@ -22,6 +22,20 @@ struct RuntimeCapabilities {
   tray: bool,
   always_on_top: bool,
   windows_providers: bool,
+  configured_shell_window: ConfiguredShellWindow,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfiguredShellWindow {
+  configured: bool,
+  title: String,
+  width: u16,
+  height: u16,
+  min_width: u16,
+  min_height: u16,
+  resizable: bool,
+  centered: bool,
 }
 
 #[tauri::command]
@@ -56,6 +70,16 @@ fn get_runtime_capabilities() -> RuntimeCapabilities {
     tray: false,
     always_on_top: false,
     windows_providers: false,
+    configured_shell_window: ConfiguredShellWindow {
+      configured: true,
+      title: "Cober Windows Bar".into(),
+      width: 960,
+      height: 640,
+      min_width: 720,
+      min_height: 520,
+      resizable: true,
+      centered: true,
+    },
   }
 }
 

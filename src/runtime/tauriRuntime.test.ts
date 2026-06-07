@@ -12,6 +12,24 @@ import type { HubEvent } from "../types/hub";
 
 const tests: Array<{ name: string; run: () => void | Promise<void> }> = [];
 
+const canonicalRuntimeCapabilities = {
+  runtime: "tauri",
+  fixtureIpc: true,
+  tray: false,
+  alwaysOnTop: false,
+  windowsProviders: false,
+  configuredShellWindow: {
+    configured: true,
+    title: "Cober Windows Bar",
+    width: 960,
+    height: 640,
+    minWidth: 720,
+    minHeight: 520,
+    resizable: true,
+    centered: true,
+  },
+} as const;
+
 function test(name: string, run: () => void | Promise<void>) {
   tests.push({ name, run });
 }
@@ -181,11 +199,23 @@ test("detects unavailable Tauri capability invoke", async () => {
 test("returns malformed diagnostic for non-canonical capability payloads", async () => {
   const result = await loadTauriRuntimeCapabilities({
     invoke: async () => ({
-      runtime: "tauri",
-      fixtureIpc: true,
+      ...canonicalRuntimeCapabilities,
       tray: true,
-      alwaysOnTop: false,
-      windowsProviders: false,
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "malformed");
+});
+
+test("returns malformed diagnostic for non-canonical shell window facts", async () => {
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => ({
+      ...canonicalRuntimeCapabilities,
+      configuredShellWindow: {
+        ...canonicalRuntimeCapabilities.configuredShellWindow,
+        configured: false,
+      },
     }),
   });
 
@@ -210,13 +240,7 @@ test("loads canonical runtime capability facts through the configured command", 
   const result = await loadTauriRuntimeCapabilities({
     invoke: async (command) => {
       calls.push(command);
-      return {
-        runtime: "tauri",
-        fixtureIpc: true,
-        tray: false,
-        alwaysOnTop: false,
-        windowsProviders: false,
-      };
+      return canonicalRuntimeCapabilities;
     },
   });
 
@@ -224,13 +248,7 @@ test("loads canonical runtime capability facts through the configured command", 
   assert.deepEqual(calls, [TAURI_RUNTIME_CAPABILITIES_COMMAND]);
 
   if (result.ok) {
-    assert.deepEqual(result.capabilities, {
-      runtime: "tauri",
-      fixtureIpc: true,
-      tray: false,
-      alwaysOnTop: false,
-      windowsProviders: false,
-    });
+    assert.deepEqual(result.capabilities, canonicalRuntimeCapabilities);
   }
 });
 

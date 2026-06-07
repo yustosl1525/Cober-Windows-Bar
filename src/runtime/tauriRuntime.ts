@@ -29,6 +29,18 @@ export type TauriRuntimeCapabilities = {
   tray: false;
   alwaysOnTop: false;
   windowsProviders: false;
+  configuredShellWindow: TauriConfiguredShellWindow;
+};
+
+export type TauriConfiguredShellWindow = {
+  configured: true;
+  title: string;
+  width: number;
+  height: number;
+  minWidth: number;
+  minHeight: number;
+  resizable: boolean;
+  centered: boolean;
 };
 
 export type TauriRuntimeCapabilitiesResult =
@@ -198,7 +210,8 @@ function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | un
     value.fixtureIpc !== true ||
     value.tray !== false ||
     value.alwaysOnTop !== false ||
-    value.windowsProviders !== false
+    value.windowsProviders !== false ||
+    !isConfiguredShellWindow(value.configuredShellWindow)
   ) {
     return undefined;
   }
@@ -209,7 +222,25 @@ function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | un
     tray: value.tray,
     alwaysOnTop: value.alwaysOnTop,
     windowsProviders: value.windowsProviders,
+    configuredShellWindow: value.configuredShellWindow,
   };
+}
+
+function isConfiguredShellWindow(value: unknown): value is TauriConfiguredShellWindow {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.configured === true &&
+    typeof value.title === "string" &&
+    typeof value.width === "number" &&
+    typeof value.height === "number" &&
+    typeof value.minWidth === "number" &&
+    typeof value.minHeight === "number" &&
+    typeof value.resizable === "boolean" &&
+    typeof value.centered === "boolean"
+  );
 }
 
 function isHubEvent(value: unknown): value is HubEvent {
