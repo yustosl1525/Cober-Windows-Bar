@@ -1,9 +1,11 @@
 import { strict as assert } from "node:assert";
 import {
   getTauriInvoke,
+  loadTauriRuntimeCapabilities,
   loadTauriFixtureHubEvents,
   publishTauriFixtureEvents,
   TAURI_FIXTURE_COMMAND,
+  TAURI_RUNTIME_CAPABILITIES_COMMAND,
   type TauriInvoke,
 } from "./tauriRuntime";
 import type { HubEvent } from "../types/hub";
@@ -167,6 +169,69 @@ test("does not publish when fixture command fails", async () => {
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "invoke-failed");
   assert.equal(publishedEvents.length, 0);
+});
+
+test("detects unavailable Tauri capability invoke", async () => {
+  const result = await loadTauriRuntimeCapabilities();
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "unavailable");
+});
+
+test("returns malformed diagnostic for non-canonical capability payloads", async () => {
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => ({
+      runtime: "tauri",
+      fixtureIpc: true,
+      tray: true,
+      alwaysOnTop: false,
+      windowsProviders: false,
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "malformed");
+});
+
+test("returns invoke-failed diagnostic when capability command rejects", async () => {
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => {
+      throw new Error("capability boundary failed");
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "invoke-failed");
+  assert.equal(result.diagnostic.detail, "capability boundary failed");
+});
+
+test("loads canonical runtime capability facts through the configured command", async () => {
+  const calls: string[] = [];
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async (command) => {
+      calls.push(command);
+      return {
+        runtime: "tauri",
+        fixtureIpc: true,
+        tray: false,
+        alwaysOnTop: false,
+        windowsProviders: false,
+      };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [TAURI_RUNTIME_CAPABILITIES_COMMAND]);
+
+  if (result.ok) {
+    assert.deepEqual(result.capabilities, {
+      runtime: "tauri",
+      fixtureIpc: true,
+      tray: false,
+      alwaysOnTop: false,
+      windowsProviders: false,
+    });
+  }
 });
 
 for (const { name, run } of tests) {

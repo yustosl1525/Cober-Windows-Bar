@@ -1,6 +1,7 @@
 import type { HubEvent, HubEventSource, HubEventType } from "../types/hub";
 
 export const TAURI_FIXTURE_COMMAND = "get_hub_event_fixtures";
+export const TAURI_RUNTIME_CAPABILITIES_COMMAND = "get_runtime_capabilities";
 
 export type TauriInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
 
@@ -16,6 +17,24 @@ export type TauriRuntimeResult =
   | {
       ok: true;
       events: HubEvent[];
+    }
+  | {
+      ok: false;
+      diagnostic: TauriRuntimeDiagnostic;
+    };
+
+export type TauriRuntimeCapabilities = {
+  runtime: "tauri";
+  fixtureIpc: true;
+  tray: false;
+  alwaysOnTop: false;
+  windowsProviders: false;
+};
+
+export type TauriRuntimeCapabilitiesResult =
+  | {
+      ok: true;
+      capabilities: TauriRuntimeCapabilities;
     }
   | {
       ok: false;
@@ -114,6 +133,51 @@ export async function publishTauriFixtureEvents(
   return result;
 }
 
+export async function loadTauriRuntimeCapabilities({
+  invoke = getTauriInvoke(),
+}: {
+  invoke?: TauriInvoke;
+} = {}): Promise<TauriRuntimeCapabilitiesResult> {
+  if (!invoke) {
+    return {
+      ok: false,
+      diagnostic: {
+        code: "unavailable",
+        message: "Tauri runtime invoke is unavailable.",
+      },
+    };
+  }
+
+  try {
+    const value = await invoke(TAURI_RUNTIME_CAPABILITIES_COMMAND);
+    const capabilities = parseRuntimeCapabilities(value);
+
+    if (!capabilities) {
+      return {
+        ok: false,
+        diagnostic: {
+          code: "malformed",
+          message: "Tauri runtime returned malformed capability facts.",
+        },
+      };
+    }
+
+    return {
+      ok: true,
+      capabilities,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      diagnostic: {
+        code: "invoke-failed",
+        message: "Tauri runtime capability command failed.",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+    };
+  }
+}
+
 function parseHubEvents(value: unknown): HubEvent[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -122,6 +186,30 @@ function parseHubEvents(value: unknown): HubEvent[] | undefined {
   const events = value.filter(isHubEvent);
 
   return events.length === value.length ? events : undefined;
+}
+
+function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (
+    value.runtime !== "tauri" ||
+    value.fixtureIpc !== true ||
+    value.tray !== false ||
+    value.alwaysOnTop !== false ||
+    value.windowsProviders !== false
+  ) {
+    return undefined;
+  }
+
+  return {
+    runtime: value.runtime,
+    fixtureIpc: value.fixtureIpc,
+    tray: value.tray,
+    alwaysOnTop: value.alwaysOnTop,
+    windowsProviders: value.windowsProviders,
+  };
 }
 
 function isHubEvent(value: unknown): value is HubEvent {

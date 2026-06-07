@@ -14,6 +14,16 @@ struct HubEventFixture {
   metadata: Value,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RuntimeCapabilities {
+  runtime: String,
+  fixture_ipc: bool,
+  tray: bool,
+  always_on_top: bool,
+  windows_providers: bool,
+}
+
 #[tauri::command]
 fn get_hub_event_fixtures() -> Vec<HubEventFixture> {
   vec![HubEventFixture {
@@ -38,6 +48,17 @@ fn get_hub_event_fixtures() -> Vec<HubEventFixture> {
   }]
 }
 
+#[tauri::command]
+fn get_runtime_capabilities() -> RuntimeCapabilities {
+  RuntimeCapabilities {
+    runtime: "tauri".into(),
+    fixture_ipc: true,
+    tray: false,
+    always_on_top: false,
+    windows_providers: false,
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -51,7 +72,10 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![get_hub_event_fixtures])
+    .invoke_handler(tauri::generate_handler![
+      get_hub_event_fixtures,
+      get_runtime_capabilities
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
