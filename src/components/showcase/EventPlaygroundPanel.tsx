@@ -152,10 +152,10 @@ export function EventPlaygroundPanel({
             </span>
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold leading-6 text-white">
-                v0.2 Interactive Event Playground
+                Showcase event controls
               </h2>
               <p className="truncate text-sm leading-5 text-slate-300">
-                publishHubEvent - store - resolver - UI mode
+                Mock scenarios, mock providers, and fixtures drive the resolved Hub preview.
               </p>
             </div>
           </div>
@@ -169,6 +169,17 @@ export function EventPlaygroundPanel({
             {isAutoRunning ? <Sparkles size={16} /> : <Play size={16} />}
             {isAutoRunning ? "Demo running" : "Start Demo"}
           </button>
+        </div>
+
+        <div className="grid gap-2 border-b border-white/10 px-4 py-3 text-xs leading-5 text-slate-300 md:grid-cols-2">
+          <div className="rounded-[12px] border border-white/10 bg-white/[0.045] px-3 py-2">
+            <div className="font-semibold text-slate-100">Scenario buttons</div>
+            <p>Publish canned mock event states into the preview and event list.</p>
+          </div>
+          <div className="rounded-[12px] border border-white/10 bg-white/[0.045] px-3 py-2">
+            <div className="font-semibold text-slate-100">Provider and fixture controls</div>
+            <p>Run mock providers or the explicit Tauri fixture proof, without native Windows APIs.</p>
+          </div>
         </div>
 
         <div className="border-b border-white/10 px-4 py-3">
