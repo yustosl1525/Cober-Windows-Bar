@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { HubMode } from "../../types/hub";
+import type { HubMode, HubTask, MusicState, NotificationState } from "../../types/hub";
 import { aiTask, downloadTask, multiTasks, musicState, notificationState } from "../../data/mockHubData";
 import { GlassPanel } from "../ui/GlassPanel";
 import { AiProgressHub } from "./AiProgressHub";
@@ -11,9 +11,18 @@ import { NotificationHub } from "./NotificationHub";
 
 type HubShellProps = {
   mode: HubMode;
+  tasks?: HubTask[];
+  music?: MusicState;
+  notification?: NotificationState;
 };
 
-export function HubShell({ mode }: HubShellProps) {
+export function HubShell({ mode, tasks = [], music, notification }: HubShellProps) {
+  const musicDisplay = music ?? musicState;
+  const aiDisplay = tasks.find((task) => task.type === "ai") ?? aiTask;
+  const downloadDisplay = tasks.find((task) => task.type === "download") ?? downloadTask;
+  const notificationDisplay = notification ?? notificationState;
+  const multiTaskDisplay = tasks.length > 0 ? tasks : multiTasks;
+
   return (
     <GlassPanel className="inline-flex rounded-[24px]">
       <AnimatePresence mode="wait">
@@ -25,11 +34,11 @@ export function HubShell({ mode }: HubShellProps) {
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
           {mode === "idle" && <IdleHub />}
-          {mode === "music" && <MusicHub music={musicState} />}
-          {mode === "aiProgress" && <AiProgressHub task={aiTask} />}
-          {mode === "download" && <DownloadHub task={downloadTask} />}
-          {mode === "notification" && <NotificationHub notification={notificationState} />}
-          {mode === "multiTask" && <MultiTaskHub tasks={multiTasks} />}
+          {mode === "music" && <MusicHub music={musicDisplay} />}
+          {mode === "aiProgress" && <AiProgressHub task={aiDisplay} />}
+          {mode === "download" && <DownloadHub task={downloadDisplay} />}
+          {mode === "notification" && <NotificationHub notification={notificationDisplay} />}
+          {mode === "multiTask" && <MultiTaskHub tasks={multiTaskDisplay} />}
         </motion.div>
       </AnimatePresence>
     </GlassPanel>

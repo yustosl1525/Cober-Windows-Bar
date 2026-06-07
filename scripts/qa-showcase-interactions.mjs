@@ -161,15 +161,18 @@ async function run() {
       .filter({ has: page.getByText("Provider Demo", { exact: true }) })
       .filter({ has: page.getByRole("button", { name: "Stop provider", exact: true }) })
       .first();
+    const mainPreview = page.getByTestId("showcase-main-preview");
 
     await expectText(panel, "Stopped, events stay");
     await expectText(panel, "Provider stopped");
 
     await clickButton(panel, "Music");
     await expectText(panel, "Mock Music Provider");
+    await expectText(mainPreview, "Midnight City");
 
     await clickButton(panel, "AI");
     await expectText(panel, "Mock AI Provider");
+    await expectText(mainPreview, "Codex is updating the provider SDK");
 
     await clickButton(panel, "Download");
     await expectText(panel, "Mock Download Provider");
@@ -192,8 +195,8 @@ async function run() {
 
     await clickButton(panel, "Tauri Fixture");
     await expectText(panel, "Tauri fixture published");
-    await expectText(page, "QA Tauri Fixture");
-    await expectText(page, "Injected runtime fixture");
+    await expectText(mainPreview, "QA Tauri Fixture");
+    await expectText(mainPreview, "Injected runtime fixture");
     await expectText(page, "Current mode: AI Progress");
 
     await page.evaluate(() => {

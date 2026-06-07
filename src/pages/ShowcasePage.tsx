@@ -213,10 +213,18 @@ export function ShowcasePage() {
             <ModeSidebar activeMode={activeMode} onModeChange={handleModeChange} />
 
             <div className="min-w-0 space-y-6">
-              <section className="showcase-preview-panel flex min-h-[218px] items-center justify-center p-6 sm:p-8">
+              <section
+                className="showcase-preview-panel flex min-h-[218px] items-center justify-center p-6 sm:p-8"
+                data-testid="showcase-main-preview"
+              >
                 <div className="text-center">
                   <div className="mb-7 text-sm font-semibold text-sky-200">v0.2 Interactive Event Playground / Resolved floating bar preview</div>
-                  <HubShell mode={activeMode} />
+                  <HubShell
+                    mode={activeMode}
+                    tasks={storeState.tasks}
+                    music={storeState.music}
+                    notification={storeState.notification}
+                  />
                 </div>
               </section>
 
