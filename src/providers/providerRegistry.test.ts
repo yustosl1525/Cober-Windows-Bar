@@ -33,7 +33,7 @@ function providerWithSpies(
       version: "0.6.0",
       mock: true,
     },
-    capabilities: [{ id: "music", kind: "music" }],
+    capabilities: [{ id: "music", kind: "music", origin: "mock", support: "available" }],
     start() {
       startCalls += 1;
       lifecycle = "Publishing";
@@ -224,11 +224,67 @@ test("registry snapshots do not expose mutable capability internals", () => {
   const fromGet = registry.get(music.id);
   const fromList = registry.list()[0];
 
-  fromGet?.capabilities.push({ id: "ai", kind: "ai" });
+  fromGet?.capabilities.push({ id: "ai", kind: "ai", origin: "mock", support: "available" });
   fromList?.capabilities.pop();
 
-  assert.deepEqual(registry.get(music.id)?.capabilities, [{ id: "music", kind: "music" }]);
-  assert.deepEqual(registry.list()[0]?.capabilities, [{ id: "music", kind: "music" }]);
+  assert.deepEqual(registry.get(music.id)?.capabilities, [
+    { id: "music", kind: "music", origin: "mock", support: "available" },
+  ]);
+  assert.deepEqual(registry.list()[0]?.capabilities, [
+    { id: "music", kind: "music", origin: "mock", support: "available" },
+  ]);
+});
+
+test("registry snapshots preserve native preflight capability facts without provider behavior changes", () => {
+  const registry = createProviderRegistry();
+  const nativePreflight = providerWithSpies("native-music-preflight");
+
+  nativePreflight.provider.metadata = {
+    ...nativePreflight.provider.metadata,
+    mock: false,
+  };
+  nativePreflight.provider.capabilities = [
+    {
+      id: "music",
+      kind: "music",
+      origin: "native",
+      support: "preflight",
+    },
+  ];
+
+  registry.register(nativePreflight.provider);
+
+  const fromGet = registry.get(nativePreflight.provider.id);
+  const fromList = registry.list()[0];
+
+  assert.deepEqual(fromGet?.capabilities, [
+    {
+      id: "music",
+      kind: "music",
+      origin: "native",
+      support: "preflight",
+    },
+  ]);
+  assert.deepEqual(fromList?.capabilities, fromGet?.capabilities);
+
+  fromGet?.capabilities.pop();
+  fromList?.capabilities.push({
+    id: "music",
+    kind: "music",
+    origin: "native",
+    support: "unsupported",
+  });
+
+  assert.deepEqual(registry.get(nativePreflight.provider.id)?.capabilities, [
+    {
+      id: "music",
+      kind: "music",
+      origin: "native",
+      support: "preflight",
+    },
+  ]);
+  assert.equal(nativePreflight.startCalls, 0);
+  assert.equal(nativePreflight.subscribeCalls, 0);
 });
 
 test("registry does not subscribe, emit events, or expose priority and mode fields", () => {

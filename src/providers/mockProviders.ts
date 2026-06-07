@@ -163,6 +163,8 @@ const createMockCapabilities = (
   {
     id: kind,
     kind,
+    origin: "mock",
+    support: "available",
   },
 ];
 

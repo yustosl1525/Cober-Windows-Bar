@@ -209,6 +209,8 @@ test("mock providers expose stable metadata and matching capabilities", () => {
       {
         id: provider.metadata.kind,
         kind: provider.metadata.kind,
+        origin: "mock",
+        support: "available",
       },
     ]);
     assertNoPriorityOrModeHints(provider.metadata);

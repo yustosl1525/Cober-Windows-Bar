@@ -28,6 +28,8 @@ export type HubProviderMetadata = {
 export type HubProviderCapability = {
   id: HubProviderKind;
   kind: HubProviderKind;
+  origin: "mock" | "native";
+  support: "available" | "unsupported" | "preflight";
 };
 
 export type HubProviderListener = (events: HubEvent[]) => void;
