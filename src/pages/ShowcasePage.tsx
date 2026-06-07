@@ -30,6 +30,15 @@ type ActiveProviderDemo = {
   connection: ProviderConnection;
 };
 
+const modeLabel: Record<HubMode, string> = {
+  idle: "Idle",
+  music: "Music",
+  aiProgress: "AI Progress",
+  download: "Download",
+  notification: "Notification",
+  multiTask: "MultiTask",
+};
+
 export function ShowcasePage() {
   const eventBus = useMemo(() => createHubEventBus(), []);
   const [storeState, setStoreState] = useState<HubStoreState>(() => eventBus.getState());
@@ -40,6 +49,20 @@ export function ShowcasePage() {
   const activeProviderDemo = useRef<ActiveProviderDemo | undefined>(undefined);
   const tauriFixtureRequestId = useRef(0);
   const activeMode = storeState.mode;
+  const activeEventCount = storeState.events.length;
+  const previewSource = tauriFixtureLabel
+    ? "Tauri Fixture"
+    : activeProviderLabel
+      ? "Mock Provider"
+      : isAutoRunning
+        ? "Auto Demo"
+        : activeEventCount > 0
+          ? "Manual / Mock Events"
+          : "Store-driven Preview";
+  const previewStatus =
+    tauriFixtureLabel ??
+    activeProviderLabel ??
+    (isAutoRunning ? "Sequence running" : activeMode === "idle" ? "Idle event stream" : "Resolved from Event Bus");
 
   const clearDemoTimers = useCallback(() => {
     demoTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -214,11 +237,29 @@ export function ShowcasePage() {
 
             <div className="min-w-0 space-y-6">
               <section
-                className="showcase-preview-panel flex min-h-[218px] items-center justify-center p-6 sm:p-8"
+                className="showcase-preview-panel flex min-h-[218px] items-center justify-center p-5 sm:p-7"
                 data-testid="showcase-main-preview"
               >
-                <div className="text-center">
-                  <div className="mb-7 text-sm font-semibold text-sky-200">v0.2 Interactive Event Playground / Resolved floating bar preview</div>
+                <div className="w-full min-w-0 text-center">
+                  <div className="mx-auto mb-6 flex max-w-[760px] flex-wrap items-center justify-center gap-2 text-left">
+                    <div className="min-w-[220px] flex-1">
+                      <div className="text-sm font-semibold text-white">Resolved Hub Preview</div>
+                      <div className="mt-1 truncate text-xs text-slate-300">
+                        {previewSource} - {previewStatus}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <span className="rounded-full border border-sky-200/20 bg-sky-300/10 px-3 py-1 text-xs font-semibold text-sky-100">
+                        Mode: {modeLabel[activeMode]}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/[0.065] px-3 py-1 text-xs font-semibold text-slate-200">
+                        Events: {activeEventCount}
+                      </span>
+                      <span className="rounded-full border border-emerald-200/18 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                        Store-driven
+                      </span>
+                    </div>
+                  </div>
                   <HubShell
                     mode={activeMode}
                     tasks={storeState.tasks}
