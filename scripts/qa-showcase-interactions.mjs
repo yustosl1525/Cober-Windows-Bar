@@ -100,6 +100,10 @@ async function expectText(locator, text, timeout = 5_000) {
   await locator.getByText(text, { exact: true }).waitFor({ state: "visible", timeout });
 }
 
+async function expectProgressBar(locator, name, timeout = 5_000) {
+  await locator.getByRole("progressbar", { name, exact: true }).waitFor({ state: "visible", timeout });
+}
+
 async function captureFailureScreenshot(page) {
   try {
     await page.screenshot({ path: `${outputDir}/showcase-interactions-failure.png`, fullPage: true });
@@ -185,13 +189,16 @@ async function run() {
     await clickButton(panel, "Music");
     await expectText(panel, "Mock Music Provider");
     await expectText(mainPreview, "Midnight City");
+    await expectProgressBar(mainPreview, "Music playback progress");
 
     await clickButton(panel, "AI");
     await expectText(panel, "Mock AI Provider");
     await expectText(mainPreview, "Codex is updating the provider SDK");
+    await expectProgressBar(mainPreview, "Codex is updating the provider SDK progress");
 
     await clickButton(panel, "Download");
     await expectText(panel, "Mock Download Provider");
+    await expectProgressBar(mainPreview, "Windows SDK Preview.zip progress");
 
     await clickButton(panel, "Notify");
     await expectText(panel, "Mock Notification Provider");
