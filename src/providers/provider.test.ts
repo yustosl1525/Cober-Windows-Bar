@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import "./providerRegistry.test";
+import "./systemStatusDiagnostics.test";
 import { createHubEventBus } from "../state/hubState";
 import type { HubMode } from "../types/hub";
 import {
