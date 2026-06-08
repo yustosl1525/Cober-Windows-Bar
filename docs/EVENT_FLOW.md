@@ -70,6 +70,8 @@ Provider -> Event Bus -> Store -> Resolver -> UI
 
 Provider registries and provider adapters are auxiliary lifecycle and integration helpers. They must publish through the Event Bus and must not bypass the Event Bus, Store, or Resolver when affecting hub UI state.
 
+Provider adapters isolate publish failures per event within a provider batch. If one adapter call to publish an event through the Event Bus fails, that failure must not block unrelated later events in the same provider batch from being published. This is an adapter boundary only: it does not add Event Bus retries, async delivery, persistence, queueing, provider lifecycle behavior, runtime wiring, UI behavior, or native/system integration.
+
 For v0.5.3 alignment, the Event Bus should stay small. More complex queueing, debouncing, async delivery, persistence, or cross-process IPC should wait until a later stage needs it.
 
 ## Store Responsibilities
