@@ -131,7 +131,7 @@ export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
   return {
     getState: snapshot,
     publishHubEvent(event: HubEvent) {
-      events = [event, ...events.filter((item) => item.id !== event.id)];
+      events = [snapshotHubEvent(event), ...events.filter((item) => item.id !== event.id)];
       notify();
     },
     clearHubEvents() {

@@ -113,6 +113,33 @@ test("event bus publishes latest state and replaces events by id", () => {
   unsubscribe();
 });
 
+test("event bus stores published event snapshots instead of caller references", () => {
+  const bus = createHubEventBus();
+  const payload = {
+    id: "task",
+    type: "ai" as const,
+    title: "Original task",
+    subtitle: "Original subtitle",
+    progress: 42,
+    accent: "blue" as const,
+  };
+  const metadata = { fixture: true };
+
+  bus.publishHubEvent(event({ id: "ai", type: "ai", payload, metadata }));
+  payload.title = "Mutated after publish";
+  metadata.fixture = false;
+
+  const snapshotPayload = bus.getState(now).events[0]?.payload;
+  const snapshotMetadata = bus.getState(now).events[0]?.metadata;
+
+  if (!snapshotPayload || !("title" in snapshotPayload)) {
+    throw new Error("expected task payload snapshot");
+  }
+
+  assert.equal(snapshotPayload.title, "Original task");
+  assert.deepEqual(snapshotMetadata, { fixture: true });
+});
+
 test("event bus cleanup removes expired events and notifies subscribers", () => {
   const bus = createHubEventBus([
     event({ id: "expired", type: "notification", expiresAt: now - 1 }),
