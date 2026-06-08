@@ -100,6 +100,22 @@ async function expectText(locator, text, timeout = 5_000) {
   await locator.getByText(text, { exact: true }).waitFor({ state: "visible", timeout });
 }
 
+async function captureFailureScreenshot(page) {
+  try {
+    await page.screenshot({ path: `${outputDir}/showcase-interactions-failure.png`, fullPage: true });
+  } catch (error) {
+    console.warn(`Could not capture failure screenshot: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function closeBrowser(browser) {
+  try {
+    await browser.close();
+  } catch (error) {
+    console.warn(`Could not close Playwright browser: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function run() {
   await mkdir(outputDir, { recursive: true });
   const startedServer = await ensureServer();
@@ -229,10 +245,10 @@ async function run() {
 
     console.log(`Showcase interaction QA passed at ${showcaseUrl}${startedServer ? " (started Vite)" : ""}`);
   } catch (error) {
-    await page.screenshot({ path: `${outputDir}/showcase-interactions-failure.png`, fullPage: true });
+    await captureFailureScreenshot(page);
     throw error;
   } finally {
-    await browser.close();
+    await closeBrowser(browser);
     await stopServer();
   }
 }
