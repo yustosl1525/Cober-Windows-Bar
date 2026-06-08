@@ -60,6 +60,7 @@ Planned semantics:
 - The bus does not resolve UI modes.
 - The bus does not fetch provider data.
 - The bus does not retain business state beyond listener registration.
+- The bus snapshots initial and published events at the transport boundary so caller-side mutations cannot change stored event payloads or metadata after handoff.
 - Provider adapters may use the bus, but UI components should not subscribe to provider internals directly.
 
 Canonical runtime path:
