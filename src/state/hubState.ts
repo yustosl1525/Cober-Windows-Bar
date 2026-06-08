@@ -96,7 +96,13 @@ export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
 
   function notify() {
     const state = snapshot();
-    subscribers.forEach((subscriber) => subscriber(state));
+    subscribers.forEach((subscriber) => {
+      try {
+        subscriber(state);
+      } catch {
+        // Subscriber failures should not prevent unrelated listeners from receiving state.
+      }
+    });
   }
 
   return {

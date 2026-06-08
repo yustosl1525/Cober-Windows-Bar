@@ -128,6 +128,40 @@ test("event bus cleanup removes expired events and notifies subscribers", () => 
   unsubscribe();
 });
 
+test("event bus subscriber errors do not block later state delivery", () => {
+  const bus = createHubEventBus([
+    event({ id: "expired", type: "notification", expiresAt: now - 1 }),
+    event({ id: "download", type: "download", createdAt: now - 2000 }),
+  ]);
+  const observedModes: string[] = [];
+  const observedEventIds: string[][] = [];
+  let throwingSubscriberCalls = 0;
+  const unsubscribeThrowing = bus.subscribe((state) => {
+    throwingSubscriberCalls += 1;
+    observedModes.push(state.mode);
+
+    if (throwingSubscriberCalls > 1) {
+      throw new Error("subscriber failed");
+    }
+  });
+  const unsubscribeLater = bus.subscribe((state) => {
+    observedEventIds.push(state.events.map((item) => item.id));
+  });
+
+  assert.doesNotThrow(() => bus.publishHubEvent(event({ id: "ai", type: "ai" })));
+  assert.doesNotThrow(() => bus.clearExpiredEvents(now));
+
+  assert.deepEqual(observedModes, ["download", "multiTask", "multiTask"]);
+  assert.deepEqual(observedEventIds, [
+    ["download"],
+    ["ai", "download"],
+    ["ai", "download"],
+  ]);
+
+  unsubscribeThrowing();
+  unsubscribeLater();
+});
+
 test("store derives task display fields from event payload", () => {
   const state = createHubStoreState([event()], now);
 
