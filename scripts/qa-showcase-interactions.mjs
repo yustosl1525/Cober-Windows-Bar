@@ -191,6 +191,9 @@ async function run() {
     await expectButton(page, "File shortcut mock");
     await expectButton(page, "Browser shortcut mock");
     await expectProgressBar(page, "Taskbar AI progress");
+    await expectProgressBar(page, "Fluent music progress token");
+    await expectProgressBar(page, "Fluent AI progress token");
+    await expectProgressBar(page, "Fluent download progress token");
 
     await expectText(panel, "Stopped, events stay");
     await expectText(panel, "Provider stopped");

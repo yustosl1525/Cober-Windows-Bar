@@ -24,9 +24,9 @@ export function FluentStyleGuide() {
           <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl md:col-span-2 min-[1700px]:col-span-2">
             <div className="text-sm text-slate-300">进度条</div>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <ProgressBar value={64} tone="pink" />
-              <ProgressBar value={68} tone="blue" />
-              <ProgressBar value={48} tone="green" />
+              <ProgressBar value={64} tone="pink" label="Fluent music progress token" />
+              <ProgressBar value={68} tone="blue" label="Fluent AI progress token" />
+              <ProgressBar value={48} tone="green" label="Fluent download progress token" />
             </div>
           </div>
           <SpecCard title="动画" value="ease-out 180-220ms" swatch="bg-white/[0.08]" />
