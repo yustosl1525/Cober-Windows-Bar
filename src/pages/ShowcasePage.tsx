@@ -20,7 +20,7 @@ import {
 } from "../providers/mockProviders";
 import { connectProviderToEventBus, type ProviderConnection } from "../providers/providerAdapter";
 import type { HubProvider } from "../providers/types";
-import { loadTauriFixtureHubEvents } from "../runtime/tauriRuntime";
+import { publishTauriFixtureEvents } from "../runtime/tauriRuntime";
 import type { HubMode, HubStoreState } from "../types/hub";
 
 type ProviderDemoId = "music" | "ai" | "download" | "notification";
@@ -168,14 +168,16 @@ export function ShowcasePage() {
     const requestId = ++tauriFixtureRequestId.current;
     setTauriFixtureLabel("Loading fixture");
 
-    const result = await loadTauriFixtureHubEvents();
+    const result = await publishTauriFixtureEvents({
+      publishHubEvent(event) {
+        if (requestId === tauriFixtureRequestId.current) {
+          eventBus.publishHubEvent(event);
+        }
+      },
+    });
 
     if (requestId !== tauriFixtureRequestId.current) {
       return;
-    }
-
-    if (result.ok) {
-      result.events.forEach((event) => eventBus.publishHubEvent(event));
     }
 
     setTauriFixtureLabel(result.ok ? "Tauri fixture published" : `Tauri ${result.diagnostic.code}`);
