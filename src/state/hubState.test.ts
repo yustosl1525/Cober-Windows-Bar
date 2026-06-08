@@ -177,6 +177,17 @@ test("store clamps task progress into the canonical display range", () => {
   assert.equal(lowProgressState.tasks[0]?.progress, 0);
 });
 
+test("store defaults task progress to zero for progress-rendering modes", () => {
+  const aiState = createHubStoreState([event({ id: "ai", type: "ai", progress: undefined })], now);
+  const downloadState = createHubStoreState(
+    [event({ id: "download", type: "download", progress: undefined })],
+    now,
+  );
+
+  assert.equal(aiState.tasks[0]?.progress, 0);
+  assert.equal(downloadState.tasks[0]?.progress, 0);
+});
+
 test("store notification snapshots do not expose mutable event payloads", () => {
   const notificationPayload = {
     app: "Cober",

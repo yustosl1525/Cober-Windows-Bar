@@ -55,13 +55,19 @@ export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
 
 export function eventToTask(event: HubEvent): HubTask {
   const payload = event.payload && "title" in event.payload ? event.payload : undefined;
+  const shouldDefaultProgress = event.type === "ai" || event.type === "download";
 
   return {
     id: event.id,
     type: event.type,
     title: payload?.title ?? event.type,
     subtitle: payload?.subtitle ?? "",
-    progress: event.progress === undefined ? undefined : clampProgress(event.progress),
+    progress:
+      event.progress === undefined
+        ? shouldDefaultProgress
+          ? 0
+          : undefined
+        : clampProgress(event.progress),
     accent: taskAccentMap[event.type],
   };
 }
