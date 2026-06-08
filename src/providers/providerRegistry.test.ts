@@ -534,6 +534,57 @@ test("registry list returns a copy instead of mutable internal array", () => {
   assert.equal(registry.list().length, 1);
 });
 
+test("registry register result is a copied read model", () => {
+  const registry = createProviderRegistry();
+  const music = createMockMusicProvider();
+  const result = registry.register(music);
+
+  assert.equal(result.ok, true);
+
+  if (!result.ok) {
+    return;
+  }
+
+  result.record.metadata.name = "Caller Mutated Provider";
+  result.record.capabilities.push({
+    id: "ai",
+    kind: "ai",
+    origin: "mock",
+    support: "available",
+  });
+  result.record.status.lifecycle = "Publishing";
+
+  assert.equal(music.metadata.name, "Mock Music Provider");
+  assert.deepEqual(music.capabilities, [
+    { id: "music", kind: "music", origin: "mock", support: "available" },
+  ]);
+  assert.deepEqual(music.status(), {
+    lifecycle: "Stopped",
+    health: "Healthy",
+  });
+  assert.deepEqual(registry.get(music.id), {
+    id: "mock-music-provider",
+    name: "Mock Music Provider",
+    kind: "music",
+    metadata: {
+      id: "mock-music-provider",
+      name: "Mock Music Provider",
+      kind: "music",
+      version: "0.6.0",
+      mock: true,
+    },
+    capabilities: [{ id: "music", kind: "music", origin: "mock", support: "available" }],
+    status: {
+      lifecycle: "Stopped",
+      health: "Healthy",
+    },
+    registrationOrder: 0,
+  });
+  assert.deepEqual(registry.list()[0]?.capabilities, [
+    { id: "music", kind: "music", origin: "mock", support: "available" },
+  ]);
+});
+
 test("registry unregister removes known providers and ignores unknown ids", () => {
   const registry = createProviderRegistry();
   const music = createMockMusicProvider();
