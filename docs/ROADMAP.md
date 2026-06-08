@@ -107,6 +107,8 @@ Goal: freeze and prove the shell/runtime/IPC boundary before any real provider w
 
 Target: v0.7.
 
+Status: v0.7 boundary proof and diagnostics are closed as mock/fixture-only work. The landed slices prove fixture IPC, runtime capability diagnostics, provider capability support facts, registry diagnostic summaries, and runtime/provider diagnostic compatibility without adding real native providers.
+
 Scope:
 
 - Tauri shell/runtime scope planning and spike gate
@@ -114,6 +116,9 @@ Scope:
 - IPC boundary shape for canonical mock or fixture HubEvents
 - Proof that mocked events can still flow through Event Bus -> Store -> Resolver -> Hub UI
 - Failure and diagnostic expectations when the native boundary is unavailable or malformed
+- Runtime capability facts that keep `windowsProviders`, tray, and always-on-top reported as `false`
+- Provider capability facts that can represent mock `available` capabilities and native/music `preflight` diagnostics
+- Read-only provider registry diagnostics through `listCapabilitySupport()` and `summarizeCapabilitySupport()`
 
 Non-goals:
 
@@ -121,13 +126,15 @@ Non-goals:
 - Broad Rust module design
 - Production packaging polish
 - UI redesign
-- Store, Resolver, or ProviderRegistry expansion
+- Store, Resolver, provider lifecycle, runtime-provider wiring, or native provider expansion
 
 ## Stage 5: First Real Provider
 
 Goal: connect real system data for the first time.
 
 Target: v0.8 or later, after the Tauri shell/runtime boundary is proven.
+
+Stage 5 must begin from the v0.7 diagnostic baseline: runtime `windowsProviders` remains `false`, and provider `origin: "native"` / `support: "preflight"` facts are not working native provider implementations.
 
 Priority:
 

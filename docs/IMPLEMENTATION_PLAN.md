@@ -4,7 +4,7 @@
 
 Cober-Windows-Bar is a **Windows 11 Unified Status Hub**. It starts as a visual and interaction prototype, then gradually grows into a native-feeling desktop surface for status, developer work, and AI agent activity.
 
-The current route is v0.7 mock/fixture runtime boundary proof and Showcase polish. v0.6 closed the mock Provider SDK alignment at `92f3e01 test: harden provider alignment coverage`. Since then, narrow v0.7 slices have landed to prove fixture events can cross the Tauri/runtime boundary and still flow through the existing Event Bus, Store, Resolver, and Showcase UI path.
+The current route is v0.7 mock/fixture runtime boundary proof and diagnostic closeout. v0.6 closed the mock Provider SDK alignment at `92f3e01 test: harden provider alignment coverage`. Since then, narrow v0.7 slices have landed to prove fixture events can cross the Tauri/runtime boundary, runtime capability facts can be reported truthfully, and provider capability diagnostics can be queried without leaving the existing Event Bus, Store, Resolver, and Showcase UI path.
 
 The completed v0.7 slices are still mock/fixture-only. They do not implement real providers, Windows/system APIs, Tauri tray behavior, always-on-top windowing, production packaging, signing, updater, installer behavior, or real native integration.
 
@@ -14,7 +14,7 @@ The completed v0.7 slices are still mock/fixture-only. They do not implement rea
 - **Stage 1: Event Playground** - done as v0.2. Proved state transitions with mock Event Controls, Auto Demo playback, and Resolver Visualization.
 - **Stage 2: Architecture Planning** - closed v0.4. Documented runtime boundaries and future Tauri/Windows architecture needs only.
 - **Stage 3: Mock Provider SDK Planning and Alignment** - v0.5/v0.6. Define and align provider lifecycle, registry, runtime, test strategy, mock providers, and provider tests; no Windows/system integration.
-- **Stage 4: Tauri Shell Runtime Spike** - v0.7. Freeze and prove the shell/runtime/IPC boundary with mock or fixture events only.
+- **Stage 4: Tauri Shell Runtime Spike** - v0.7. Freeze and prove the shell/runtime/IPC boundary with mock or fixture events and diagnostic facts only.
 - **Stage 5: First Real Provider** - v0.8 or later. First real system integration after the Tauri boundary is proven.
 - **Stage 6: Developer Hub** - v0.9 or later. Add Git, Docker, WSL, Maven, Gradle, npm/pnpm, Cargo, and developer workflow surfaces.
 - **Stage 7: AI Agent Hub** - v1.0. Add Codex, Claude, GPT/OpenCode/Gemini-style agent status, queue state, progress, and multi-agent visibility.
@@ -164,6 +164,7 @@ v0.6 implemented provider alignment scope:
 - `src/providers/provider.test.ts` verifies provider output resolves to the expected hub modes.
 - `src/providers/providerRegistry.ts` owns the minimum in-memory provider inventory and lifecycle/health snapshots.
 - `src/providers/providerRegistry.test.ts` verifies registry behavior.
+- Provider capability facts now carry mock/native origin and support values so diagnostic preflight facts can be represented without creating a real provider.
 - `docs/PROVIDER_RUNTIME.md` documents the v0.5.3 aligned runtime plan.
 - `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan that v0.5.3 keeps as planning input.
 - `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
@@ -185,7 +186,12 @@ Completed narrow slices:
 
 - Tauri fixture command and IPC fixture boundary scaffold.
 - Frontend runtime adapter for Tauri invoke detection, fixture loading, malformed data handling, and unavailable/invoke-failed diagnostics.
+- Runtime diagnostic context fields for `fixtureEvents` and `runtimeCapabilities`, including the intended Tauri command.
+- Runtime capability facts for fixture IPC, configured shell window values, and unsupported desktop/native capabilities; `windowsProviders`, tray, and always-on-top remain `false`.
 - Runtime bridge proof that fixture events can be published through the Event Bus boundary.
+- Provider capability support metadata using `origin` and `support`, including native/music `preflight` descriptors that remain diagnostic only.
+- Provider registry read models: `listCapabilitySupport()` returns copied capability facts, and `summarizeCapabilitySupport()` aggregates diagnostic capability support without lifecycle or provider-object exposure.
+- Runtime/provider compatibility tests proving runtime `windowsProviders: false` can coexist with provider native/music `preflight` diagnostic facts.
 - Explicit Showcase playground entry for manually triggering the Tauri fixture path.
 - Runtime bridge tests included in the standard `npm run qa` gate.
 - Showcase interaction QA process cleanup and Windows/Vite path documentation.
@@ -198,6 +204,8 @@ Minimum success criteria:
 - Mock or fixture canonical HubEvents remain the only data source.
 - The spike does not bypass Event Bus, Store, Resolver, or UI boundaries.
 - Failure handling is defined as boundary diagnostics, not as real provider behavior.
+- Runtime capability diagnostics stay explicit about unavailable native provider and desktop-shell behavior.
+- Provider capability diagnostics can describe native/music `preflight` facts without claiming a working native provider.
 - The route remains clear: v0.7 proves shell/runtime/IPC; first real provider waits until after that proof.
 
 Non-goals:
@@ -206,7 +214,7 @@ Non-goals:
 - Real provider implementations
 - Tauri tray, always-on-top windowing, or production packaging
 - `/showcase` visual redesigns
-- Store, Resolver, or ProviderRegistry expansion
+- Store, Resolver, provider lifecycle, runtime-provider wiring, or native provider expansion
 - Broad Rust module design
 - Production packaging polish
 

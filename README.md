@@ -2,7 +2,7 @@
 
 Windows 11-style status hub showcase for proving glanceable desktop state flows and the mock/fixture runtime boundary before real native integration work begins.
 
-Current release track: **v0.7 mock/fixture runtime boundary and Showcase polish**.
+Current release track: **v0.7 mock/fixture runtime diagnostics closeout**.
 
 ## Current Status
 
@@ -17,6 +17,10 @@ What exists today:
 - Mock Provider SDK demo that feeds provider-style events into the same resolver path.
 - Tauri fixture command and runtime adapter scaffold for canonical mock `HubEvent` fixtures.
 - Runtime bridge proof that fixture events can enter the Event Bus boundary.
+- Runtime diagnostics for fixture events and runtime capabilities, including `surface` / `command` context.
+- Runtime capability facts that keep `windowsProviders`, tray, and always-on-top reported as `false`.
+- Provider capability diagnostics for mock capabilities and native/music `preflight` facts.
+- Provider registry read models for copied capability facts and diagnostic summaries.
 - Explicit Showcase playground entry for the Tauri fixture path.
 - Store-derived main preview data and a status header that connects the resolved Hub preview to the active event source.
 - QA coverage that includes state, provider, runtime bridge, build, and Showcase interaction checks.
@@ -27,6 +31,7 @@ What does not exist yet:
 - No Windows/system APIs, media-session readers, notification readers, file watchers, or OS hooks.
 - No Tauri tray, always-on-top behavior, production packaging, signing, updater, or installer.
 - No real providers or external integrations.
+- No native Windows/Music provider; `origin: "native"` plus `support: "preflight"` is a diagnostic descriptor only.
 
 ## What It Proves
 
@@ -34,6 +39,7 @@ The current showcase proves the front-end interaction model and provider boundar
 
 - The hub can present distinct, glanceable modes: Idle, Music, AI Progress, Download, Notification, and MultiTask.
 - Manual playground events and mock provider events travel through one shared flow.
+- Runtime capability diagnostics and provider capability summaries can coexist without claiming a native provider.
 - Resolver behavior is visible enough to review, debug, and demo.
 - The Win11 visual direction is stable enough for screenshots and demo capture.
 
@@ -99,7 +105,7 @@ Screenshots are written to `output/playwright/` as local QA artifacts and are no
 - **Stage 0: UI prototype** - Win11/Mica showcase with the core hub states.
 - **Stage 1: Event Playground** - mock event controls, resolver visualization, and Auto Demo.
 - **Stage 2: Provider SDK** - mock providers and adapter validation, still without real system integration.
-- **v0.7: Runtime boundary and Showcase polish** - prove mock/fixture Tauri IPC events can cross into the existing Event Bus -> Store -> Resolver -> UI path.
+- **v0.7: Runtime boundary and diagnostics** - prove mock/fixture Tauri IPC events can cross into the existing Event Bus -> Store -> Resolver -> UI path, while runtime/provider diagnostics stay truthful about unsupported native work.
 - **Stage 3: Desktop shell hardening** - continue Tauri shell work after the boundary proof, without claiming tray, always-on-top, or production packaging yet.
 - **Stage 4: Real providers** - connect system, music, download, notification, and AI task sources after the native boundary is ready.
 - **Stage 5+: Developer and agent hub** - add Git, Docker, WSL, build tool, and long-running AI work status surfaces.

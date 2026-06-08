@@ -11,7 +11,7 @@ The near-term goal is to keep the React status hub moving through a stable mock 
 - **v0.4 Architecture Planning**: document runtime boundaries, shell needs, IPC shape, packaging expectations, and provider sequencing. No implementation.
 - **v0.5 Mock Provider SDK**: keep provider contracts and validation mock-only inside the web/runtime boundary.
 - **v0.6 Mock Provider SDK Alignment**: closed at `92f3e01 test: harden provider alignment coverage`.
-- **v0.7 Tauri Scope Freeze and Spike**: plan and then prove the smallest useful Tauri desktop shell/runtime/IPC boundary with mocked or fixture data only.
+- **v0.7 Tauri Scope Freeze and Spike**: plan and then prove the smallest useful Tauri desktop shell/runtime/IPC boundary with mocked or fixture data and diagnostic facts only.
 - **v0.8 First Real Provider**: add the first real Windows-facing provider after the runtime boundary and IPC model are proven.
 - **v0.9 Developer Hub**: expand provider surfaces for developer workflows.
 - **v1.0 AI Agent Hub**: make long-running AI agent activity a first-class status surface.
@@ -26,7 +26,7 @@ Mock Runtime -> Tauri Runtime -> Windows Runtime
 
 ### Mock Runtime
 
-The current runtime remains the source of truth through v0.6. It includes mocked events, fake providers, resolver behavior, showcase controls, and docs that describe the future system without depending on native capabilities.
+The current runtime remains the source of truth for mock data and fixture-driven review. It includes mocked events, fake providers, resolver behavior, showcase controls, and docs that describe the future system without depending on native capabilities.
 
 Responsibilities:
 
@@ -48,6 +48,13 @@ Architecture needs:
 - A narrow IPC contract that can carry normalized hub events and runtime commands.
 - Failure behavior when the native layer is unavailable or returns malformed data.
 
+Current v0.7 diagnostic facts:
+
+- Fixture event loading reports `surface: "fixtureEvents"` and the intended `get_hub_event_fixtures` command.
+- Runtime capability loading reports `surface: "runtimeCapabilities"` and the intended `get_runtime_capabilities` command.
+- Runtime capabilities remain static and truthful: fixture IPC can be reported, configured shell-window facts can be reported, and `windowsProviders`, tray, and always-on-top remain `false`.
+- Provider capability diagnostics may include `origin: "native"` and `support: "preflight"` for music, but that is only a preflight descriptor for future work.
+
 Non-goals for the spike:
 
 - Real Windows providers.
@@ -55,7 +62,7 @@ Non-goals for the spike:
 - Deep system API integration.
 - Production packaging polish.
 - UI redesign.
-- Store, Resolver, or ProviderRegistry behavior changes.
+- Store, Resolver, provider lifecycle, or runtime-provider wiring changes.
 - Background services beyond what is needed to test shell viability.
 
 ### Windows Runtime
@@ -121,7 +128,7 @@ Recommended order:
 
 1. **v0.5 Mock Provider SDK**: finish the fake provider contract and adapter path.
 2. **v0.6 Mock Provider SDK Alignment**: align canonical events, lifecycle/health, metadata, registry, and provider tests.
-3. **v0.7 Tauri Scope Freeze and Spike**: prove shell/runtime/IPC using mock or fixture events.
+3. **v0.7 Tauri Scope Freeze and Spike**: prove shell/runtime/IPC using mock or fixture events and diagnostic facts.
 4. **v0.8 First Real Provider**: choose one low-risk Windows provider and keep its event output compatible with the mock provider contract.
 5. **v0.9 Developer Hub**: add developer workflow providers once runtime diagnostics and provider lifecycle handling are stable.
 6. **v1.0 AI Agent Hub**: add AI agent sessions as a top-level product surface.

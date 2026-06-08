@@ -1,18 +1,20 @@
-# Provider Registry Planning
+# Provider Registry
 
-Status: v0.5.0 planning-only. This document describes the intended provider registry shape for the Mock Provider SDK. It does not define implemented behavior, runtime wiring, IPC, Tauri commands, Windows APIs, or concrete mock providers.
+Status: v0.7 diagnostic alignment. This document began as v0.5.0 planning for the Mock Provider SDK; the current project now includes a narrow local registry plus read-only capability diagnostic read models. It still does not define runtime wiring, IPC, Tauri commands, Windows APIs, real providers, or concrete native provider behavior.
 
 ## Purpose
 
-The provider registry is the planned coordination layer for discovering, storing, querying, and lifecycle-controlling providers exposed through the Mock Provider SDK. It is intended to give the app a single conceptual place to ask which providers exist, what they can do, what lifecycle phase they are in, and how healthy they are.
+The provider registry is the local coordination layer for discovering, storing, querying, and lifecycle-controlling providers exposed through the Mock Provider SDK. It gives tests and future diagnostic surfaces one place to ask which providers exist, what they can do, what lifecycle phase they are in, and how healthy they are.
 
-The registry is a local SDK concept. It should remain independent from platform integration details so future provider implementations can be mocked, simulated, or replaced without changing registry semantics.
+The registry is a local SDK concept. It must remain independent from platform integration details so future provider implementations can be mocked, simulated, or replaced without changing registry semantics. Native-looking capability facts are diagnostic descriptors only unless a later slice separately implements a real provider.
 
 ## Responsibilities
 
 - Store registered provider records by stable provider id.
 - Expose provider id, name, group, capabilities, lifecycle, health, metadata, privacy declarations, and registration order.
 - Provide lookup and listing APIs for UI, orchestration, and tests.
+- Expose copied capability support rows through `listCapabilitySupport()`.
+- Expose aggregated capability support diagnostics through `summarizeCapabilitySupport()`.
 - Coordinate conceptual lifecycle transitions such as start, stop, pause, and resume.
 - Support bulk lifecycle operations across all registered providers.
 - Detect duplicate provider ids and apply a deterministic conflict policy.
@@ -30,10 +32,59 @@ The registry is a local SDK concept. It should remain independent from platform 
 - Replace domain-specific provider logic; providers still own their own behavior.
 - Convert provider output into UI-specific state.
 - Bypass the Provider -> Event Bus -> Store -> Resolver -> UI runtime path.
+- Do not treat `origin: "native"` plus `support: "preflight"` as a real Windows/Music provider.
+- Do not report native provider readiness, connection, activity, or production capability.
 
-## Conceptual API
+## Current Diagnostic API
 
-These names describe the planning surface only. v0.5.0 should not add implementation code for them.
+The current v0.7 diagnostic surface is read-only and local. It returns copied facts; it must not expose provider objects, mutate registry entries, start providers, subscribe to providers, emit events, call native APIs, or wire runtime capability checks into the registry.
+
+### `listCapabilitySupport()`
+
+Returns copied provider capability support rows.
+
+Current row shape:
+
+```ts
+{
+  providerId: string;
+  providerName: string;
+  providerKind: ProviderKind;
+  registrationOrder: number;
+  capability: HubProviderCapability;
+}
+```
+
+The `capability` object is copied from the provider snapshot. Callers can inspect `id`, `kind`, `origin`, and `support` without receiving a mutable provider reference.
+
+### `summarizeCapabilitySupport()`
+
+Aggregates copied capability support rows by `kind`, `origin`, and `support`.
+
+Current summary shape:
+
+```ts
+{
+  kind: ProviderKind;
+  origin: "mock" | "native";
+  support: "available" | "unsupported" | "preflight";
+  capabilityCount: number;
+  providerCount: number;
+  providerIds: string[];
+}
+```
+
+The summary preserves first-seen bucket order and copies `providerIds` for each call. It intentionally excludes lifecycle, health, readiness, connection, provider object, adapter, store, resolver, event bus, runtime, and native availability fields.
+
+Current diagnostic interpretation:
+
+- Mock providers may report `origin: "mock"` and `support: "available"`.
+- Future-facing native capability descriptors may report `origin: "native"` and `support: "preflight"`.
+- Native/music `preflight` facts are not a Windows Media implementation, not a provider startup result, and not proof that native provider behavior exists.
+
+## Local Registry API
+
+The names below describe the local registry surface and remaining planning concepts. Where code exists, it remains in-memory and test-focused. Where future behavior is described, it is still conceptual and must not be read as native/runtime implementation approval.
 
 ### `register(provider)`
 
@@ -145,7 +196,7 @@ The registry should know these details for every provider:
 | Area | Registry-owned details |
 | --- | --- |
 | Identity | Stable `id`, human-readable `name`, primary `group`, and deterministic `registrationOrder`. |
-| Capabilities | Capability ids, optional features, conceptual commands, conceptual events, pause support, and bulk lifecycle support. |
+| Capabilities | Capability ids, provider kind, capability origin, support state, optional features, conceptual commands, conceptual events, pause support, and bulk lifecycle support. |
 | Lifecycle | One lifecycle value: `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, or `Failed`. |
 | Health | One health value: `Healthy`, `Degraded`, or `Unhealthy`. |
 | Metadata | Description, version, author, homepage, tags, mock/real declaration, and review-facing metadata. |
@@ -174,6 +225,9 @@ The registry may expose summaries and diagnostics, but it should not leak provid
 ### Capability Fields
 
 - `capabilities`: Stable capability ids exposed by the provider.
+- `kind`: Broad product surface for the capability, such as `music`, `ai`, `download`, or `notification`.
+- `origin`: Whether the capability fact describes a `mock` source or a future-facing `native` source.
+- `support`: Current support descriptor. Mock capabilities may be `available`; native/music diagnostics should remain `preflight` until a later real provider slice proves otherwise.
 - `features`: Optional feature flags or named behaviors within a capability.
 - `commands`: Optional high-level command ids the provider can conceptually handle.
 - `events`: Optional event ids the provider can conceptually emit.
@@ -203,7 +257,7 @@ Privacy fields are declarations, not enforcement, in the v0.5.0 planning model.
 - `lifecycle`: Conceptual lifecycle state, limited to `Registered`, `Started`, `Publishing`, `Paused`, `Stopped`, or `Failed`.
 - `health`: Provider health, limited to `Healthy`, `Degraded`, or `Unhealthy`.
 - `enabled`: Whether the provider is allowed to participate in lifecycle operations.
-- `available`: Whether the provider can currently run in the active environment.
+- `available`: Planned future environment availability field. Current v0.7 capability diagnostics use `support` facts instead and must not treat native/music `preflight` as current provider availability.
 - `registrationOrder`: Monotonic order assigned when the provider is registered.
 - `lastStartedAt`: Optional timestamp for the most recent successful start.
 - `lastStoppedAt`: Optional timestamp for the most recent stop.
@@ -212,6 +266,8 @@ Privacy fields are declarations, not enforcement, in the v0.5.0 planning model.
 Runtime fields are intended for mockable state transitions. They should not imply real process, service, or OS lifecycle management in v0.5.0.
 
 Lifecycle and health must remain separate from event or task status. Download progress, notification delivery state, AI task state, and other domain statuses belong in HubEvents, not registry lifecycle.
+
+Capability `support` must also remain separate from lifecycle and health. A native/music `preflight` capability fact says the boundary can represent the future capability; it does not say a native provider has started, connected, emitted events, or observed the operating system.
 
 ## Duplicate Id Handling
 
@@ -246,15 +302,17 @@ Groups are broad registry categories used for filtering, settings organization, 
 
 Future groups are placeholders only. They do not grant permission to add system, developer, agent, Tauri, Rust, IPC, Windows, or background-process implementation in v0.5.0.
 
-## Planning Boundary
+## Current Boundary
 
-For v0.5.0, this registry remains documentation and planning content only.
+The registry may own local in-memory provider records, lifecycle snapshots for mock providers, and copied capability diagnostic read models.
 
-No code should be added for:
+No registry slice should add:
 
-- Registry classes, stores, hooks, commands, or state containers.
-- Mock provider implementations.
+- Runtime-provider wiring.
+- Provider adapter expansion.
+- Store, Resolver, Event Bus, UI, or Showcase behavior.
+- Real provider implementations.
 - Tauri commands, Rust structs, IPC channels, Windows integrations, or background services.
 - Package scripts, dependency changes, assets, or generated files.
 
-The next implementation step, after planning approval, should be a narrow SDK design pass that turns this document into typed contracts and tests without crossing into platform integration.
+The next implementation step, after separate planning approval, should stay narrow and testable. Native provider implementation remains outside this registry diagnostic boundary.
