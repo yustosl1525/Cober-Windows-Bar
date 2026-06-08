@@ -10,7 +10,7 @@ const toneClass = {
 };
 
 export function ProgressBar({ value, tone = "blue" }: ProgressBarProps) {
-  const safeValue = Math.max(0, Math.min(value, 100));
+  const safeValue = Number.isFinite(value) ? Math.max(0, Math.min(value, 100)) : 0;
 
   return (
     <div
