@@ -4,6 +4,8 @@
 
 The page is still mock-only. It may use mock providers and the Provider SDK adapter, but it must not depend on Tauri, real providers, system APIs, tray behavior, or always-on-top windowing.
 
+`/desktop` is the product-style mock desktop preview. It removes the Showcase review panels and presents the Hub as a compact desktop surface with a mock taskbar context. Tauri dev opens this route by default so the local desktop window previews the product surface instead of the review page.
+
 ## Run
 
 ```bash
@@ -14,6 +16,13 @@ Or start the dev server and open:
 
 ```text
 http://localhost:5173/showcase
+http://localhost:5173/desktop
+```
+
+Open the mock desktop preview in a Tauri desktop window:
+
+```bash
+npm run desktop:mock
 ```
 
 ## Automated Checks
@@ -30,7 +39,7 @@ Run the repeatable interaction check for the Showcase Provider Demo and Tauri Fi
 npm run qa:showcase:interactions
 ```
 
-The script verifies `/showcase`, Provider Demo source switching, Stop provider, Clear to idle, Tauri Fixture publishing, stale fixture/request cancellation after Clear to idle, and console/page errors. It starts a local Vite server if one is not already available.
+The script verifies `/showcase`, `/desktop`, Provider Demo source switching, Stop provider, Clear to idle, Tauri Fixture publishing, stale fixture/request cancellation after Clear to idle, the not-found fallback, and console/page errors. It starts a local Vite server if one is not already available.
 
 ### Interaction QA server paths on Windows
 

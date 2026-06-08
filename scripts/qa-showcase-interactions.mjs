@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 
 const baseUrl = process.env.SHOWCASE_BASE_URL ?? "http://127.0.0.1:5173";
 const showcaseUrl = `${baseUrl}/showcase`;
+const desktopUrl = `${baseUrl}/desktop`;
 const outputDir = "output/playwright";
 
 const consoleErrors = [];
@@ -284,8 +285,19 @@ async function run() {
       throw new Error(`/missing returned ${missingResponse?.status() ?? "no response"}`);
     }
 
-    await expectText(page, "Showcase page not found");
-    await expectLink(page, "Open /showcase");
+    await expectText(page, "Cober page not found");
+    await expectLink(page, "Open /desktop");
+
+    const desktopResponse = await page.goto(desktopUrl, { waitUntil: "networkidle" });
+
+    if (!desktopResponse || desktopResponse.status() !== 200) {
+      throw new Error(`/desktop returned ${desktopResponse?.status() ?? "no response"}`);
+    }
+
+    await page.getByTestId("desktop-preview").waitFor({ state: "visible", timeout: 5_000 });
+    await expectText(page, "Cober Windows Bar");
+    await expectText(page, "Mock desktop preview");
+    await expectText(page, "Search mock apps");
 
     console.log(`Showcase interaction QA passed at ${showcaseUrl}${startedServer ? " (started Vite)" : ""}`);
   } catch (error) {

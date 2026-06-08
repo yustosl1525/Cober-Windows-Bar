@@ -244,6 +244,70 @@ button {
     outline: 2px solid rgba(125, 211, 252, 0.9);
     outline-offset: 2px;
   }
+
+  .desktop-preview {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(circle at 72% 18%, rgba(96, 205, 255, 0.2), transparent 30%),
+      radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.16), transparent 26%),
+      linear-gradient(135deg, #162033 0%, #0b1320 46%, #151b25 100%);
+  }
+
+  .desktop-preview-wallpaper {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 76% 54% at 50% 112%, rgba(43, 171, 226, 0.34), transparent 60%),
+      linear-gradient(118deg, transparent 20%, rgba(255, 255, 255, 0.1) 32%, transparent 46%);
+    filter: saturate(112%);
+  }
+
+  .desktop-hub-stage {
+    display: grid;
+    min-height: calc(100vh - 76px);
+    place-items: end center;
+    padding: 24px 24px 34px;
+  }
+
+  .desktop-hub-anchor {
+    transform: translateY(8px);
+  }
+
+  .desktop-taskbar {
+    position: fixed;
+    right: 18px;
+    bottom: 14px;
+    left: 18px;
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.055)),
+      rgba(17, 25, 38, 0.72);
+    box-shadow:
+      0 24px 56px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    padding: 8px 12px;
+    backdrop-filter: blur(30px) saturate(150%);
+  }
+
+  .desktop-start-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background:
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.76) calc(50% - 1px), rgba(255, 255, 255, 0.76) calc(50% + 1px), transparent calc(50% + 1px)),
+      linear-gradient(0deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.76) calc(50% - 1px), rgba(255, 255, 255, 0.76) calc(50% + 1px), transparent calc(50% + 1px)),
+      linear-gradient(135deg, #67e8f9, #38bdf8 48%, #2563eb);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.46);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

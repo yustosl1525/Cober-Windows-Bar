@@ -10,6 +10,7 @@ Cober-Windows-Bar is currently a mock and fixture-driven `/showcase` experience.
 
 What exists today:
 
+- Mock desktop preview route at `/desktop`, intended for the Tauri desktop window.
 - Win11/Mica/Acrylic showcase UI for core hub states.
 - Event Playground controls for publishing mock hub events.
 - Auto Demo flow for recording state transitions.
@@ -68,6 +69,20 @@ Open:
 ```text
 http://localhost:5173/showcase
 ```
+
+Preview the mock desktop product surface in the browser:
+
+```text
+http://localhost:5173/desktop
+```
+
+Open the same mock desktop surface in a Tauri desktop window:
+
+```bash
+npm run desktop:mock
+```
+
+`/desktop` is the product-style preview. `/showcase` remains the review and QA surface with playground controls, diagnostics, and design reference panels.
 
 Or start the showcase directly:
 

@@ -14,6 +14,7 @@
     "test:providers": "tsx src/providers/provider.test.ts",
     "test:runtime": "tsx src/runtime/tauriRuntime.test.ts",
     "preview": "vite preview",
+    "desktop:mock": "tauri dev",
     "tauri": "tauri"
   },
   "dependencies": {
