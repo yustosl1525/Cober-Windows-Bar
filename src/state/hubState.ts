@@ -108,7 +108,7 @@ export type HubEventBus = {
 };
 
 export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
-  let events = [...initialEvents];
+  let events = initialEvents.map(snapshotHubEvent);
   const subscribers = new Set<(state: HubStoreState) => void>();
 
   function snapshot(now = Date.now()) {

@@ -140,6 +140,32 @@ test("event bus stores published event snapshots instead of caller references", 
   assert.deepEqual(snapshotMetadata, { fixture: true });
 });
 
+test("event bus stores initial event snapshots instead of caller references", () => {
+  const payload = {
+    id: "task",
+    type: "ai" as const,
+    title: "Original initial task",
+    subtitle: "Original subtitle",
+    progress: 42,
+    accent: "blue" as const,
+  };
+  const metadata = { fixture: true };
+  const bus = createHubEventBus([event({ id: "ai", type: "ai", payload, metadata })]);
+
+  payload.title = "Mutated after bus creation";
+  metadata.fixture = false;
+
+  const snapshotPayload = bus.getState(now).events[0]?.payload;
+  const snapshotMetadata = bus.getState(now).events[0]?.metadata;
+
+  if (!snapshotPayload || !("title" in snapshotPayload)) {
+    throw new Error("expected task payload snapshot");
+  }
+
+  assert.equal(snapshotPayload.title, "Original initial task");
+  assert.deepEqual(snapshotMetadata, { fixture: true });
+});
+
 test("event bus cleanup removes expired events and notifies subscribers", () => {
   const bus = createHubEventBus([
     event({ id: "expired", type: "notification", expiresAt: now - 1 }),
