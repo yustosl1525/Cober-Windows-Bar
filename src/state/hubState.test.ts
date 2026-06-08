@@ -177,6 +177,24 @@ test("event bus subscriber errors do not block later state delivery", () => {
   unsubscribeLater();
 });
 
+test("event bus initial subscriber errors do not block later subscribers", () => {
+  const bus = createHubEventBus([event({ id: "download", type: "download", createdAt: now - 2000 })]);
+  const observedModes: string[] = [];
+
+  assert.doesNotThrow(() =>
+    bus.subscribe(() => {
+      throw new Error("initial subscriber failed");
+    }),
+  );
+  const unsubscribeLater = bus.subscribe((state) => observedModes.push(state.mode));
+
+  bus.publishHubEvent(event({ id: "ai", type: "ai" }));
+
+  assert.deepEqual(observedModes, ["download", "multiTask"]);
+
+  unsubscribeLater();
+});
+
 test("store derives task display fields from event payload", () => {
   const state = createHubStoreState([event()], now);
 

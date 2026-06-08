@@ -115,15 +115,17 @@ export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
     return createHubStoreState(events, now);
   }
 
+  function deliver(subscriber: (state: HubStoreState) => void, state: HubStoreState) {
+    try {
+      subscriber(state);
+    } catch {
+      // Subscriber failures should not prevent unrelated listeners from receiving state.
+    }
+  }
+
   function notify() {
     const state = snapshot();
-    subscribers.forEach((subscriber) => {
-      try {
-        subscriber(state);
-      } catch {
-        // Subscriber failures should not prevent unrelated listeners from receiving state.
-      }
-    });
+    subscribers.forEach((subscriber) => deliver(subscriber, state));
   }
 
   return {
@@ -142,7 +144,7 @@ export function createHubEventBus(initialEvents: HubEvent[] = []): HubEventBus {
     },
     subscribe(subscriber: (state: HubStoreState) => void) {
       subscribers.add(subscriber);
-      subscriber(snapshot());
+      deliver(subscriber, snapshot());
       return () => subscribers.delete(subscriber);
     },
   };
