@@ -128,7 +128,7 @@ async function run() {
   await mkdir(outputDir, { recursive: true });
   const startedServer = await ensureServer();
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const page = await browser.newPage({ viewport: { width: 1700, height: 900 } });
 
   await page.addInitScript(() => {
     window.__qaTauriInvokeDelayMs = 0;
@@ -186,6 +186,11 @@ async function run() {
       .filter({ has: page.getByRole("button", { name: "Stop provider", exact: true }) })
       .first();
     const mainPreview = page.getByTestId("showcase-main-preview");
+
+    await expectButton(page, "Start area mock");
+    await expectButton(page, "File shortcut mock");
+    await expectButton(page, "Browser shortcut mock");
+    await expectProgressBar(page, "Taskbar AI progress");
 
     await expectText(panel, "Stopped, events stay");
     await expectText(panel, "Provider stopped");
