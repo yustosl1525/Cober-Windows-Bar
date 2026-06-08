@@ -6,9 +6,15 @@ export const TAURI_RUNTIME_CAPABILITIES_COMMAND = "get_runtime_capabilities";
 export type TauriInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
 
 export type TauriRuntimeDiagnosticCode = "unavailable" | "invoke-failed" | "malformed";
+export type TauriRuntimeDiagnosticSurface = "fixtureEvents" | "runtimeCapabilities";
+export type TauriRuntimeDiagnosticCommand =
+  | typeof TAURI_FIXTURE_COMMAND
+  | typeof TAURI_RUNTIME_CAPABILITIES_COMMAND;
 
 export type TauriRuntimeDiagnostic = {
   code: TauriRuntimeDiagnosticCode;
+  surface: TauriRuntimeDiagnosticSurface;
+  command: TauriRuntimeDiagnosticCommand;
   message: string;
   detail?: string;
 };
@@ -75,6 +81,14 @@ const eventSources = new Set<HubEventSource>([
   "ai",
   "notification",
 ]);
+const fixtureEventsDiagnosticContext = {
+  surface: "fixtureEvents",
+  command: TAURI_FIXTURE_COMMAND,
+} as const;
+const runtimeCapabilitiesDiagnosticContext = {
+  surface: "runtimeCapabilities",
+  command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+} as const;
 
 export function getTauriInvoke(globalScope: unknown = globalThis): TauriInvoke | undefined {
   const tauri = (globalScope as TauriGlobal | undefined)?.__TAURI__;
@@ -92,6 +106,7 @@ export async function loadTauriFixtureHubEvents({
     return {
       ok: false,
       diagnostic: {
+        ...fixtureEventsDiagnosticContext,
         code: "unavailable",
         message: "Tauri runtime invoke is unavailable.",
       },
@@ -106,6 +121,7 @@ export async function loadTauriFixtureHubEvents({
       return {
         ok: false,
         diagnostic: {
+          ...fixtureEventsDiagnosticContext,
           code: "malformed",
           message: "Tauri runtime returned malformed HubEvent fixtures.",
         },
@@ -120,6 +136,7 @@ export async function loadTauriFixtureHubEvents({
     return {
       ok: false,
       diagnostic: {
+        ...fixtureEventsDiagnosticContext,
         code: "invoke-failed",
         message: "Tauri runtime fixture command failed.",
         detail: error instanceof Error ? error.message : String(error),
@@ -154,6 +171,7 @@ export async function loadTauriRuntimeCapabilities({
     return {
       ok: false,
       diagnostic: {
+        ...runtimeCapabilitiesDiagnosticContext,
         code: "unavailable",
         message: "Tauri runtime invoke is unavailable.",
       },
@@ -168,6 +186,7 @@ export async function loadTauriRuntimeCapabilities({
       return {
         ok: false,
         diagnostic: {
+          ...runtimeCapabilitiesDiagnosticContext,
           code: "malformed",
           message: "Tauri runtime returned malformed capability facts.",
         },
@@ -182,6 +201,7 @@ export async function loadTauriRuntimeCapabilities({
     return {
       ok: false,
       diagnostic: {
+        ...runtimeCapabilitiesDiagnosticContext,
         code: "invoke-failed",
         message: "Tauri runtime capability command failed.",
         detail: error instanceof Error ? error.message : String(error),

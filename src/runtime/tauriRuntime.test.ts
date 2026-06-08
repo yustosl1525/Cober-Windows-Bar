@@ -6,6 +6,7 @@ import {
   publishTauriFixtureEvents,
   TAURI_FIXTURE_COMMAND,
   TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  type TauriRuntimeDiagnostic,
   type TauriInvoke,
 } from "./tauriRuntime";
 import type { HubEvent } from "../types/hub";
@@ -57,11 +58,23 @@ function fixtureEvent(overrides: Partial<HubEvent> = {}): HubEvent {
   };
 }
 
+function assertDiagnosticContext(
+  diagnostic: TauriRuntimeDiagnostic,
+  expected: Pick<TauriRuntimeDiagnostic, "surface" | "command">,
+) {
+  assert.equal(diagnostic.surface, expected.surface);
+  assert.equal(diagnostic.command, expected.command);
+}
+
 test("detects unavailable Tauri invoke", async () => {
   const result = await loadTauriFixtureHubEvents();
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "unavailable");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "fixtureEvents",
+    command: TAURI_FIXTURE_COMMAND,
+  });
 });
 
 test("finds global Tauri core invoke when present", () => {
@@ -84,6 +97,10 @@ test("returns malformed diagnostic for non-canonical fixture payloads", async ()
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "malformed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "fixtureEvents",
+    command: TAURI_FIXTURE_COMMAND,
+  });
 });
 
 test("returns invoke-failed diagnostic when command rejects", async () => {
@@ -95,6 +112,10 @@ test("returns invoke-failed diagnostic when command rejects", async () => {
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "invoke-failed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "fixtureEvents",
+    command: TAURI_FIXTURE_COMMAND,
+  });
   assert.equal(result.diagnostic.detail, "native boundary failed");
 });
 
@@ -194,6 +215,10 @@ test("detects unavailable Tauri capability invoke", async () => {
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "unavailable");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "runtimeCapabilities",
+    command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  });
 });
 
 test("returns malformed diagnostic for non-canonical capability payloads", async () => {
@@ -206,6 +231,10 @@ test("returns malformed diagnostic for non-canonical capability payloads", async
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "malformed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "runtimeCapabilities",
+    command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  });
 });
 
 test("returns malformed diagnostic for non-canonical shell window facts", async () => {
@@ -221,6 +250,10 @@ test("returns malformed diagnostic for non-canonical shell window facts", async 
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "malformed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "runtimeCapabilities",
+    command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  });
 });
 
 test("returns invoke-failed diagnostic when capability command rejects", async () => {
@@ -232,6 +265,10 @@ test("returns invoke-failed diagnostic when capability command rejects", async (
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostic.code, "invoke-failed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "runtimeCapabilities",
+    command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  });
   assert.equal(result.diagnostic.detail, "capability boundary failed");
 });
 
