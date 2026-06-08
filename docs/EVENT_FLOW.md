@@ -87,6 +87,7 @@ Responsibilities:
 - Clear all events for Idle/demo reset flows.
 - Expose active events to the Resolver and showcase diagnostics.
 - Keep event ordering and timestamps stable enough for tests.
+- Return Store snapshots as copied read models so callers cannot mutate stored events, payloads, metadata, music state, or notification state through a resolved snapshot.
 
 The Store should not know how music sessions, downloads, notifications, developer tools, or AI agents are collected. Those details belong to providers.
 
