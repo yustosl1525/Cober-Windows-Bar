@@ -104,6 +104,10 @@ async function expectProgressBar(locator, name, timeout = 5_000) {
   await locator.getByRole("progressbar", { name, exact: true }).waitFor({ state: "visible", timeout });
 }
 
+async function expectButton(locator, name, timeout = 5_000) {
+  await locator.getByRole("button", { name, exact: true }).waitFor({ state: "visible", timeout });
+}
+
 async function captureFailureScreenshot(page) {
   try {
     await page.screenshot({ path: `${outputDir}/showcase-interactions-failure.png`, fullPage: true });
@@ -190,6 +194,9 @@ async function run() {
     await expectText(panel, "Mock Music Provider");
     await expectText(mainPreview, "Midnight City");
     await expectProgressBar(mainPreview, "Music playback progress");
+    await expectButton(mainPreview, "Previous track");
+    await expectButton(mainPreview, "Pause playback");
+    await expectButton(mainPreview, "Next track");
 
     await clickButton(panel, "AI");
     await expectText(panel, "Mock AI Provider");

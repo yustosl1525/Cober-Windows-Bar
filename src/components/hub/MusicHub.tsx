@@ -21,13 +21,13 @@ export function MusicHub({ music }: MusicHubProps) {
         </div>
       </div>
       <div className="flex items-center gap-3 text-slate-100">
-        <button className="hub-icon-button" type="button" aria-label="上一首">
+        <button className="hub-icon-button" type="button" aria-label="Previous track">
           <SkipBack size={17} />
         </button>
-        <button className="hub-icon-button" type="button" aria-label="暂停">
+        <button className="hub-icon-button" type="button" aria-label="Pause playback">
           <Pause size={18} fill="currentColor" />
         </button>
-        <button className="hub-icon-button" type="button" aria-label="下一首">
+        <button className="hub-icon-button" type="button" aria-label="Next track">
           <SkipForward size={17} />
         </button>
       </div>
