@@ -32,8 +32,183 @@ const canonicalRuntimeCapabilities = {
   },
 } as const;
 
+type SystemStatusRuntimePayloadFixture = {
+  surface: "runtimeCapabilities";
+  command: typeof TAURI_RUNTIME_CAPABILITIES_COMMAND;
+  payloadShape: "coarse-runtime-payload";
+  redacted: true;
+  windowsProviders: false;
+  capability: {
+    id: "system-status";
+    kind: "system-status";
+    origin: "native";
+    support: "preflight";
+  };
+  facts: {
+    cpuRange: "low" | "medium" | "high" | "critical" | "unknown";
+    memoryPressure: "normal" | "elevated" | "high" | "critical" | "unknown";
+    batteryState: "charging" | "discharging" | "full" | "low" | "critical" | "unknown";
+    networkAvailability: "offline" | "online" | "limited" | "metered" | "unknown";
+  };
+  diagnosticCodes: Array<
+    | "unsupported-platform"
+    | "source-unavailable"
+    | "permission-denied"
+    | "malformed-source-data"
+    | "timeout"
+    | "provider-bug"
+  >;
+};
+
+const systemStatusRuntimePayloadFixture: SystemStatusRuntimePayloadFixture = {
+  surface: "runtimeCapabilities",
+  command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  payloadShape: "coarse-runtime-payload",
+  redacted: true,
+  windowsProviders: false,
+  capability: {
+    id: "system-status",
+    kind: "system-status",
+    origin: "native",
+    support: "preflight",
+  },
+  facts: {
+    cpuRange: "medium",
+    memoryPressure: "normal",
+    batteryState: "charging",
+    networkAvailability: "online",
+  },
+  diagnosticCodes: [
+    "unsupported-platform",
+    "source-unavailable",
+    "permission-denied",
+    "malformed-source-data",
+    "timeout",
+    "provider-bug",
+  ],
+};
+
+const allowedSystemStatusRuntimePayloadValues = new Set<string>([
+  "runtimeCapabilities",
+  TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  "coarse-runtime-payload",
+  "system-status",
+  "native",
+  "preflight",
+  "low",
+  "medium",
+  "high",
+  "critical",
+  "unknown",
+  "normal",
+  "elevated",
+  "charging",
+  "discharging",
+  "full",
+  "offline",
+  "online",
+  "limited",
+  "metered",
+  "unsupported-platform",
+  "source-unavailable",
+  "permission-denied",
+  "malformed-source-data",
+  "timeout",
+  "provider-bug",
+]);
+
+const forbiddenSystemStatusRuntimePayloadKeys = new Set([
+  "secret",
+  "secrets",
+  "token",
+  "credential",
+  "credentials",
+  "password",
+  "path",
+  "paths",
+  "filePath",
+  "folderPath",
+  "rawContent",
+  "rawSource",
+  "rawSourcePayload",
+  "rawOsData",
+  "rawOperatingSystemData",
+  "commandOutput",
+  "stdout",
+  "stderr",
+  "username",
+  "userName",
+  "user",
+  "appIdentity",
+  "appIdentities",
+  "process",
+  "processes",
+  "processList",
+  "processId",
+  "pid",
+  "windowTitle",
+  "networkDetails",
+  "rawNetworkData",
+  "rawNetworkDetails",
+  "ipAddress",
+  "macAddress",
+  "hostname",
+  "machineIdentifier",
+  "deviceIdentifier",
+  "stableIdentifier",
+  "provider",
+  "providerAvailability",
+  "providerLifecycle",
+  "lifecycle",
+  "event",
+  "emit",
+  "hubEvents",
+  "eventEmission",
+  "runtimeProviderWiring",
+  "uiExposure",
+  "nativeCollection",
+  "windowsApi",
+  "osObservation",
+  "providerExport",
+  "polling",
+  "available",
+  "ready",
+  "connected",
+  "active",
+  "implemented",
+  "productionCapable",
+  "alreadyWired",
+]);
+
 function test(name: string, run: () => void | Promise<void>) {
   tests.push({ name, run });
+}
+
+function collectKeys(value: unknown): string[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(collectKeys);
+  }
+
+  return Object.entries(value).flatMap(([key, childValue]) => [
+    key,
+    ...collectKeys(childValue),
+  ]);
+}
+
+function collectPrimitiveValues(value: unknown): unknown[] {
+  if (!value || typeof value !== "object") {
+    return [value];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(collectPrimitiveValues);
+  }
+
+  return Object.values(value).flatMap(collectPrimitiveValues);
 }
 
 function fixtureEvent(overrides: Partial<HubEvent> = {}): HubEvent {
@@ -65,6 +240,59 @@ function assertDiagnosticContext(
 ) {
   assert.equal(diagnostic.surface, expected.surface);
   assert.equal(diagnostic.command, expected.command);
+}
+
+function assertSystemStatusRuntimePayloadFixture(value: SystemStatusRuntimePayloadFixture) {
+  assert.equal(value.surface, "runtimeCapabilities");
+  assert.equal(value.command, TAURI_RUNTIME_CAPABILITIES_COMMAND);
+  assert.equal(value.payloadShape, "coarse-runtime-payload");
+  assert.equal(value.redacted, true);
+  assert.equal(value.windowsProviders, false);
+  assert.deepEqual(value.capability, {
+    id: "system-status",
+    kind: "system-status",
+    origin: "native",
+    support: "preflight",
+  });
+  assert.deepEqual(Object.keys(value.facts).sort(), [
+    "batteryState",
+    "cpuRange",
+    "memoryPressure",
+    "networkAvailability",
+  ]);
+  assert.deepEqual(value.diagnosticCodes, [
+    "unsupported-platform",
+    "source-unavailable",
+    "permission-denied",
+    "malformed-source-data",
+    "timeout",
+    "provider-bug",
+  ]);
+
+  for (const key of collectKeys(value)) {
+    assert.equal(
+      forbiddenSystemStatusRuntimePayloadKeys.has(key),
+      false,
+      `${key} must not appear in future system status runtime payload fixtures`,
+    );
+  }
+
+  for (const primitiveValue of collectPrimitiveValues(value)) {
+    if (typeof primitiveValue === "string") {
+      assert.equal(
+        allowedSystemStatusRuntimePayloadValues.has(primitiveValue),
+        true,
+        `${primitiveValue} must stay in the approved coarse runtime payload vocabulary`,
+      );
+      assert.equal(primitiveValue.length <= 32, true, `${primitiveValue} must stay short`);
+    } else {
+      assert.equal(
+        typeof primitiveValue,
+        "boolean",
+        `${String(primitiveValue)} must be boolean or an approved short code`,
+      );
+    }
+  }
 }
 
 test("detects unavailable Tauri invoke", async () => {
@@ -316,6 +544,50 @@ test("keeps runtime Windows provider facts compatible with music preflight diagn
     assert.equal("connected" in musicPreflightDiagnostic, false);
     assert.equal("implemented" in musicPreflightDiagnostic, false);
     assert.equal("active" in musicPreflightDiagnostic, false);
+  }
+});
+
+test("future system status runtime payload fixture stays coarse, redacted, and local", () => {
+  assertSystemStatusRuntimePayloadFixture(systemStatusRuntimePayloadFixture);
+});
+
+test("current runtime capabilities do not expose future system status payload behavior", async () => {
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => canonicalRuntimeCapabilities,
+  });
+
+  assert.equal(result.ok, true);
+
+  if (result.ok) {
+    const capabilities = result.capabilities as Record<string, unknown>;
+
+    assert.equal(result.capabilities.windowsProviders, false);
+    assert.equal("systemStatus" in capabilities, false);
+    assert.equal("systemStatusPayload" in capabilities, false);
+    assert.equal("systemStatusRuntimePayload" in capabilities, false);
+    assert.equal("provider" in capabilities, false);
+    assert.equal("providerAvailability" in capabilities, false);
+    assert.equal("providerLifecycle" in capabilities, false);
+    assert.equal("lifecycle" in capabilities, false);
+    assert.equal("event" in capabilities, false);
+    assert.equal("emit" in capabilities, false);
+    assert.equal("hubEvents" in capabilities, false);
+    assert.equal("eventEmission" in capabilities, false);
+    assert.equal("store" in capabilities, false);
+    assert.equal("resolver" in capabilities, false);
+    assert.equal("ui" in capabilities, false);
+    assert.equal("nativeCollection" in capabilities, false);
+    assert.equal("runtimeProviderWiring" in capabilities, false);
+    assert.equal("windowsApi" in capabilities, false);
+    assert.equal("osObservation" in capabilities, false);
+    assert.equal("providerExport" in capabilities, false);
+    assert.equal("polling" in capabilities, false);
+    assert.equal("available" in capabilities, false);
+    assert.equal("ready" in capabilities, false);
+    assert.equal("connected" in capabilities, false);
+    assert.equal("active" in capabilities, false);
+    assert.equal("implemented" in capabilities, false);
+    assert.equal("production-capable" in capabilities, false);
   }
 });
 
