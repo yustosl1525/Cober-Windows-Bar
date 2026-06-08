@@ -229,6 +229,32 @@ test("store music snapshots do not expose mutable event payloads", () => {
   assert.equal(musicPayload.title, "Original track");
 });
 
+test("store clamps music progress into the canonical display range", () => {
+  const highProgressState = createHubStoreState(
+    [
+      event({
+        id: "music-high",
+        type: "music",
+        payload: { title: "Track", subtitle: "Artist", time: "1:00 / 3:00", progress: 150 },
+      }),
+    ],
+    now,
+  );
+  const lowProgressState = createHubStoreState(
+    [
+      event({
+        id: "music-low",
+        type: "music",
+        payload: { title: "Track", subtitle: "Artist", time: "1:00 / 3:00", progress: -20 },
+      }),
+    ],
+    now,
+  );
+
+  assert.equal(highProgressState.music?.progress, 100);
+  assert.equal(lowProgressState.music?.progress, 0);
+});
+
 test("store event snapshots do not expose mutable event payload references", () => {
   const taskPayload = {
     id: "task",

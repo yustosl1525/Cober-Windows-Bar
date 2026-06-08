@@ -89,7 +89,7 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
         : undefined,
     music:
       musicEvent && musicEvent.payload && "time" in musicEvent.payload
-        ? { ...musicEvent.payload }
+        ? { ...musicEvent.payload, progress: clampProgress(musicEvent.payload.progress) }
         : undefined,
   };
 }
