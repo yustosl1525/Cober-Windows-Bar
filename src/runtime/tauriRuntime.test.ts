@@ -367,6 +367,32 @@ test("loads canonical fixture events through the configured command", async () =
   }
 });
 
+test("loaded fixture events do not expose mutable invoke payload references", async () => {
+  const fixture = fixtureEvent();
+  const payload = fixture.payload as { title: string };
+  const metadata = fixture.metadata as { runtime: string };
+  const result = await loadTauriFixtureHubEvents({
+    invoke: async () => [fixture],
+  });
+
+  assert.equal(result.ok, true);
+
+  if (result.ok) {
+    const snapshotPayload = result.events[0]?.payload as { title: string } | undefined;
+    const snapshotMetadata = result.events[0]?.metadata as { runtime: string } | undefined;
+
+    if (!snapshotPayload || !snapshotMetadata) {
+      throw new Error("expected fixture snapshot payload and metadata");
+    }
+
+    snapshotPayload.title = "Mutated outside runtime";
+    snapshotMetadata.runtime = "mutated";
+
+    assert.equal(payload.title, "Tauri IPC fixture");
+    assert.equal(metadata.runtime, "tauri");
+  }
+});
+
 test("publishes canonical fixture events through the event bus boundary", async () => {
   const publishedEvents: HubEvent[] = [];
   const result = await publishTauriFixtureEvents(
@@ -540,6 +566,23 @@ test("loads canonical runtime capability facts through the configured command", 
 
   if (result.ok) {
     assert.deepEqual(result.capabilities, canonicalRuntimeCapabilities);
+  }
+});
+
+test("loaded runtime capabilities do not expose mutable invoke payload references", async () => {
+  const capabilities = {
+    ...canonicalRuntimeCapabilities,
+    configuredShellWindow: { ...canonicalRuntimeCapabilities.configuredShellWindow },
+  };
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => capabilities,
+  });
+
+  assert.equal(result.ok, true);
+
+  if (result.ok) {
+    result.capabilities.configuredShellWindow.title = "Mutated outside runtime";
+    assert.equal(capabilities.configuredShellWindow.title, "Cober Windows Bar");
   }
 });
 

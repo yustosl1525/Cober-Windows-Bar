@@ -223,7 +223,15 @@ function parseHubEvents(value: unknown): HubEvent[] | undefined {
 
   const events = value.filter(isHubEvent);
 
-  return events.length === value.length ? events : undefined;
+  return events.length === value.length ? events.map(snapshotHubEvent) : undefined;
+}
+
+function snapshotHubEvent(event: HubEvent): HubEvent {
+  return {
+    ...event,
+    payload: event.payload ? { ...event.payload } : undefined,
+    metadata: event.metadata ? { ...event.metadata } : undefined,
+  };
 }
 
 function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | undefined {
@@ -248,7 +256,7 @@ function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | un
     tray: value.tray,
     alwaysOnTop: value.alwaysOnTop,
     windowsProviders: value.windowsProviders,
-    configuredShellWindow: value.configuredShellWindow,
+    configuredShellWindow: { ...value.configuredShellWindow },
   };
 }
 
