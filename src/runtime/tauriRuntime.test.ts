@@ -332,6 +332,19 @@ test("returns malformed diagnostic for non-canonical fixture payloads", async ()
   });
 });
 
+test("returns malformed diagnostic for non-finite fixture numbers", async () => {
+  const result = await loadTauriFixtureHubEvents({
+    invoke: async () => [fixtureEvent({ createdAt: Number.NaN, progress: Number.POSITIVE_INFINITY })],
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "malformed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "fixtureEvents",
+    command: TAURI_FIXTURE_COMMAND,
+  });
+});
+
 test("returns invoke-failed diagnostic when command rejects", async () => {
   const result = await loadTauriFixtureHubEvents({
     invoke: async () => {
@@ -524,6 +537,25 @@ test("returns malformed diagnostic for non-canonical shell window facts", async 
       configuredShellWindow: {
         ...canonicalRuntimeCapabilities.configuredShellWindow,
         configured: false,
+      },
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostic.code, "malformed");
+  assertDiagnosticContext(result.diagnostic, {
+    surface: "runtimeCapabilities",
+    command: TAURI_RUNTIME_CAPABILITIES_COMMAND,
+  });
+});
+
+test("returns malformed diagnostic for non-finite shell window numbers", async () => {
+  const result = await loadTauriRuntimeCapabilities({
+    invoke: async () => ({
+      ...canonicalRuntimeCapabilities,
+      configuredShellWindow: {
+        ...canonicalRuntimeCapabilities.configuredShellWindow,
+        width: Number.POSITIVE_INFINITY,
       },
     }),
   });

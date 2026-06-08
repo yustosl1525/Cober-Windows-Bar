@@ -268,10 +268,10 @@ function isConfiguredShellWindow(value: unknown): value is TauriConfiguredShellW
   return (
     value.configured === true &&
     typeof value.title === "string" &&
-    typeof value.width === "number" &&
-    typeof value.height === "number" &&
-    typeof value.minWidth === "number" &&
-    typeof value.minHeight === "number" &&
+    isFiniteNumber(value.width) &&
+    isFiniteNumber(value.height) &&
+    isFiniteNumber(value.minWidth) &&
+    isFiniteNumber(value.minHeight) &&
     typeof value.resizable === "boolean" &&
     typeof value.centered === "boolean"
   );
@@ -286,7 +286,7 @@ function isHubEvent(value: unknown): value is HubEvent {
     typeof value.id === "string" &&
     eventTypes.has(value.type as HubEventType) &&
     eventSources.has(value.source as HubEventSource) &&
-    typeof value.createdAt === "number" &&
+    isFiniteNumber(value.createdAt) &&
     isOptionalNumber(value.expiresAt) &&
     isOptionalNumber(value.progress) &&
     isOptionalRecord(value.payload) &&
@@ -303,5 +303,9 @@ function isOptionalRecord(value: unknown): boolean {
 }
 
 function isOptionalNumber(value: unknown): boolean {
-  return value === undefined || typeof value === "number";
+  return value === undefined || isFiniteNumber(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
