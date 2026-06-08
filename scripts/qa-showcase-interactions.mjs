@@ -108,6 +108,10 @@ async function expectButton(locator, name, timeout = 5_000) {
   await locator.getByRole("button", { name, exact: true }).waitFor({ state: "visible", timeout });
 }
 
+async function expectNoText(locator, text, timeout = 5_000) {
+  await locator.getByText(text, { exact: true }).waitFor({ state: "detached", timeout });
+}
+
 async function captureFailureScreenshot(page) {
   try {
     await page.screenshot({ path: `${outputDir}/showcase-interactions-failure.png`, fullPage: true });
@@ -242,9 +246,12 @@ async function run() {
     });
     await clickButton(panel, "Tauri Fixture");
     await clickButton(panel, "Clear to idle");
-    await page.waitForTimeout(500);
     await expectText(page, "Current mode: Idle");
     await expectText(page, "Idle event stream");
+    await expectNoText(mainPreview, "QA Tauri Fixture");
+    await expectNoText(panel, "Tauri fixture published");
+
+    await page.waitForTimeout(500);
 
     const staleFixtureCount = await page.getByText("QA Tauri Fixture", { exact: true }).count();
     if (staleFixtureCount > 0) {
