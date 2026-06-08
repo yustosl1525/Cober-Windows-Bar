@@ -244,7 +244,7 @@ npm run build
 npm run qa
 ```
 
-`npm run qa` runs state tests, provider tests, and the production build.
+`npm run qa` runs state tests, provider tests, runtime tests, Showcase interaction QA, and the production build.
 
 ### Showcase Screenshots
 
