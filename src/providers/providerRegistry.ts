@@ -122,6 +122,12 @@ export function createProviderRegistry() {
     return entries.get(providerId);
   }
 
+  function listCapabilitySupport() {
+    return [...entries.values()]
+      .sort((left, right) => left.registrationOrder - right.registrationOrder)
+      .flatMap(snapshotCapabilitySupport);
+  }
+
   return {
     register(provider: HubProvider): ProviderRegistryRegisterResult {
       if (entries.has(provider.id)) {
@@ -158,14 +164,10 @@ export function createProviderRegistry() {
         .map(snapshotProvider);
     },
 
-    listCapabilitySupport() {
-      return [...entries.values()]
-        .sort((left, right) => left.registrationOrder - right.registrationOrder)
-        .flatMap(snapshotCapabilitySupport);
-    },
+    listCapabilitySupport,
 
     summarizeCapabilitySupport() {
-      return summarizeCapabilitySupportRecords(this.listCapabilitySupport());
+      return summarizeCapabilitySupportRecords(listCapabilitySupport());
     },
 
     unregister(providerId: string) {

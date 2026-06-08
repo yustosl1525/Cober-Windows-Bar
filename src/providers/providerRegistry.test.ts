@@ -273,6 +273,24 @@ test("registry capability support summary is empty for an empty registry", () =>
   assert.deepEqual(registry.summarizeCapabilitySupport(), []);
 });
 
+test("registry capability support summary does not depend on method binding", () => {
+  const registry = createProviderRegistry();
+  registry.register(createMockMusicProvider());
+
+  const { summarizeCapabilitySupport } = registry;
+
+  assert.deepEqual(summarizeCapabilitySupport(), [
+    {
+      kind: "music",
+      origin: "mock",
+      support: "available",
+      capabilityCount: 1,
+      providerCount: 1,
+      providerIds: ["mock-music-provider"],
+    },
+  ]);
+});
+
 test("registry capability support summary preserves first-seen bucket order", () => {
   const registry = createProviderRegistry();
   const first = providerWithSpies("first-diagnostic-provider");
