@@ -388,6 +388,31 @@ test("publishes canonical fixture events through the event bus boundary", async 
   assert.equal(publishedEvents[0]?.metadata?.runtime, "tauri");
 });
 
+test("keeps publishing later fixture events after one event bus publish fails", async () => {
+  const fixtureEvents = [
+    fixtureEvent({ id: "first-fixture" }),
+    fixtureEvent({ id: "second-fixture" }),
+  ];
+  const publishedEventIds: string[] = [];
+  const result = await publishTauriFixtureEvents(
+    {
+      publishHubEvent(event) {
+        publishedEventIds.push(event.id);
+
+        if (event.id === "first-fixture") {
+          throw new Error("first fixture publish failed");
+        }
+      },
+    },
+    {
+      invoke: async () => fixtureEvents,
+    },
+  );
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(publishedEventIds, ["first-fixture", "second-fixture"]);
+});
+
 test("does not publish when Tauri invoke is unavailable", async () => {
   const publishedEvents: HubEvent[] = [];
   const result = await publishTauriFixtureEvents({
