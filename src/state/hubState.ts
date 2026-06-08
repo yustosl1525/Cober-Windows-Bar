@@ -13,6 +13,14 @@ export function getActiveHubEvents(events: HubEvent[], now = Date.now()) {
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+function snapshotHubEvent(event: HubEvent): HubEvent {
+  return {
+    ...event,
+    payload: event.payload ? { ...event.payload } : undefined,
+    metadata: event.metadata ? { ...event.metadata } : undefined,
+  };
+}
+
 export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
   const activeEvents = getActiveHubEvents(events, now);
 
@@ -57,7 +65,7 @@ export function eventToTask(event: HubEvent): HubTask {
 }
 
 export function createHubStoreState(events: HubEvent[], now = Date.now()): HubStoreState {
-  const activeEvents = getActiveHubEvents(events, now);
+  const activeEvents = getActiveHubEvents(events, now).map(snapshotHubEvent);
   const mode = resolveHubMode(activeEvents, now);
   const tasks = activeEvents.filter((event) => event.type !== "notification").map(eventToTask);
   const notificationEvent = activeEvents.find((event) => event.type === "notification");

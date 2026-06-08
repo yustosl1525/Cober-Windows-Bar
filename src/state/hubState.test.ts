@@ -210,6 +210,27 @@ test("store music snapshots do not expose mutable event payloads", () => {
   assert.equal(musicPayload.title, "Original track");
 });
 
+test("store event snapshots do not expose mutable event payload references", () => {
+  const taskPayload = {
+    id: "task",
+    type: "ai" as const,
+    title: "Original task",
+    subtitle: "Original subtitle",
+    progress: 42,
+    accent: "blue" as const,
+  };
+  const state = createHubStoreState([event({ id: "ai", type: "ai", payload: taskPayload })], now);
+  const snapshotPayload = state.events[0]?.payload;
+
+  if (!snapshotPayload || !("title" in snapshotPayload)) {
+    throw new Error("expected task payload snapshot");
+  }
+
+  snapshotPayload.title = "Mutated outside store";
+
+  assert.equal(taskPayload.title, "Original task");
+});
+
 test("event demo scenarios resolve to their expected hub modes", () => {
   for (const scenario of createHubDemoScenarios(now)) {
     assert.equal(resolveHubMode(scenario.events, now), scenario.expectedMode);
