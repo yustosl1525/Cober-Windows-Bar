@@ -344,6 +344,22 @@ test("unsubscribe prevents provider listener calls", () => {
   assert.equal(calls, 0);
 });
 
+test("mock provider listener errors do not block later listeners", () => {
+  const provider = createMockMusicProvider({ now });
+  const observedEventIds: string[][] = [];
+  provider.subscribe(() => {
+    throw new Error("listener failed");
+  });
+  const unsubscribeLater = provider.subscribe((events) => {
+    observedEventIds.push(events.map((event) => event.id));
+  });
+
+  assert.doesNotThrow(() => provider.start());
+  assert.deepEqual(observedEventIds, [["mock-music-music-1780743600000"]]);
+
+  unsubscribeLater();
+});
+
 test("AI and download mock fixtures keep deterministic fixed progress", () => {
   const ai = createMockAiTaskEvent({ now });
   const download = createMockDownloadEvent({ now });

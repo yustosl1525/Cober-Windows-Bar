@@ -110,7 +110,13 @@ const createMockProvider = ({ metadata, capabilities, events }: MockProviderConf
     }
 
     const nextEvents = events();
-    listeners.forEach((listener) => listener(nextEvents));
+    listeners.forEach((listener) => {
+      try {
+        listener(nextEvents);
+      } catch {
+        // Listener failures should not block unrelated provider subscribers.
+      }
+    });
   };
 
   return {
