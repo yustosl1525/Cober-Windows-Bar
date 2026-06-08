@@ -21,7 +21,7 @@ function event(overrides: Partial<HubEvent> = {}): HubEvent {
       id: "event-1-task",
       type: "ai",
       title: "GPT-5.5",
-      subtitle: "正在生成代码...",
+      subtitle: "Generating code...",
       progress: 68,
       accent: "blue",
     },
@@ -252,7 +252,7 @@ test("store derives task display fields from event payload", () => {
   const state = createHubStoreState([event()], now);
 
   assert.equal(state.tasks[0]?.title, "GPT-5.5");
-  assert.equal(state.tasks[0]?.subtitle, "正在生成代码...");
+  assert.equal(state.tasks[0]?.subtitle, "Generating code...");
 });
 
 test("store clamps task progress into the canonical display range", () => {

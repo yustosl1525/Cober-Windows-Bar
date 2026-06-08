@@ -1,7 +1,7 @@
 import type { HubEvent, HubTask, MusicState, NotificationState, ShowcaseStep } from "../types/hub";
 
 export const musicState: MusicState = {
-  title: "星穹铁道 OST",
+  title: "Starline OST",
   subtitle: "Hope Is the Thing",
   time: "02:35 / 04:32",
   progress: 56,
@@ -11,7 +11,7 @@ export const aiTask: HubTask = {
   id: "ai-gpt",
   type: "ai",
   title: "GPT-5.5",
-  subtitle: "正在生成代码...",
+  subtitle: "Generating code...",
   progress: 68,
   accent: "blue",
 };
@@ -26,9 +26,9 @@ export const downloadTask: HubTask = {
 };
 
 export const notificationState: NotificationState = {
-  app: "微信",
-  sender: "张三",
-  message: "晚上打CS2吗?",
+  app: "Teams",
+  sender: "Alex",
+  message: "CS2 tonight?",
 };
 
 export const multiTasks: HubTask[] = [
@@ -45,12 +45,12 @@ export const multiTasks: HubTask[] = [
 ];
 
 export const showcaseSteps: ShowcaseStep[] = [
-  { id: "idle", mode: "idle", label: "1. 空闲状态", caption: "收缩" },
-  { id: "music", mode: "music", label: "2. 音乐播放中", caption: "媒体控制" },
-  { id: "ai", mode: "aiProgress", label: "3. AI 任务进行中", caption: "进度反馈" },
-  { id: "download", mode: "download", label: "4. 下载进行中", caption: "文件进度" },
-  { id: "notification", mode: "notification", label: "5. 收到消息通知", caption: "3秒后自动收起" },
-  { id: "multi", mode: "multiTask", label: "6. 多任务堆叠", caption: "展开" },
+  { id: "idle", mode: "idle", label: "1. Idle state", caption: "Collapsed" },
+  { id: "music", mode: "music", label: "2. Music playback", caption: "Media controls" },
+  { id: "ai", mode: "aiProgress", label: "3. AI task running", caption: "Progress feedback" },
+  { id: "download", mode: "download", label: "4. Download running", caption: "File progress" },
+  { id: "notification", mode: "notification", label: "5. Message received", caption: "Auto collapse after 3s" },
+  { id: "multi", mode: "multiTask", label: "6. Multi-task stack", caption: "Expanded" },
 ];
 
 const demoStart = Date.UTC(2026, 5, 6, 8, 20, 0);
