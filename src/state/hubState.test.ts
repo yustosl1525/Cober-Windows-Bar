@@ -83,6 +83,21 @@ test("expired events are ignored and cleaned from state", () => {
   assert.equal(createHubStoreState(events, now).mode, "download");
 });
 
+test("events with non-finite timestamps are ignored", () => {
+  const events = [
+    event({ id: "nan-created", type: "notification", createdAt: Number.NaN }),
+    event({ id: "infinite-created", type: "ai", createdAt: Number.POSITIVE_INFINITY }),
+    event({ id: "nan-expires", type: "notification", expiresAt: Number.NaN }),
+    event({ id: "download", type: "download", createdAt: now - 2000 }),
+  ];
+
+  assert.deepEqual(
+    getActiveHubEvents(events, now).map((item) => item.id),
+    ["download"],
+  );
+  assert.equal(createHubStoreState(events, now).mode, "download");
+});
+
 test("event bus publishes latest state and replaces events by id", () => {
   const bus = createHubEventBus();
   const states: string[] = [];

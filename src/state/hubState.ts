@@ -8,10 +8,15 @@ const taskAccentMap = {
 } as const;
 
 const clampProgress = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(value, 100)) : 0);
+const isFiniteNumber = (value: number | undefined) => typeof value === "number" && Number.isFinite(value);
 
 export function getActiveHubEvents(events: HubEvent[], now = Date.now()) {
   return events
-    .filter((event) => event.expiresAt === undefined || event.expiresAt > now)
+    .filter(
+      (event) =>
+        isFiniteNumber(event.createdAt) &&
+        (event.expiresAt === undefined || (isFiniteNumber(event.expiresAt) && event.expiresAt > now)),
+    )
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
