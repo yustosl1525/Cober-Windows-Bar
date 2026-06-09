@@ -133,6 +133,19 @@ export type DesktopStatusScheduleDecision = {
   reason: "preferred" | "priority" | "fallback";
 };
 
+export type DesktopStatusAggregationInput = {
+  hubState?: HubStoreState;
+  events?: HubEvent[];
+  now?: number;
+  availableKinds?: DesktopStatusKind[];
+};
+
+export type DesktopStatusAggregationResult = {
+  activeKinds: DesktopStatusKind[];
+  availableKinds?: DesktopStatusKind[];
+  states?: Partial<DesktopStatusStateMap>;
+};
+
 export type DesktopStatusPreferenceKey = "alwaysFloat" | "avoidFullscreen" | "lockPosition";
 
 export type DesktopStatusPreferences = Record<DesktopStatusPreferenceKey, boolean>;

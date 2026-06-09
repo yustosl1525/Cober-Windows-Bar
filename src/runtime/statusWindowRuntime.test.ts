@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import {
   createDebouncedWindowCorrection,
   createStatusWindowOverlayState,
+  STATUS_WINDOW_CORRECT_POSITION_COMMAND,
   enforceStatusWindowOverlay,
   parseOverlayPolicy,
   scheduleOverlayStartupReassert,
@@ -61,6 +62,7 @@ test("applies floating on the first non-fullscreen policy", async () => {
   assert.deepEqual(calls.map((call) => call.command), [
     STATUS_WINDOW_OVERLAY_POLICY_COMMAND,
     STATUS_WINDOW_FLOATING_COMMAND,
+    STATUS_WINDOW_CORRECT_POSITION_COMMAND,
   ]);
   assert.deepEqual(calls[1]?.args, { floating: true });
   assert.equal(state.appliedFloating, true);
@@ -75,6 +77,8 @@ test("reasserts topmost after the refresh interval", async () => {
     lastFloatingAppliedAt: 100,
     lastPositionCorrectionAt: 0,
     mode: "floating",
+    pendingInitialPositionCorrection: false,
+    pendingRestorePositionCorrection: false,
     startupReassertPendingAt: [],
   };
 
@@ -100,6 +104,8 @@ test("does not reassert topmost before the refresh interval", async () => {
     lastFloatingAppliedAt: 100,
     lastPositionCorrectionAt: 0,
     mode: "floating",
+    pendingInitialPositionCorrection: false,
+    pendingRestorePositionCorrection: false,
     startupReassertPendingAt: [],
   };
 
@@ -120,6 +126,8 @@ test("releases topmost when the foreground app is fullscreen", async () => {
     lastFloatingAppliedAt: 100,
     lastPositionCorrectionAt: 0,
     mode: "floating",
+    pendingInitialPositionCorrection: false,
+    pendingRestorePositionCorrection: false,
     startupReassertPendingAt: [],
   };
 
@@ -168,12 +176,91 @@ test("startup reassert schedule can be reset explicitly", () => {
   state.startupReassertPendingAt = [];
   state.mode = "floating";
   state.appliedFloating = true;
+  state.pendingInitialPositionCorrection = false;
+  state.pendingRestorePositionCorrection = true;
 
   scheduleOverlayStartupReassert(state);
 
   assert.equal(state.mode, "restoring");
   assert.equal(state.appliedFloating, null);
+  assert.equal(state.pendingInitialPositionCorrection, true);
+  assert.equal(state.pendingRestorePositionCorrection, false);
   assert.equal(state.startupReassertPendingAt.length > 0, true);
+});
+
+test("performs an initial position correction on first overlay enforcement", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const state = createStatusWindowOverlayState();
+
+  await enforceStatusWindowOverlay(state, {
+    invoke: invokeWithPolicy({ foregroundFullscreen: false, shouldFloat: true }, calls),
+    now: 100,
+    topmostReassertMs: Number.POSITIVE_INFINITY,
+    positionCorrectionMs: Number.POSITIVE_INFINITY,
+  });
+
+  assert.deepEqual(calls.map((call) => call.command), [
+    STATUS_WINDOW_OVERLAY_POLICY_COMMAND,
+    STATUS_WINDOW_FLOATING_COMMAND,
+    STATUS_WINDOW_CORRECT_POSITION_COMMAND,
+  ]);
+  assert.equal(state.pendingInitialPositionCorrection, false);
+  assert.equal(state.mode, "floating");
+});
+
+test("skips position correction while fullscreen suppression is active", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const state: StatusWindowOverlayState = {
+    appliedFloating: true,
+    lastFloatingAppliedAt: 100,
+    lastPositionCorrectionAt: 100,
+    mode: "floating",
+    pendingInitialPositionCorrection: false,
+    pendingRestorePositionCorrection: false,
+    startupReassertPendingAt: [],
+  };
+
+  await enforceStatusWindowOverlay(state, {
+    invoke: invokeWithPolicy({ foregroundFullscreen: true, shouldFloat: false }, calls),
+    now: 200,
+    positionCorrectionMs: 0,
+  });
+
+  assert.deepEqual(calls.map((call) => call.command), [
+    STATUS_WINDOW_OVERLAY_POLICY_COMMAND,
+    STATUS_WINDOW_FLOATING_COMMAND,
+  ]);
+  assert.equal(state.mode, "suppressed_for_fullscreen");
+  assert.equal(state.pendingRestorePositionCorrection, true);
+});
+
+test("restores floating mode with a single position correction after fullscreen suppression", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const state: StatusWindowOverlayState = {
+    appliedFloating: false,
+    lastFloatingAppliedAt: 100,
+    lastPositionCorrectionAt: 100,
+    mode: "suppressed_for_fullscreen",
+    pendingInitialPositionCorrection: false,
+    pendingRestorePositionCorrection: true,
+    startupReassertPendingAt: [],
+  };
+
+  await enforceStatusWindowOverlay(state, {
+    invoke: invokeWithPolicy({ foregroundFullscreen: false, shouldFloat: true }, calls),
+    now: 300,
+    topmostReassertMs: Number.POSITIVE_INFINITY,
+    positionCorrectionMs: Number.POSITIVE_INFINITY,
+  });
+
+  assert.deepEqual(calls.map((call) => call.command), [
+    STATUS_WINDOW_OVERLAY_POLICY_COMMAND,
+    STATUS_WINDOW_FLOATING_COMMAND,
+    STATUS_WINDOW_CORRECT_POSITION_COMMAND,
+  ]);
+  assert.equal(state.mode, "floating");
+  assert.equal(state.pendingRestorePositionCorrection, false);
+  assert.equal(state.lastPositionCorrectionAt, 300);
 });
 
 test("debounced correction collapses repeated triggers", async () => {

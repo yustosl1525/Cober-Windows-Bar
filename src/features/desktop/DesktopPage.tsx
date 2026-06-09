@@ -8,7 +8,7 @@ import {
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MonitorCog, X } from "lucide-react";
 import { DESKTOP_STATUS_TEMPLATE_DESCRIPTORS } from "../../data/desktopStatusConfig";
-import { systemPerformanceMetrics } from "../../data/mockHubData";
+import { mockHubEvents, systemPerformanceMetrics } from "../../data/mockHubData";
 import {
   listenStatusCenterMenuActions,
   listenStatusCenterOpenSettings,
@@ -32,11 +32,13 @@ import {
 } from "../../runtime/statusWindowRuntime";
 import { loadSystemPerformance } from "../../runtime/systemPerformanceRuntime";
 import { getTauriInvoke } from "../../runtime/tauriRuntime";
+import { aggregateDesktopStatusInput } from "../../state/desktopStatusAggregation";
 import { resolveDesktopStatusState } from "../../state/desktopStatusState";
 import type {
   DesktopStatusKind,
   DesktopStatusPreferences,
   DesktopStatusPreferencesPayload,
+  HubEvent,
   SystemPerformanceMetric,
 } from "../../types/hub";
 import { ClipboardStatusTemplate } from "./templates/ClipboardStatusTemplate";
@@ -68,6 +70,7 @@ export function DesktopPage() {
   const [metrics, setMetrics] = useState<SystemPerformanceMetric[]>(systemPerformanceMetrics);
   const [preferences, setPreferences] = useState<DesktopStatusPreferences>(DEFAULT_PREFERENCES);
   const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
+  const [desktopEvents] = useState<HubEvent[]>(mockHubEvents);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dragStateRef = useRef<StatusWindowDragState | null>(null);
   const dragPointerRef = useRef<DragPointer | null>(null);
@@ -78,8 +81,16 @@ export function DesktopPage() {
   const overlayStateRef = useRef(createStatusWindowOverlayState());
   const appWindowRef = useRef(getCurrentWindow());
 
+  const aggregatedStatus = aggregateDesktopStatusInput({
+    events: desktopEvents,
+    availableKinds: DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => descriptor.kind),
+  });
+
   const resolvedState = resolveDesktopStatusState({
     metrics,
+    activeKinds: aggregatedStatus.activeKinds,
+    availableKinds: aggregatedStatus.availableKinds,
+    states: aggregatedStatus.states,
     preferredKind: activeStatusKind ?? undefined,
   });
 

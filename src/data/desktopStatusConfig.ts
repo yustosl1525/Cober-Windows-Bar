@@ -99,12 +99,7 @@ export const desktopStatusConfig: DesktopStatusConfig = {
   menuActions: [
     { id: "refresh-data", label: "刷新数据", kind: "action" },
     { id: "always-float", label: "总是悬浮", kind: "toggle", preferenceKey: "alwaysFloat" },
-    {
-      id: "avoid-fullscreen",
-      label: "全屏时避让",
-      kind: "toggle",
-      preferenceKey: "avoidFullscreen",
-    },
+    { id: "avoid-fullscreen", label: "全屏时避让", kind: "toggle", preferenceKey: "avoidFullscreen" },
     { id: "lock-position", label: "锁定位置", kind: "toggle", preferenceKey: "lockPosition" },
     { id: "reset-position", label: "重置位置", kind: "action" },
     { id: "open-settings", label: "打开设置", kind: "action" },
