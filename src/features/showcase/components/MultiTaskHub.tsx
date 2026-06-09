@@ -1,40 +1,44 @@
 import type { HubTask } from "../../../types/hub";
-import { ProgressBar } from "../../../shared/ui/ProgressBar";
-import { StatusIcon } from "../../../shared/ui/StatusIcon";
+import { FluentIconChip, FluentProgressRail, type ShowcaseFluentMode } from "./ShowcaseFluentTokens";
 
 type MultiTaskHubProps = {
   tasks: HubTask[];
 };
 
-const toneMap = {
-  music: "pink",
-  ai: "blue",
-  download: "green",
-  notification: "blue",
+const modeMap: Record<HubTask["type"], ShowcaseFluentMode> = {
+  music: "music",
+  ai: "ai",
+  download: "download",
+  notification: "notification",
 } as const;
 
 export function MultiTaskHub({ tasks }: MultiTaskHubProps) {
   return (
-    <div className="hub-card-lg rounded-[22px] px-4 py-3">
-      <div className="space-y-2">
+    <section className="hub-card-lg relative min-w-[372px] overflow-hidden rounded-[30px] border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(245,243,255,0.44)_100%)]">
+      <div className="pointer-events-none absolute inset-[1px] rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_38%,rgba(255,255,255,0.16)_100%)] opacity-90" />
+
+      <div className="relative z-[1] space-y-2.5">
         {tasks.map((task) => (
-          <div key={task.id} className="grid grid-cols-[36px_1fr_44px] items-center gap-3">
-            <StatusIcon type={task.type} compact />
+          <div
+            key={task.id}
+            className="grid grid-cols-[36px_1fr_40px] items-center gap-3 rounded-[22px] border border-white/26 bg-white/28 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+          >
+            <FluentIconChip mode={modeMap[task.type]} compact />
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-white">{task.title}</div>
-              <div className="mt-1 truncate text-xs text-slate-300">{task.subtitle}</div>
+              <div className="truncate text-[13px] font-semibold tracking-[0] text-slate-900">{task.title}</div>
+              <div className="mt-0.5 truncate text-[11px] font-medium tracking-[0] text-slate-600">{task.subtitle}</div>
               <div className="mt-1.5">
                 {task.progress !== undefined && (
-                  <ProgressBar value={task.progress} tone={toneMap[task.type]} label={`${task.title} progress`} />
+                  <FluentProgressRail mode={modeMap[task.type]} value={task.progress} label={`${task.title} progress`} shimmer={task.type !== "notification"} />
                 )}
               </div>
             </div>
-            <span className="text-right text-xs tabular-nums text-slate-100">
+            <span className="text-right text-[10px] font-medium tabular-nums text-slate-500">
               {task.progress !== undefined ? `${task.progress}%` : ""}
             </span>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
