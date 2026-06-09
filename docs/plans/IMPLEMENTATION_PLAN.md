@@ -121,7 +121,7 @@ Mock Runtime -> Tauri Runtime -> Windows Runtime
 
 Planning scope:
 
-- `docs/TAURI_STRATEGY.md` documents v0.4 as planning only.
+- `docs/architecture/TAURI_STRATEGY.md` documents v0.4 as planning only.
 - The Tauri shell is described through architecture requirements: windowing, IPC, packaging, startup, always-on-top, and docking behavior.
 - The Tauri shell spike is deferred until after the v0.6 Mock Provider SDK alignment slice.
 - Real Windows providers are deferred until after the Tauri shell spike.
@@ -165,9 +165,9 @@ v0.6 implemented provider alignment scope:
 - `src/providers/providerRegistry.ts` owns the minimum in-memory provider inventory and lifecycle/health snapshots.
 - `src/providers/providerRegistry.test.ts` verifies registry behavior.
 - Provider capability facts now carry mock/native origin and support values so diagnostic preflight facts can be represented without creating a real provider.
-- `docs/PROVIDER_RUNTIME.md` documents the v0.5.3 aligned runtime plan.
-- `docs/TEST_STRATEGY.md` documents the v0.5.1 test plan that v0.5.3 keeps as planning input.
-- `docs/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
+- `docs/providers/PROVIDER_RUNTIME.md` documents the v0.5.3 aligned runtime plan.
+- `docs/qa/TEST_STRATEGY.md` documents the v0.5.1 test plan that v0.5.3 keeps as planning input.
+- `docs/providers/PROVIDER_SDK.md` documents the contract, event flow, and v0.5 limitations.
 
 v0.6 does not include Tauri, IPC, Rust, Windows APIs, real providers, media sessions, notification center readers, download monitoring, tray behavior, always-on-top behavior, or packaging work. Those remain later-stage planning or implementation items after the mock provider runtime slice is proven.
 

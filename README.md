@@ -1,138 +1,162 @@
 # Cober-Windows-Bar
 
-Windows 11-style status hub showcase for proving glanceable desktop state flows and the mock/fixture runtime boundary before real native integration work begins.
+Cober-Windows-Bar is a Tauri + React prototype for a compact Windows desktop status center.
 
-Current release track: **v0.7 mock/fixture runtime diagnostics closeout**.
+This repository currently contains two parallel product surfaces:
 
-## Current Status
+- `desktop`: the real product-facing desktop status center shell
+- `showcase`: the demo and QA surface for state flows, mock providers, and visual review
 
-Cober-Windows-Bar is currently a mock and fixture-driven `/showcase` experience. It demonstrates the product direction for a lightweight Windows 11 status surface and now includes a narrow v0.7 Tauri/runtime boundary proof, but it is not a real native integration yet.
+The goal of this repo is to make the product direction, runtime boundary, and future native integration path easy to understand before the project expands into deeper Windows-specific features.
 
-What exists today:
+## Start Here
 
-- Mock desktop preview route at `/desktop`, intended for the Tauri desktop window.
-- Win11/Mica/Acrylic showcase UI for core hub states.
-- Event Playground controls for publishing mock hub events.
-- Auto Demo flow for recording state transitions.
-- Resolver visualization for active events, resolver output, and current mode.
-- Mock Provider SDK demo that feeds provider-style events into the same resolver path.
-- Tauri fixture command and runtime adapter scaffold for canonical mock `HubEvent` fixtures.
-- Runtime bridge proof that fixture events can enter the Event Bus boundary.
-- Runtime diagnostics for fixture events and runtime capabilities, including `surface` / `command` context.
-- Runtime capability facts that keep `windowsProviders`, tray, and always-on-top reported as `false`.
-- Provider capability diagnostics for mock capabilities and native/music `preflight` facts.
-- Provider registry read models for copied capability facts and diagnostic summaries.
-- Explicit Showcase playground entry for the Tauri fixture path.
-- Store-derived main preview data and a status header that connects the resolved Hub preview to the active event source.
-- QA coverage that includes state, provider, runtime bridge, build, and Showcase interaction checks.
+If you just forked the repo and want to understand it quickly:
 
-What does not exist yet:
+1. Read [Repository Guide](docs/README.md)
+2. Read [Architecture Overview](docs/architecture/ARCHITECTURE.md)
+3. Read [Roadmap](docs/product/ROADMAP.md)
+4. Read [Contributing](CONTRIBUTING.md)
 
-- No real Windows provider implementation or native system integration.
-- No Windows/system APIs, media-session readers, notification readers, file watchers, or OS hooks.
-- No Tauri tray, always-on-top behavior, production packaging, signing, updater, or installer.
-- No real providers or external integrations.
-- No native Windows/Music provider; `origin: "native"` plus `support: "preflight"` is a diagnostic descriptor only.
+## Project Structure
 
-## What It Proves
-
-The current showcase proves the front-end interaction model and provider boundary before the project commits to Windows-native implementation details.
-
-- The hub can present distinct, glanceable modes: Idle, Music, AI Progress, Download, Notification, and MultiTask.
-- Manual playground events and mock provider events travel through one shared flow.
-- Runtime capability diagnostics and provider capability summaries can coexist without claiming a native provider.
-- Resolver behavior is visible enough to review, debug, and demo.
-- The Win11 visual direction is stable enough for screenshots and demo capture.
-
-Event flow:
+Top-level layout:
 
 ```text
-Event Playground / Mock Provider / Tauri Fixture
-  -> publishHubEvent()
-  -> Event Bus
-  -> Store
-  -> Resolver
-  -> Store-derived Showcase Hub UI
+src/
+  features/
+    desktop/      desktop product surface
+    showcase/     demo and QA surface
+  shared/
+    ui/           reusable UI building blocks
+  runtime/        desktop/runtime boundary and Tauri-facing logic
+  providers/      provider contracts, adapters, registries, mocks
+  state/          event bus, store, resolver-friendly state
+  data/           mock data and desktop status configuration
+  types/          shared domain types
+  styles/         global styling
+
+src-tauri/
+  Rust native shell, system/runtime commands, window behavior
+
+docs/
+  architecture/   system shape and runtime flow
+  product/        PRD, UI spec, roadmap
+  providers/      provider model and mock/provider plans
+  qa/             QA and test strategy
+  plans/          active implementation plans
+  decisions/      current decision records
+  archive/        historical freeze/alignment reports
+
+scripts/
+  local helpers such as desktop launch and showcase QA
 ```
 
-## Try It
+## Source Guide
 
-Install dependencies and run the local app:
+If you want to change a specific area:
+
+- Desktop status center UI:
+  `src/features/desktop/`
+
+- Showcase/demo flows:
+  `src/features/showcase/`
+
+- Shared visual primitives:
+  `src/shared/ui/`
+
+- Window drag, floating, fullscreen avoidance, display correction:
+  `src/runtime/statusWindowRuntime.ts`
+
+- System performance loading:
+  `src/runtime/systemPerformanceRuntime.ts`
+
+- Tauri runtime bridge and fixture/runtime capability parsing:
+  `src/runtime/tauriRuntime.ts`
+
+- Native Tauri/Rust commands:
+  `src-tauri/src/lib.rs`
+
+- Mock data and desktop menu/config labels:
+  `src/data/`
+
+## Current Product State
+
+What is already present:
+
+- Desktop route at `/desktop` for the compact status center
+- Showcase route at `/showcase` for review, QA, and mock state demos
+- Window dragging, work-area clamping, fullscreen avoidance, and floating policy groundwork
+- Mock CPU / memory / network status center data flow
+- Mock provider/event bus/store/resolver pipeline
+- Tauri runtime fixture and capability bridge scaffolding
+
+What is still in progress:
+
+- Native desktop context menu replacing the default web-style menu
+- Real settings/persistence boundary for desktop preferences
+- Tray/recall/click-through product behavior
+- Real Windows-backed providers
+
+## Local Development
+
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Start the web dev server:
+
+```bash
 npm run dev
 ```
 
-Open:
-
-```text
-http://localhost:5173/showcase
-```
-
-Preview the mock desktop product surface in the browser:
+Useful routes:
 
 ```text
 http://localhost:5173/desktop
+http://localhost:5173/showcase
 ```
 
-Open the same mock desktop surface in a Tauri desktop window:
+Launch the desktop mock shell:
 
 ```bash
 npm run desktop:mock
 ```
 
-`/desktop` is the product-style preview. `/showcase` remains the review and QA surface with playground controls, diagnostics, and design reference panels.
+## Validation
 
-Or start the showcase directly:
-
-```bash
-npm run dev:showcase
-```
-
-Use the Event Playground controls to trigger hub states, clear back to Idle, or run the Auto Demo sequence.
-
-## QA Commands
-
-Build and run the main QA checks:
+Main checks:
 
 ```bash
 npm run build
 npm run qa
 ```
 
-Run the repeatable Provider Demo interaction check:
+Focused checks:
 
 ```bash
+npm run test:runtime
 npm run qa:showcase:interactions
 ```
 
-Generate showcase screenshots after the dev server is running:
+## Docs
 
-```bash
-npm run qa:showcase:screenshots
-```
+- [Repository Guide](docs/README.md)
+- [Architecture](docs/architecture/ARCHITECTURE.md)
+- [Event Flow](docs/architecture/EVENT_FLOW.md)
+- [Tauri Strategy](docs/architecture/TAURI_STRATEGY.md)
+- [PRD](docs/product/PRD.md)
+- [UI Spec](docs/product/UI_SPEC.md)
+- [Roadmap](docs/product/ROADMAP.md)
+- [Provider SDK](docs/providers/PROVIDER_SDK.md)
+- [Showcase QA](docs/qa/SHOWCASE_QA.md)
+- [Implementation Plan](docs/plans/IMPLEMENTATION_PLAN.md)
 
-Screenshots are written to `output/playwright/` as local QA artifacts and are not committed by default.
+## Collaboration
 
-## Roadmap
-
-- **Stage 0: UI prototype** - Win11/Mica showcase with the core hub states.
-- **Stage 1: Event Playground** - mock event controls, resolver visualization, and Auto Demo.
-- **Stage 2: Provider SDK** - mock providers and adapter validation, still without real system integration.
-- **v0.7: Runtime boundary and diagnostics** - prove mock/fixture Tauri IPC events can cross into the existing Event Bus -> Store -> Resolver -> UI path, while runtime/provider diagnostics stay truthful about unsupported native work.
-- **Stage 3: Desktop shell hardening** - continue Tauri shell work after the boundary proof, without claiming tray, always-on-top, or production packaging yet.
-- **Stage 4: Real providers** - connect system, music, download, notification, and AI task sources after the native boundary is ready.
-- **Stage 5+: Developer and agent hub** - add Git, Docker, WSL, build tool, and long-running AI work status surfaces.
-
-## Documentation
-
-- [PRD](docs/PRD.md)
-- [UI Spec](docs/UI_SPEC.md)
-- [Showcase QA](docs/SHOWCASE_QA.md)
-- [Provider SDK](docs/PROVIDER_SDK.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
+For contribution expectations and a suggested PR path, see [Contributing](CONTRIBUTING.md).
 
 ## License
 
