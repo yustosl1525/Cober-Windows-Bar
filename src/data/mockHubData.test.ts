@@ -5,6 +5,7 @@ import {
   createSystemPerformanceMetricSnapshot,
   getDesktopStatusLabels,
   getDesktopStatusMenuActions,
+  getDesktopStatusSettingsCopy,
 } from "./desktopStatusConfig";
 import { systemPerformanceMetrics } from "./mockHubData";
 
@@ -23,7 +24,11 @@ for (const label of Object.values(metricLabels)) {
 }
 
 const labels = getDesktopStatusLabels();
+const settingsCopy = getDesktopStatusSettingsCopy();
 assert.equal(labels.currentUsage, "\u5f53\u524d\u4f7f\u7528\u7387");
+assert.equal(settingsCopy.panel.title, "\u72b6\u6001\u4e2d\u5fc3\u8bbe\u7f6e");
+assert.equal(settingsCopy.sections.windowBehavior, "\u7a97\u53e3\u884c\u4e3a");
+assert.equal(settingsCopy.actions.openNativeSettings, "\u6253\u5f00\u539f\u751f\u8bbe\u7f6e\u5165\u53e3");
 
 const expectedMenuLabels = [
   "\u5237\u65b0\u6570\u636e",
@@ -69,6 +74,19 @@ assert.equal(stateTemplates.focus.sessionLabel, "\u6df1\u5ea6\u5de5\u4f5c 25 \u5
 for (const value of [
   labels.currentUsage,
   ...expectedMenuLabels,
+  settingsCopy.panel.ariaLabel,
+  settingsCopy.panel.title,
+  settingsCopy.panel.description,
+  settingsCopy.panel.closeLabel,
+  settingsCopy.sections.windowBehavior,
+  settingsCopy.sections.statusTemplates,
+  ...Object.values(settingsCopy.toggles).flatMap((toggle) => [
+    toggle.title,
+    toggle.description,
+    toggle.activeLabel,
+    toggle.inactiveLabel,
+  ]),
+  ...Object.values(settingsCopy.actions),
   ...DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.flatMap((descriptor) => [descriptor.label, descriptor.description]),
   stateTemplates.resident.title,
   stateTemplates.resident.subtitle,

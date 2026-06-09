@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::{Networks, System};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -40,6 +42,9 @@ const MENU_QUIT: &str = "quit";
 const TRAY_MENU_SHOW_STATUS_CENTER: &str = "tray-show-status-center";
 const TRAY_MENU_OPEN_SETTINGS: &str = "tray-open-settings";
 const GLOBAL_SHORTCUT_RECALL: &str = "Alt+Shift+Space";
+const HUB_EVENT_FIXTURE_INTERVAL: Duration = Duration::from_secs(5);
+
+static HUB_EVENT_FIXTURE_TICK: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -169,26 +174,7 @@ struct WindowPositionCorrection {
 
 #[tauri::command]
 fn get_hub_event_fixtures() -> Vec<HubEventFixture> {
-  vec![HubEventFixture {
-    id: "tauri-fixture-ai-1780743600000".into(),
-    event_type: "ai".into(),
-    source: "mock".into(),
-    created_at: 1_780_743_600_000,
-    progress: Some(64),
-    payload: json!({
-      "id": "tauri-fixture-ai-task",
-      "type": "ai",
-      "title": "Tauri IPC fixture",
-      "subtitle": "Boundary smoke event from native fixture command",
-      "progress": 64,
-      "accent": "blue"
-    }),
-    metadata: json!({
-      "runtime": "tauri",
-      "fixture": true,
-      "version": "0.7.0"
-    }),
-  }]
+  build_hub_event_fixtures(HUB_EVENT_FIXTURE_TICK.load(Ordering::Relaxed))
 }
 
 #[tauri::command]
@@ -403,6 +389,108 @@ fn sample_network_percent() -> u8 {
     .sum();
 
   clamp_percent((total_bytes as f64 / 1_250_000.0) * 100.0)
+}
+
+fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
+  let now_ms = unix_time_ms();
+  let ai_progress = 35 + ((tick * 11) % 55) as u8;
+  let download_progress = 18 + ((tick * 17) % 70) as u8;
+  let cpu_hint = 24 + ((tick * 9) % 58) as u8;
+  let accent = match tick % 3 {
+    0 => "blue",
+    1 => "violet",
+    _ => "cyan",
+  };
+
+  vec![
+    HubEventFixture {
+      id: "tauri-fixture-ai-task".into(),
+      event_type: "ai".into(),
+      source: "mock".into(),
+      created_at: now_ms.saturating_sub(1_500),
+      progress: Some(ai_progress),
+      payload: json!({
+        "id": "tauri-fixture-ai-task",
+        "type": "ai",
+        "title": "Tauri IPC fixture",
+        "subtitle": format!("Native fixture stream tick {}", tick),
+        "progress": ai_progress,
+        "accent": accent
+      }),
+      metadata: json!({
+        "runtime": "tauri",
+        "fixture": true,
+        "streaming": true,
+        "tick": tick,
+        "version": "0.7.0"
+      }),
+    },
+    HubEventFixture {
+      id: "tauri-fixture-download-task".into(),
+      event_type: "download".into(),
+      source: "mock".into(),
+      created_at: now_ms.saturating_sub(800),
+      progress: Some(download_progress),
+      payload: json!({
+        "id": "tauri-fixture-download-task",
+        "type": "download",
+        "title": "Downloads queue",
+        "subtitle": format!("Fixture refresh {}s cadence", HUB_EVENT_FIXTURE_INTERVAL.as_secs()),
+        "progress": download_progress,
+        "accent": "emerald"
+      }),
+      metadata: json!({
+        "runtime": "tauri",
+        "fixture": true,
+        "streaming": true,
+        "tick": tick,
+        "surface": "downloads"
+      }),
+    },
+    HubEventFixture {
+      id: "tauri-fixture-notification-task".into(),
+      event_type: "notification".into(),
+      source: "system".into(),
+      created_at: now_ms,
+      progress: None,
+      payload: json!({
+        "id": "tauri-fixture-notification-task",
+        "type": "notification",
+        "title": "System pulse",
+        "subtitle": format!("Synthetic native heartbeat at {}", now_ms),
+        "accent": "amber"
+      }),
+      metadata: json!({
+        "runtime": "tauri",
+        "fixture": true,
+        "streaming": true,
+        "tick": tick,
+        "cpuHint": cpu_hint
+      }),
+    },
+  ]
+}
+
+fn emit_next_hub_event_fixture_batch<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> usize {
+  let tick = HUB_EVENT_FIXTURE_TICK.fetch_add(1, Ordering::Relaxed);
+  let fixtures = build_hub_event_fixtures(tick);
+  let emitted = fixtures.len();
+  emit_hub_events(app, fixtures);
+  emitted
+}
+
+fn start_hub_event_fixture_stream<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
+  std::thread::spawn(move || loop {
+    std::thread::sleep(HUB_EVENT_FIXTURE_INTERVAL);
+    emit_next_hub_event_fixture_batch(&app);
+  });
+}
+
+fn unix_time_ms() -> u64 {
+  SystemTime::now()
+    .duration_since(UNIX_EPOCH)
+    .map(|duration| duration.as_millis().min(u128::from(u64::MAX)) as u64)
+    .unwrap_or(0)
 }
 
 fn clamp_percent(value: f64) -> u8 {
@@ -930,7 +1018,8 @@ pub fn run() {
       }
 
       emit_status_center_settings(app.handle(), &preferences);
-      emit_hub_events(app.handle(), get_hub_event_fixtures());
+      emit_next_hub_event_fixture_batch(app.handle());
+      start_hub_event_fixture_stream(app.handle().clone());
 
       Ok(())
     })

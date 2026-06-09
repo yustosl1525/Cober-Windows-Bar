@@ -7,7 +7,10 @@ import {
 } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MonitorCog, X } from "lucide-react";
-import { DESKTOP_STATUS_TEMPLATE_DESCRIPTORS } from "../../data/desktopStatusConfig";
+import {
+  DESKTOP_STATUS_TEMPLATE_DESCRIPTORS,
+  getDesktopStatusSettingsCopy,
+} from "../../data/desktopStatusConfig";
 import { systemPerformanceMetrics } from "../../data/mockHubData";
 import {
   listenStatusCenterMenuActions,
@@ -66,30 +69,6 @@ const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   lockPosition: false,
 };
 
-const SETTINGS_TOGGLE_COPY: Record<
-  keyof DesktopStatusPreferences,
-  { title: string; description: string; activeLabel: string; inactiveLabel: string }
-> = {
-  alwaysFloat: {
-    title: "\u59cb\u7ec8\u60ac\u6d6e",
-    description: "\u8ba9\u72b6\u6001\u4e2d\u5fc3\u4fdd\u6301\u5728\u684c\u9762\u524d\u666f\u3002",
-    activeLabel: "\u5f53\u524d\u5df2\u5f00\u542f",
-    inactiveLabel: "\u5f53\u524d\u5df2\u5173\u95ed",
-  },
-  avoidFullscreen: {
-    title: "\u5168\u5c4f\u65f6\u907f\u8ba9",
-    description: "\u68c0\u6d4b\u5230\u5168\u5c4f\u5e94\u7528\u65f6\u81ea\u52a8\u907f\u5f00\u8986\u76d6\u3002",
-    activeLabel: "\u5f53\u524d\u5df2\u5f00\u542f",
-    inactiveLabel: "\u5f53\u524d\u5df2\u5173\u95ed",
-  },
-  lockPosition: {
-    title: "\u9501\u5b9a\u4f4d\u7f6e",
-    description: "\u56fa\u5b9a\u5f53\u524d\u505c\u9760\u4f4d\u7f6e\uff0c\u907f\u514d\u8bef\u62d6\u52a8\u3002",
-    activeLabel: "\u5f53\u524d\u4f4d\u7f6e\u5df2\u9501\u5b9a",
-    inactiveLabel: "\u53ef\u81ea\u7531\u62d6\u52a8",
-  },
-};
-
 type DragPointer = {
   x: number;
   y: number;
@@ -103,6 +82,7 @@ export function DesktopPage() {
   const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
   const [desktopHubState, setDesktopHubState] = useState<HubStoreState>(initialDesktopStatusSnapshot.state);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsCopy = getDesktopStatusSettingsCopy();
   const dragStateRef = useRef<StatusWindowDragState | null>(null);
   const dragPointerRef = useRef<DragPointer | null>(null);
   const dragFrameRef = useRef<number | null>(null);
@@ -568,22 +548,22 @@ export function DesktopPage() {
       </section>
 
       {settingsOpen ? (
-        <section className="product-status-settings" aria-label={"\u72b6\u6001\u4e2d\u5fc3\u8bbe\u7f6e"}>
+        <section className="product-status-settings" aria-label={settingsCopy.panel.ariaLabel}>
           <header className="product-status-settings-header">
             <div className="product-status-settings-title">
               <div className="product-status-settings-icon" aria-hidden="true">
                 <MonitorCog size={18} strokeWidth={2.1} />
               </div>
               <div>
-                <strong>{"\u72b6\u6001\u4e2d\u5fc3\u8bbe\u7f6e"}</strong>
-                <span>{"\u6574\u7406\u684c\u9762\u60ac\u6d6e\u72b6\u6001\u7684\u663e\u793a\u65b9\u5f0f\u4e0e\u6a21\u677f\u5165\u53e3\u3002"}</span>
+                <strong>{settingsCopy.panel.title}</strong>
+                <span>{settingsCopy.panel.description}</span>
               </div>
             </div>
             <button
               className="product-status-settings-close"
               type="button"
-              aria-label={"\u5173\u95ed\u8bbe\u7f6e"}
-              title={"\u5173\u95ed\u8bbe\u7f6e"}
+              aria-label={settingsCopy.panel.closeLabel}
+              title={settingsCopy.panel.closeLabel}
               onClick={closeSettings}
             >
               <X size={16} strokeWidth={2.2} />
@@ -592,19 +572,19 @@ export function DesktopPage() {
 
           <div className="product-status-settings-body">
             <div className="product-status-settings-section">
-              <span className="product-status-settings-label">{"\u7a97\u53e3\u884c\u4e3a"}</span>
+              <span className="product-status-settings-label">{settingsCopy.sections.windowBehavior}</span>
               <div className="product-status-settings-grid">
                 <button
                   type="button"
                   className={settingsToggleClassName(preferences.alwaysFloat)}
                   onClick={() => void setAlwaysFloat(!preferences.alwaysFloat)}
                 >
-                  <strong>{SETTINGS_TOGGLE_COPY.alwaysFloat.title}</strong>
-                  <span>{SETTINGS_TOGGLE_COPY.alwaysFloat.description}</span>
+                  <strong>{settingsCopy.toggles.alwaysFloat.title}</strong>
+                  <span>{settingsCopy.toggles.alwaysFloat.description}</span>
                   <small>
                     {preferences.alwaysFloat
-                      ? SETTINGS_TOGGLE_COPY.alwaysFloat.activeLabel
-                      : SETTINGS_TOGGLE_COPY.alwaysFloat.inactiveLabel}
+                      ? settingsCopy.toggles.alwaysFloat.activeLabel
+                      : settingsCopy.toggles.alwaysFloat.inactiveLabel}
                   </small>
                 </button>
                 <button
@@ -612,12 +592,12 @@ export function DesktopPage() {
                   className={settingsToggleClassName(preferences.avoidFullscreen)}
                   onClick={() => setAvoidFullscreen(!preferences.avoidFullscreen)}
                 >
-                  <strong>{SETTINGS_TOGGLE_COPY.avoidFullscreen.title}</strong>
-                  <span>{SETTINGS_TOGGLE_COPY.avoidFullscreen.description}</span>
+                  <strong>{settingsCopy.toggles.avoidFullscreen.title}</strong>
+                  <span>{settingsCopy.toggles.avoidFullscreen.description}</span>
                   <small>
                     {preferences.avoidFullscreen
-                      ? SETTINGS_TOGGLE_COPY.avoidFullscreen.activeLabel
-                      : SETTINGS_TOGGLE_COPY.avoidFullscreen.inactiveLabel}
+                      ? settingsCopy.toggles.avoidFullscreen.activeLabel
+                      : settingsCopy.toggles.avoidFullscreen.inactiveLabel}
                   </small>
                 </button>
                 <button
@@ -625,19 +605,19 @@ export function DesktopPage() {
                   className={settingsToggleClassName(preferences.lockPosition)}
                   onClick={() => setLockPosition(!preferences.lockPosition)}
                 >
-                  <strong>{SETTINGS_TOGGLE_COPY.lockPosition.title}</strong>
-                  <span>{SETTINGS_TOGGLE_COPY.lockPosition.description}</span>
+                  <strong>{settingsCopy.toggles.lockPosition.title}</strong>
+                  <span>{settingsCopy.toggles.lockPosition.description}</span>
                   <small>
                     {preferences.lockPosition
-                      ? SETTINGS_TOGGLE_COPY.lockPosition.activeLabel
-                      : SETTINGS_TOGGLE_COPY.lockPosition.inactiveLabel}
+                      ? settingsCopy.toggles.lockPosition.activeLabel
+                      : settingsCopy.toggles.lockPosition.inactiveLabel}
                   </small>
                 </button>
               </div>
             </div>
 
             <div className="product-status-settings-section">
-              <span className="product-status-settings-label">{"\u72b6\u6001\u6a21\u677f"}</span>
+              <span className="product-status-settings-label">{settingsCopy.sections.statusTemplates}</span>
               <div className="product-status-settings-kinds">
                 {DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => {
                   const active = descriptor.kind === activeStatusKind;
@@ -660,24 +640,24 @@ export function DesktopPage() {
 
             <div className="product-status-settings-actions">
               <button type="button" className="product-status-settings-action" onClick={() => void refresh()}>
-                {"\u5237\u65b0\u6570\u636e"}
+                {settingsCopy.actions.refresh}
               </button>
               <button type="button" className="product-status-settings-action" onClick={() => void resetPosition()}>
-                {"\u91cd\u7f6e\u4f4d\u7f6e"}
+                {settingsCopy.actions.resetPosition}
               </button>
               <button
                 type="button"
                 className="product-status-settings-action is-primary"
                 onClick={() => void handleOpenSettingsClick()}
               >
-                {"\u6253\u5f00\u539f\u751f\u8bbe\u7f6e\u5165\u53e3"}
+                {settingsCopy.actions.openNativeSettings}
               </button>
               <button
                 type="button"
                 className="product-status-settings-action"
                 onClick={() => void recallStatusCenter()}
               >
-                {"\u53ec\u56de\u72b6\u6001\u4e2d\u5fc3"}
+                {settingsCopy.actions.recallStatusCenter}
               </button>
             </div>
           </div>

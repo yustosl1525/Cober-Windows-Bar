@@ -259,3 +259,44 @@ export function createDesktopStatusStateTemplates(
 export function getDesktopStatusTemplateChromeCopy() {
   return COPY.templateChrome;
 }
+
+export function getDesktopStatusSettingsCopy() {
+  return {
+    panel: {
+      ariaLabel: "状态中心设置",
+      title: "状态中心设置",
+      description: "整理桌面悬浮状态的显示方式与模板入口。",
+      closeLabel: "关闭设置",
+    },
+    sections: {
+      windowBehavior: "窗口行为",
+      statusTemplates: "状态模板",
+    },
+    toggles: {
+      alwaysFloat: {
+        title: "始终悬浮",
+        description: "让状态中心保持在桌面前景。",
+        activeLabel: "当前已开启",
+        inactiveLabel: "当前已关闭",
+      },
+      avoidFullscreen: {
+        title: "全屏时避让",
+        description: "检测到全屏应用时自动避开覆盖。",
+        activeLabel: "当前已开启",
+        inactiveLabel: "当前已关闭",
+      },
+      lockPosition: {
+        title: "锁定位置",
+        description: "固定当前停靠位置，避免误拖动。",
+        activeLabel: "当前位置已锁定",
+        inactiveLabel: "可自由拖动",
+      },
+    },
+    actions: {
+      refresh: COPY.labels.menu.refreshData,
+      resetPosition: COPY.labels.menu.resetPosition,
+      openNativeSettings: "打开原生设置入口",
+      recallStatusCenter: "召回状态中心",
+    },
+  } as const;
+}
