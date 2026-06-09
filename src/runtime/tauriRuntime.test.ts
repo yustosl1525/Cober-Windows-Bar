@@ -17,17 +17,17 @@ const tests: Array<{ name: string; run: () => void | Promise<void> }> = [];
 const canonicalRuntimeCapabilities = {
   runtime: "tauri",
   fixtureIpc: true,
-  tray: false,
-  alwaysOnTop: false,
-  windowsProviders: false,
+  tray: true,
+  alwaysOnTop: true,
+  windowsProviders: true,
   configuredShellWindow: {
     configured: true,
     title: "Cober Windows Bar",
-    width: 960,
-    height: 640,
-    minWidth: 720,
-    minHeight: 520,
-    resizable: true,
+    width: 350,
+    height: 70,
+    minWidth: 350,
+    minHeight: 70,
+    resizable: false,
     centered: true,
   },
 } as const;
@@ -546,7 +546,7 @@ test("returns malformed diagnostic for non-canonical capability payloads", async
   const result = await loadTauriRuntimeCapabilities({
     invoke: async () => ({
       ...canonicalRuntimeCapabilities,
-      tray: true,
+      tray: false,
     }),
   });
 
@@ -660,7 +660,7 @@ test("keeps runtime Windows provider facts compatible with music preflight diagn
   assert.equal(result.ok, true);
 
   if (result.ok) {
-    assert.equal(result.capabilities.windowsProviders, false);
+    assert.equal(result.capabilities.windowsProviders, true);
     assert.deepEqual(musicPreflightDiagnostic, {
       id: "music",
       kind: "music",
@@ -689,7 +689,7 @@ test("current runtime capabilities do not expose future system status payload be
   if (result.ok) {
     const capabilities = result.capabilities as Record<string, unknown>;
 
-    assert.equal(result.capabilities.windowsProviders, false);
+    assert.equal(result.capabilities.windowsProviders, true);
     assert.equal("systemStatus" in capabilities, false);
     assert.equal("systemStatusPayload" in capabilities, false);
     assert.equal("systemStatusRuntimePayload" in capabilities, false);

@@ -31,6 +31,8 @@ export type StatusWindowOverlayState = {
   lastFloatingAppliedAt: number;
   lastPositionCorrectionAt: number;
   mode: StatusWindowOverlayMode;
+  pendingInitialPositionCorrection: boolean;
+  pendingRestorePositionCorrection: boolean;
   startupReassertPendingAt: number[];
 };
 
@@ -58,6 +60,8 @@ export function createStatusWindowOverlayState(): StatusWindowOverlayState {
     lastFloatingAppliedAt: 0,
     lastPositionCorrectionAt: 0,
     mode: "restoring",
+    pendingInitialPositionCorrection: true,
+    pendingRestorePositionCorrection: false,
     startupReassertPendingAt: [...STATUS_WINDOW_STARTUP_REASSERT_AT_MS],
   };
 }
@@ -124,8 +128,22 @@ export async function enforceStatusWindowOverlay(
   const positionCorrectionMs = options.positionCorrectionMs ?? STATUS_WINDOW_POSITION_CORRECTION_MS;
   const policy =
     parseOverlayPolicy(await invoke(STATUS_WINDOW_OVERLAY_POLICY_COMMAND)) ?? defaultOverlayPolicy();
-  const nextMode = resolveOverlayMode(policy);
+  const currentMode = state.mode;
+  const resolvedMode = resolveOverlayMode(policy);
+  const enteringFullscreenSuppression =
+    currentMode !== "suppressed_for_fullscreen" && resolvedMode === "suppressed_for_fullscreen";
+  const leavingFullscreenSuppression =
+    currentMode === "suppressed_for_fullscreen" && resolvedMode === "floating";
+  const nextMode: StatusWindowOverlayMode = leavingFullscreenSuppression ? "restoring" : resolvedMode;
   const consumedStartupReasserts = consumeStartupReasserts(state.startupReassertPendingAt, now);
+  if (enteringFullscreenSuppression) {
+    state.pendingRestorePositionCorrection = true;
+  }
+
+  if (leavingFullscreenSuppression) {
+    state.pendingRestorePositionCorrection = true;
+  }
+
   const shouldRefreshTopmost =
     state.appliedFloating !== policy.shouldFloat ||
     state.mode !== nextMode ||
@@ -140,9 +158,21 @@ export async function enforceStatusWindowOverlay(
 
   state.mode = nextMode;
 
-  if (now - state.lastPositionCorrectionAt >= positionCorrectionMs) {
+  const shouldCorrectPosition =
+    state.mode !== "suppressed_for_fullscreen" &&
+    (state.pendingInitialPositionCorrection ||
+      state.pendingRestorePositionCorrection ||
+      now - state.lastPositionCorrectionAt >= positionCorrectionMs);
+
+  if (shouldCorrectPosition) {
     state.lastPositionCorrectionAt = now;
+    state.pendingInitialPositionCorrection = false;
+    state.pendingRestorePositionCorrection = false;
     await correctStatusWindowPosition(invoke);
+
+    if (state.mode === "restoring") {
+      state.mode = "floating";
+    }
   }
 
   return policy;
@@ -153,6 +183,8 @@ export function scheduleOverlayStartupReassert(state: StatusWindowOverlayState):
   state.appliedFloating = null;
   state.lastFloatingAppliedAt = 0;
   state.lastPositionCorrectionAt = 0;
+  state.pendingInitialPositionCorrection = true;
+  state.pendingRestorePositionCorrection = false;
   state.startupReassertPendingAt = [...STATUS_WINDOW_STARTUP_REASSERT_AT_MS];
 }
 
