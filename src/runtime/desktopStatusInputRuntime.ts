@@ -7,8 +7,12 @@ import {
   type TauriInvoke,
   type TauriRuntimeDiagnostic,
 } from "./tauriRuntime";
+import type { Event, UnlistenFn } from "@tauri-apps/api/event";
+import { listen } from "@tauri-apps/api/event";
 
-export type DesktopStatusEventSource = "mock" | "tauri-fixture";
+export const DESKTOP_STATUS_INPUT_EVENT = "status-center://hub-events";
+
+export type DesktopStatusEventSource = "mock" | "tauri-fixture" | "tauri-event";
 
 export type DesktopStatusEventsResult = {
   events: HubEvent[];
@@ -41,6 +45,11 @@ export type DesktopStatusEventListenerSource = (
   listener: DesktopStatusEventListener,
 ) => DesktopStatusEventListenerUnsubscribe | Promise<DesktopStatusEventListenerUnsubscribe>;
 
+export type DesktopStatusTauriListen = (
+  event: string,
+  handler: (event: Event<unknown>) => void | Promise<void>,
+) => Promise<UnlistenFn>;
+
 function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
   return typeof value === "object" && value !== null && "then" in value && typeof value.then === "function";
 }
@@ -50,6 +59,7 @@ type CreateDesktopStatusRuntimeOptions = {
   fallbackEvents?: HubEvent[];
   eventBus?: HubEventBus;
   subscribeToEvents?: DesktopStatusEventListenerSource;
+  tauriListen?: DesktopStatusTauriListen;
 };
 
 const desktopStatusRuntimeCache = new WeakMap<TauriInvoke | typeof globalThis, DesktopStatusRuntime>();
@@ -89,6 +99,7 @@ export function createDesktopStatusRuntime({
   fallbackEvents = mockHubEvents,
   eventBus = createHubEventBus(),
   subscribeToEvents,
+  tauriListen,
 }: CreateDesktopStatusRuntimeOptions = {}): DesktopStatusRuntime {
   let source: DesktopStatusEventSource = "mock";
   let diagnostic: TauriRuntimeDiagnostic | undefined;
@@ -97,6 +108,8 @@ export function createDesktopStatusRuntime({
   const runtimeSubscribers = new Set<(snapshot: DesktopStatusRuntimeSnapshot) => void>();
   let unsubscribeBus: (() => void) | undefined;
   let unsubscribePushSource: (() => void) | undefined;
+  const eventSourceSubscription =
+    subscribeToEvents ?? (invoke ? createTauriDesktopStatusEventSource({ tauriListen }) : undefined);
 
   eventBus.replaceHubEvents(snapshotFallbackEvents);
 
@@ -129,8 +142,8 @@ export function createDesktopStatusRuntime({
     notify();
   });
 
-  if (subscribeToEvents) {
-    const subscription = subscribeToEvents((events, nextSource = "tauri-fixture", nextDiagnostic) => {
+  if (eventSourceSubscription) {
+    const subscription = eventSourceSubscription((events, nextSource = "tauri-fixture", nextDiagnostic) => {
       if (disposed) {
         return;
       }
@@ -196,6 +209,29 @@ export function createDesktopStatusRuntime({
   };
 }
 
+export function createTauriDesktopStatusEventSource({
+  tauriListen = listen,
+}: {
+  tauriListen?: DesktopStatusTauriListen;
+} = {}): DesktopStatusEventListenerSource {
+  return async (listener) => {
+    try {
+      return await tauriListen(DESKTOP_STATUS_INPUT_EVENT, async (event) => {
+        const result = parseDesktopStatusInputEventPayload(event.payload);
+        if (!result) {
+          return;
+        }
+
+        listener(result.events, "tauri-event");
+      });
+    } catch {
+      return () => {
+        // Keep refresh/fallback flows available when the Tauri event bridge is absent.
+      };
+    }
+  };
+}
+
 export function getDesktopStatusRuntime(options: CreateDesktopStatusRuntimeOptions = {}): DesktopStatusRuntime {
   if (options.eventBus || options.fallbackEvents || options.invoke) {
     return createDesktopStatusRuntime(options);
@@ -219,4 +255,66 @@ function snapshotHubEvents(events: HubEvent[]): HubEvent[] {
     payload: event.payload ? { ...event.payload } : undefined,
     metadata: event.metadata ? { ...event.metadata } : undefined,
   }));
+}
+
+function parseDesktopStatusInputEventPayload(
+  value: unknown,
+): { events: HubEvent[] } | undefined {
+  const events = Array.isArray(value)
+    ? parseHubEvents(value)
+    : isRecord(value) && Array.isArray(value.events)
+      ? parseHubEvents(value.events)
+      : undefined;
+
+  return events ? { events } : undefined;
+}
+
+function parseHubEvents(value: unknown[]): HubEvent[] | undefined {
+  const events = value.filter(isHubEvent);
+  return events.length === value.length ? snapshotHubEvents(events) : undefined;
+}
+
+function isHubEvent(value: unknown): value is HubEvent {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    isHubEventType(value.type) &&
+    isHubEventSource(value.source) &&
+    isFiniteNumber(value.createdAt) &&
+    isOptionalNumber(value.expiresAt) &&
+    isOptionalNumber(value.progress) &&
+    isOptionalRecord(value.payload) &&
+    isOptionalRecord(value.metadata)
+  );
+}
+
+function isHubEventType(value: unknown): value is HubEvent["type"] {
+  return value === "music" || value === "ai" || value === "download" || value === "notification";
+}
+
+function isHubEventSource(value: unknown): value is HubEvent["source"] {
+  return (
+    value === "mock" ||
+    value === "system" ||
+    value === "music" ||
+    value === "download" ||
+    value === "ai" ||
+    value === "notification"
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isOptionalRecord(value: unknown): boolean {
+  return value === undefined || isRecord(value);
+}
+
+function isOptionalNumber(value: unknown): boolean {
+  return value === undefined || isFiniteNumber(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }

@@ -3,6 +3,8 @@ import { mockHubEvents } from "../data/mockHubData";
 import { createHubEventBus, getActiveHubEvents } from "../state/hubState";
 import {
   createDesktopStatusRuntime,
+  createTauriDesktopStatusEventSource,
+  DESKTOP_STATUS_INPUT_EVENT,
   loadDesktopStatusEvents,
 } from "./desktopStatusInputRuntime";
 
@@ -210,6 +212,90 @@ async function testDesktopStatusRuntimeDisposeUnsubscribesPushListener() {
   assert.deepEqual(observedEventIds, [["fixture-download"]]);
 }
 
+async function testTauriDesktopStatusEventSourceEmitsCanonicalEvents() {
+  let registeredEventName: string | undefined;
+  let handler:
+    | ((event: { payload: unknown }) => void | Promise<void>)
+    | undefined;
+  const source = createTauriDesktopStatusEventSource({
+    tauriListen: async (eventName, nextHandler) => {
+      registeredEventName = eventName;
+      handler = nextHandler as typeof handler;
+      return () => {
+        handler = undefined;
+      };
+    },
+  });
+  const observed: Array<{ ids: string[]; source?: string }> = [];
+  const unsubscribe = await source((events, sourceName) => {
+    observed.push({
+      ids: events.map((event) => event.id),
+      source: sourceName,
+    });
+  });
+
+  await handler?.({ payload: { events: fixtureEvents } });
+
+  assert.equal(registeredEventName, DESKTOP_STATUS_INPUT_EVENT);
+  assert.deepEqual(observed, [
+    {
+      ids: ["fixture-download"],
+      source: "tauri-event",
+    },
+  ]);
+
+  unsubscribe();
+}
+
+async function testDesktopStatusRuntimeUsesTauriEventSourceAndUnlistensOnDispose() {
+  let handler:
+    | ((event: { payload: unknown }) => void | Promise<void>)
+    | undefined;
+  let unlistenCalls = 0;
+  const runtime = createDesktopStatusRuntime({
+    invoke: async () => fixtureEvents,
+    fallbackEvents: mockHubEvents,
+    tauriListen: async (eventName, nextHandler) => {
+      assert.equal(eventName, DESKTOP_STATUS_INPUT_EVENT);
+      handler = nextHandler as typeof handler;
+      return () => {
+        unlistenCalls += 1;
+        handler = undefined;
+      };
+    },
+  });
+  const observedEventIds: string[][] = [];
+  const observedSources: string[] = [];
+  runtime.subscribe((snapshot) => {
+    observedEventIds.push(snapshot.state.events.map((event) => event.id));
+    observedSources.push(snapshot.source);
+  });
+
+  await handler?.({ payload: fixtureEvents });
+
+  assert.deepEqual(observedEventIds[0], getActiveHubEvents(mockHubEvents).map((event) => event.id));
+  assert.deepEqual(observedEventIds[observedEventIds.length - 1], ["fixture-download"]);
+  assert.equal(observedSources[observedSources.length - 1], "tauri-event");
+
+  runtime.dispose();
+  await Promise.resolve();
+  assert.equal(unlistenCalls, 1);
+
+  await handler?.({
+    payload: [
+      {
+        ...fixtureEvents[0],
+        id: "after-dispose",
+        payload: {
+          ...fixtureEvents[0].payload,
+          id: "after-dispose",
+        },
+      },
+    ],
+  });
+  assert.deepEqual(observedEventIds[observedEventIds.length - 1], ["fixture-download"]);
+}
+
 await testFallsBackToMockWithoutInvoke();
 await testLoadsFixtureEventsFromTauriInvoke();
 await testFallsBackToMockWhenFixtureLoadFails();
@@ -217,3 +303,5 @@ await testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource();
 await testDesktopStatusRuntimeSubscribersReceiveBusUpdates();
 await testDesktopStatusRuntimeAcceptsPushListenerUpdates();
 await testDesktopStatusRuntimeDisposeUnsubscribesPushListener();
+await testTauriDesktopStatusEventSourceEmitsCanonicalEvents();
+await testDesktopStatusRuntimeUsesTauriEventSourceAndUnlistensOnDispose();
