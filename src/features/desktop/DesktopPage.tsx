@@ -24,19 +24,16 @@ import {
   type DesktopStatusRuntimeSnapshot,
 } from "../../runtime/desktopStatusInputRuntime";
 import {
-  captureStatusWindowDragState,
   correctStatusWindowPosition,
   correctStatusWindowPositionForDisplayChange,
   createDebouncedWindowCorrection,
   createStatusWindowOverlayState,
   enforceStatusWindowOverlay,
-  moveStatusWindowDrag,
   scheduleOverlayStartupReassert,
   STATUS_WINDOW_CORRECT_POSITION_COMMAND,
   STATUS_WINDOW_DISPLAY_CHANGE_DEBOUNCE_MS,
   STATUS_WINDOW_FLOATING_COMMAND,
   STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS,
-  type StatusWindowDragState,
 } from "../../runtime/statusWindowRuntime";
 import { loadSystemPerformance } from "../../runtime/systemPerformanceRuntime";
 import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
@@ -71,11 +68,6 @@ const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   lockPosition: false,
 };
 
-type DragPointer = {
-  x: number;
-  y: number;
-};
-
 export function DesktopPage() {
   const desktopStatusRuntime = getDesktopStatusRuntime();
   const initialDesktopStatusSnapshot = desktopStatusRuntime.getSnapshot();
@@ -86,11 +78,6 @@ export function DesktopPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const shellCopy = getDesktopStatusShellCopy();
   const settingsCopy = getDesktopStatusSettingsCopy();
-  const dragStateRef = useRef<StatusWindowDragState | null>(null);
-  const dragPointerRef = useRef<DragPointer | null>(null);
-  const dragFrameRef = useRef<number | null>(null);
-  const dragMoveInFlightRef = useRef(false);
-  const pendingPositionCorrectionRef = useRef(false);
   const isDraggingRef = useRef(false);
   const overlayStateRef = useRef(createStatusWindowOverlayState());
   const appWindowRef = useRef(getCurrentWindow());
@@ -116,13 +103,10 @@ export function DesktopPage() {
 
     event.preventDefault();
     isDraggingRef.current = true;
-    pendingPositionCorrectionRef.current = false;
-    dragPointerRef.current = { x: event.screenX, y: event.screenY };
 
     const invoke = getTauriInvoke();
     if (!invoke) {
       isDraggingRef.current = false;
-      dragPointerRef.current = null;
       return;
     }
 
@@ -137,7 +121,6 @@ export function DesktopPage() {
 
     if (!started) {
       isDraggingRef.current = false;
-      dragPointerRef.current = null;
     }
   }
 
@@ -212,8 +195,6 @@ export function DesktopPage() {
 
     if (nextValue) {
       isDraggingRef.current = false;
-      dragStateRef.current = null;
-      dragPointerRef.current = null;
     }
   }
 
@@ -462,93 +443,20 @@ export function DesktopPage() {
   }, []);
 
   useEffect(() => {
-    function clearPendingDragFrame() {
-      if (dragFrameRef.current !== null) {
-        window.cancelAnimationFrame(dragFrameRef.current);
-        dragFrameRef.current = null;
-      }
-    }
-
-    function scheduleDragMove() {
-      if (dragFrameRef.current !== null) {
-        return;
-      }
-
-      dragFrameRef.current = window.requestAnimationFrame(() => {
-        dragFrameRef.current = null;
-
-        const dragState = dragStateRef.current;
-        const pointer = dragPointerRef.current;
-        if (!dragState || !pointer || dragMoveInFlightRef.current) {
-          return;
-        }
-
-        const { x, y } = pointer;
-        dragMoveInFlightRef.current = true;
-
-        void moveStatusWindowDrag(dragState, x, y)
-          .catch(() => {
-            dragStateRef.current = null;
-            dragPointerRef.current = null;
-            isDraggingRef.current = false;
-            pendingPositionCorrectionRef.current = false;
-          })
-          .finally(() => {
-            dragMoveInFlightRef.current = false;
-
-            if (pendingPositionCorrectionRef.current && !isDraggingRef.current) {
-              pendingPositionCorrectionRef.current = false;
-              void correctStatusWindowPosition();
-              return;
-            }
-
-            const latestPointer = dragPointerRef.current;
-            if (
-              dragStateRef.current &&
-              latestPointer &&
-              (latestPointer.x !== x || latestPointer.y !== y)
-            ) {
-              scheduleDragMove();
-            }
-          });
-      });
-    }
-
-    function handlePointerMove(event: PointerEvent) {
+    function handlePointerUp() {
       if (!isDraggingRef.current) {
         return;
       }
 
-      dragPointerRef.current = { x: event.screenX, y: event.screenY };
-      scheduleDragMove();
-    }
-
-    function handlePointerUp() {
-      const wasDragging = isDraggingRef.current || dragStateRef.current !== null;
-
-      clearPendingDragFrame();
       isDraggingRef.current = false;
-      dragStateRef.current = null;
-      dragPointerRef.current = null;
-
-      if (wasDragging) {
-        if (dragMoveInFlightRef.current) {
-          pendingPositionCorrectionRef.current = true;
-          return;
-        }
-
-        void correctStatusWindowPosition();
-      }
+      void correctStatusWindowPosition();
     }
 
-    window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     window.addEventListener("pointercancel", handlePointerUp);
     window.addEventListener("blur", handlePointerUp);
 
     return () => {
-      clearPendingDragFrame();
-      window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
       window.removeEventListener("blur", handlePointerUp);

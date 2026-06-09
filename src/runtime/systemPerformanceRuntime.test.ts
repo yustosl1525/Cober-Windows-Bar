@@ -36,7 +36,7 @@ test("falls back without introducing mojibake when native data is malformed", as
   });
 
   for (const label of metrics.map((metric) => metric.label)) {
-    assert.equal(/[�]/.test(label), false, `${label} must not be mojibake`);
+    assert.equal(/\uFFFD/.test(label), false, `${label} must not be mojibake`);
   }
 });
 
