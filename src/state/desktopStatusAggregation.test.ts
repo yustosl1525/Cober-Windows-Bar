@@ -31,6 +31,7 @@ test("desktop status aggregation maps mock music input into media state", () => 
   assert.deepEqual(result.activeKinds, ["media"]);
   assert.equal(result.states?.media?.kind, "media");
   assert.equal(result.states?.media?.title, "Midnight City");
+  assert.equal(result.states?.media?.subtitle, "正在播放");
   assert.equal(result.states?.media?.artist, "M83 - Hurry Up, We're Dreaming");
 });
 
@@ -43,6 +44,7 @@ test("desktop status aggregation maps mock download input into download state", 
   assert.deepEqual(result.activeKinds, ["download"]);
   assert.equal(result.states?.download?.kind, "download");
   assert.equal(result.states?.download?.title, "Windows SDK Preview.zip");
+  assert.equal(result.states?.download?.subtitle, "下载任务");
   assert.equal(result.states?.download?.detail, "42.8 MB of 96 MB");
 });
 
@@ -55,6 +57,7 @@ test("desktop status aggregation maps mock ai task input into update state", () 
   assert.deepEqual(result.activeKinds, ["update"]);
   assert.equal(result.states?.update?.kind, "update");
   assert.equal(result.states?.update?.title, "Codex is updating the provider SDK");
+  assert.equal(result.states?.update?.subtitle, "进行中");
 });
 
 test("desktop status aggregation keeps multiple active kinds without doing priority resolution", () => {
@@ -73,6 +76,7 @@ test("desktop status aggregation keeps multiple active kinds without doing prior
   assert.equal(result.states?.download?.kind, "download");
   assert.equal(result.states?.update?.kind, "update");
   assert.equal(result.states?.clipboard?.kind, "clipboard");
+  assert.equal(result.states?.clipboard?.subtitle, "最近消息");
 });
 
 test("desktop status aggregation preserves caller-provided available kinds as scheduler input", () => {
