@@ -35,27 +35,47 @@ The long-term product ceiling is a Windows 11 **Unified Status Hub**, not only a
 
 ```text
 src/
-|-- App.tsx
-|-- main.tsx
-|-- styles/
-|   `-- globals.css
-|-- components/
-|   |-- hub/
-|   |-- showcase/
+|-- features/
+|   |-- desktop/
+|   |   |-- components/
+|   |   `-- templates/
+|   `-- showcase/
+|       |-- components/
+|       `-- ShowcasePage.tsx
+|-- shared/
 |   `-- ui/
+|-- runtime/
+|-- providers/
 |-- data/
-|   `-- mockHubData.ts
-|-- pages/
-|   `-- ShowcasePage.tsx
 |-- state/
-|   |-- hubScenarios.ts
-|   |-- hubState.ts
-|   `-- hubState.test.ts
-`-- types/
-    `-- hub.ts
+|-- styles/
+|-- types/
+|-- App.tsx
+`-- main.tsx
+
+src-tauri/
+`-- src/lib.rs
+
+docs/
+|-- architecture/
+|-- product/
+|-- providers/
+|-- qa/
+|-- plans/
+|-- decisions/
+`-- archive/
 ```
 
+The current repository has two explicit product surfaces:
+
+- `src/features/desktop/` for the desktop product shell
+- `src/features/showcase/` for demo, QA, and fixture review
+
+The runtime/native boundary lives under `src/runtime/` and `src-tauri/`.
+
 ## 5. v0.2 Interactive Event Playground Scope
+
+Historical note: this section documents the original showcase/event-playground phase. The current codebase has since been reorganized around `desktop` and `showcase` feature folders.
 
 ### Event Controls
 
@@ -106,8 +126,8 @@ The visualization should make notification priority and MultiTask resolution eas
 - `src/state/hubScenarios.ts` defines deterministic mock scenarios and the auto-demo sequence.
 - `src/state/hubState.ts` remains the event bus/store/resolver boundary.
 - `src/state/hubState.test.ts` protects scenario resolution, expiry, clear-to-idle, and playback order.
-- `src/components/showcase/EventPlaygroundPanel.tsx` is the showcase control and visualization surface.
-- `src/pages/ShowcasePage.tsx` integrates the panel while preserving the Stage 0 Win11/Mica shell.
+- `src/features/showcase/components/EventPlaygroundPanel.tsx` is the showcase control and visualization surface.
+- `src/features/showcase/ShowcasePage.tsx` integrates the panel while preserving the Stage 0 Win11/Mica shell.
 
 ## 6. v0.4 Runtime/Tauri Architecture Planning Scope
 
