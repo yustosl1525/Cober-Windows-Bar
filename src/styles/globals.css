@@ -67,8 +67,8 @@ button {
     position: relative;
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
-    width: 330px;
-    height: 56px;
+    width: 380px;
+    height: 64px;
     align-items: center;
     gap: 11px;
     overflow: hidden;
