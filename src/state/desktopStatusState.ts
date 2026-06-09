@@ -1,4 +1,5 @@
 import { DESKTOP_STATUS_TEMPLATE_ORDER, createDesktopStatusStateTemplates } from "../data/desktopStatusConfig";
+import { scheduleDesktopStatus } from "./desktopStatusScheduler";
 import type {
   DesktopStatusKind,
   DesktopStatusResolverInput,
@@ -32,27 +33,26 @@ export function createDesktopStatusStateMap(metrics: SystemPerformanceMetric[]):
 }
 
 export function resolveDesktopStatusState(input: DesktopStatusResolverInput): DesktopStatusState {
+  const defaults = createDesktopStatusStateTemplates(cloneMetrics(input.metrics));
   const states = cloneStateMap({
-    ...createDesktopStatusStateTemplates(cloneMetrics(input.metrics)),
+    ...defaults,
     ...input.states,
     resident: {
-      ...createDesktopStatusStateTemplates(cloneMetrics(input.metrics)).resident,
+      ...defaults.resident,
       ...input.states?.resident,
       metrics: cloneMetrics(input.states?.resident?.metrics ?? input.metrics),
     },
   });
-  const activeKinds = input.activeKinds?.length ? input.activeKinds : undefined;
-  const preferredKind = input.preferredKind;
-  const candidateKinds = [
-    preferredKind,
-    ...(activeKinds ?? []),
-    DESKTOP_STATUS_DEFAULT_KIND,
-  ].filter((kind, index, list): kind is DesktopStatusKind => Boolean(kind) && list.indexOf(kind) === index);
+  const availableKinds =
+    input.availableKinds?.filter((kind) => DESKTOP_STATUS_TEMPLATE_ORDER.includes(kind)) ??
+    DESKTOP_STATUS_TEMPLATE_ORDER.filter((kind) => Boolean(states[kind]));
+  const decision = scheduleDesktopStatus({
+    preferredKind: input.preferredKind,
+    activeKinds: input.activeKinds,
+    availableKinds,
+  });
 
-  const resolvedKind =
-    candidateKinds.find((kind) => DESKTOP_STATUS_TEMPLATE_ORDER.includes(kind)) ?? DESKTOP_STATUS_DEFAULT_KIND;
-
-  return states[resolvedKind];
+  return states[decision.kind] ?? states[DESKTOP_STATUS_DEFAULT_KIND];
 }
 
 export function listDesktopStatusStates(metrics: SystemPerformanceMetric[]): DesktopStatusState[] {

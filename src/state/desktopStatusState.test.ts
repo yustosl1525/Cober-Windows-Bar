@@ -27,6 +27,35 @@ test("desktop status resolver can switch to another explicit state kind", () => 
   assert.equal(state.title, "Neon Focus");
 });
 
+test("desktop status resolver uses priority when multiple active kinds are present", () => {
+  const state = resolveDesktopStatusState({
+    metrics,
+    activeKinds: ["clipboard", "update", "media"],
+  });
+
+  assert.equal(state.kind, "update");
+});
+
+test("desktop status resolver safely falls back to resident when preferred kind is unavailable", () => {
+  const state = resolveDesktopStatusState({
+    metrics,
+    preferredKind: "focus",
+    activeKinds: ["focus"],
+    availableKinds: ["resident"],
+    states: {
+      resident: {
+        kind: "resident",
+        title: "系统性能",
+        subtitle: "常驻状态中心",
+        source: "system",
+        metrics,
+      },
+    },
+  });
+
+  assert.equal(state.kind, "resident");
+});
+
 test("desktop status state map snapshots metrics instead of leaking caller references", () => {
   const stateMap = createDesktopStatusStateMap(metrics);
 

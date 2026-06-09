@@ -51,14 +51,13 @@ const OVERLAY_POLICY_MS = 700;
 const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
 const STATUS_CENTER_SETTINGS_COMMAND = "get_status_center_settings";
 const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
+const SET_STATUS_CENTER_PREFERENCES_COMMAND = "set_status_center_preferences";
 
 const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   alwaysFloat: true,
   avoidFullscreen: true,
   lockPosition: false,
 };
-
-const DEFAULT_STATUS_KIND: DesktopStatusKind = "resident";
 
 type DragPointer = {
   x: number;
@@ -68,7 +67,7 @@ type DragPointer = {
 export function DesktopPage() {
   const [metrics, setMetrics] = useState<SystemPerformanceMetric[]>(systemPerformanceMetrics);
   const [preferences, setPreferences] = useState<DesktopStatusPreferences>(DEFAULT_PREFERENCES);
-  const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind>(DEFAULT_STATUS_KIND);
+  const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dragStateRef = useRef<StatusWindowDragState | null>(null);
   const dragPointerRef = useRef<DragPointer | null>(null);
@@ -81,12 +80,8 @@ export function DesktopPage() {
 
   const resolvedState = resolveDesktopStatusState({
     metrics,
-    preferredKind: activeStatusKind,
+    preferredKind: activeStatusKind ?? undefined,
   });
-
-  function mergePreferences(nextPreferences: Partial<DesktopStatusPreferences>) {
-    setPreferences((previous) => ({ ...previous, ...nextPreferences }));
-  }
 
   async function handlePointerDown(event: ReactPointerEvent<HTMLElement>) {
     if (preferences.lockPosition || event.button !== 0) {
@@ -134,24 +129,38 @@ export function DesktopPage() {
     await invoke(STATUS_WINDOW_CORRECT_POSITION_COMMAND);
   }
 
-  async function setAlwaysFloat(nextValue: boolean) {
+  async function updatePreferences(nextPreferences: Partial<DesktopStatusPreferences>) {
+    const nextValue = { ...preferences, ...nextPreferences };
     const invoke = getTauriInvoke();
-    mergePreferences({ alwaysFloat: nextValue });
+
+    setPreferences(nextValue);
 
     if (!invoke) {
       return;
     }
 
-    await invoke(STATUS_WINDOW_FLOATING_COMMAND, { floating: nextValue });
+    await invoke(SET_STATUS_CENTER_PREFERENCES_COMMAND, {
+      preferences: nextValue,
+    });
+
+    if (typeof nextPreferences.alwaysFloat === "boolean") {
+      await invoke(STATUS_WINDOW_FLOATING_COMMAND, {
+        floating: nextValue.alwaysFloat,
+      });
+    }
+  }
+
+  async function setAlwaysFloat(nextValue: boolean) {
+    await updatePreferences({ alwaysFloat: nextValue });
   }
 
   function setAvoidFullscreen(nextValue: boolean) {
-    mergePreferences({ avoidFullscreen: nextValue });
+    void updatePreferences({ avoidFullscreen: nextValue });
     scheduleOverlayStartupReassert(overlayStateRef.current);
   }
 
   function setLockPosition(nextValue: boolean) {
-    mergePreferences({ lockPosition: nextValue });
+    void updatePreferences({ lockPosition: nextValue });
 
     if (nextValue) {
       isDraggingRef.current = false;

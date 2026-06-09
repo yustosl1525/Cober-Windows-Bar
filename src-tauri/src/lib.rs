@@ -1,5 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::fs;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use sysinfo::{Networks, System};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder};
@@ -26,6 +28,7 @@ const STATUS_CENTER_MENU_ACTION_EVENT: &str = "status-center://menu-action";
 const STATUS_CENTER_SETTINGS_EVENT: &str = "status-center://settings";
 const STATUS_CENTER_OPEN_SETTINGS_EVENT: &str = "status-center://open-settings";
 const TRAY_ID: &str = "status-center-tray";
+const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
 const MENU_ALWAYS_FLOAT: &str = "always-float";
 const MENU_AVOID_FULLSCREEN: &str = "avoid-fullscreen";
@@ -36,7 +39,7 @@ const MENU_QUIT: &str = "quit";
 const TRAY_MENU_SHOW_STATUS_CENTER: &str = "tray-show-status-center";
 const GLOBAL_SHORTCUT_RECALL: &str = "Alt+Shift+Space";
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DesktopStatusPreferences {
   always_float: bool,
@@ -328,6 +331,29 @@ fn get_status_center_settings(
     .map_err(|_| "status center state lock poisoned".to_string())?
     .preferences
     .clone();
+
+  Ok(StatusCenterSettingsPayload { preferences })
+}
+
+#[tauri::command]
+fn set_status_center_preferences(
+  app: tauri::AppHandle,
+  state: tauri::State<'_, SharedDesktopProductState<tauri::Wry>>,
+  preferences: DesktopStatusPreferences,
+) -> Result<StatusCenterSettingsPayload, String> {
+  {
+    let mut state = state
+      .lock()
+      .map_err(|_| "status center state lock poisoned".to_string())?;
+
+    state.preferences = preferences.clone();
+    if let Some(menu_items) = &state.menu_items {
+      apply_preference_menu_state(menu_items, &state.preferences);
+    }
+  }
+
+  persist_status_center_preferences(&app, &preferences)?;
+  emit_status_center_settings(&app, &preferences);
 
   Ok(StatusCenterSettingsPayload { preferences })
 }
@@ -647,6 +673,52 @@ fn emit_status_center_action<R: tauri::Runtime>(
   );
 }
 
+fn status_center_preferences_path<R: tauri::Runtime>(
+  app: &tauri::AppHandle<R>,
+) -> Result<PathBuf, String> {
+  let mut path = app
+    .path()
+    .app_config_dir()
+    .map_err(|error| format!("failed to resolve app config dir: {error}"))?;
+  path.push(PREFERENCES_FILE_NAME);
+  Ok(path)
+}
+
+fn load_status_center_preferences<R: tauri::Runtime>(
+  app: &tauri::AppHandle<R>,
+) -> DesktopStatusPreferences {
+  let Ok(path) = status_center_preferences_path(app) else {
+    return DesktopStatusPreferences::default();
+  };
+
+  let Ok(contents) = fs::read_to_string(path) else {
+    return DesktopStatusPreferences::default();
+  };
+
+  serde_json::from_str::<DesktopStatusPreferences>(&contents).unwrap_or_default()
+}
+
+fn persist_status_center_preferences<R: tauri::Runtime>(
+  app: &tauri::AppHandle<R>,
+  preferences: &DesktopStatusPreferences,
+) -> Result<(), String> {
+  let path = status_center_preferences_path(app)?;
+  let parent = path
+    .parent()
+    .ok_or_else(|| "preferences path missing parent directory".to_string())?;
+  fs::create_dir_all(parent).map_err(|error| {
+    format!(
+      "failed to create preferences directory {}: {error}",
+      parent.display()
+    )
+  })?;
+
+  let payload = serde_json::to_vec_pretty(preferences)
+    .map_err(|error| format!("failed to serialize preferences: {error}"))?;
+  fs::write(&path, payload)
+    .map_err(|error| format!("failed to write preferences {}: {error}", path.display()))
+}
+
 fn apply_preference_menu_state<R: tauri::Runtime>(
   menu_items: &StatusCenterMenuItems<R>,
   preferences: &DesktopStatusPreferences,
@@ -672,12 +744,14 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
   let Ok(mut state) = state.lock() else {
     return;
   };
+  let mut preferences_changed = false;
 
   match id {
     TRAY_MENU_SHOW_STATUS_CENTER => reveal_status_center_window(app),
     MENU_REFRESH_DATA => emit_status_center_action(app, "refresh-data", None),
     MENU_ALWAYS_FLOAT => {
       state.preferences.always_float = !state.preferences.always_float;
+      preferences_changed = true;
       if let Some(menu_items) = &state.menu_items {
         apply_preference_menu_state(menu_items, &state.preferences);
       }
@@ -686,6 +760,7 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
     }
     MENU_AVOID_FULLSCREEN => {
       state.preferences.avoid_fullscreen = !state.preferences.avoid_fullscreen;
+      preferences_changed = true;
       if let Some(menu_items) = &state.menu_items {
         apply_preference_menu_state(menu_items, &state.preferences);
       }
@@ -698,6 +773,7 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
     }
     MENU_LOCK_POSITION => {
       state.preferences.lock_position = !state.preferences.lock_position;
+      preferences_changed = true;
       if let Some(menu_items) = &state.menu_items {
         apply_preference_menu_state(menu_items, &state.preferences);
       }
@@ -711,6 +787,10 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
       app.exit(0);
     }
     _ => {}
+  }
+
+  if preferences_changed {
+    let _ = persist_status_center_preferences(app, &state.preferences);
   }
 }
 
@@ -755,10 +835,7 @@ pub fn run() {
           .build(),
       )?;
 
-      let preferences = setup_state
-        .lock()
-        .map(|state| state.preferences.clone())
-        .unwrap_or_default();
+      let preferences = load_status_center_preferences(app.handle());
       let menu_items = create_status_center_menu(app.handle(), &preferences)?;
       let tray_menu = create_tray_menu(app.handle())?;
 
@@ -786,6 +863,7 @@ pub fn run() {
       let _ = tray.set_show_menu_on_left_click(false);
 
       if let Ok(mut state) = setup_state.lock() {
+        state.preferences = preferences.clone();
         state.menu_items = Some(menu_items);
       }
 
@@ -809,6 +887,7 @@ pub fn run() {
       start_window_drag,
       show_status_center_context_menu,
       get_status_center_settings,
+      set_status_center_preferences,
       show_status_center_window,
       open_status_center_settings
     ])

@@ -25,6 +25,15 @@ export const DESKTOP_STATUS_TEMPLATE_ORDER: DesktopStatusKind[] = [
   "focus",
 ];
 
+export const DESKTOP_STATUS_PRIORITY_ORDER: DesktopStatusKind[] = [
+  "focus",
+  "update",
+  "download",
+  "media",
+  "clipboard",
+  "resident",
+];
+
 export const DESKTOP_STATUS_TEMPLATE_DESCRIPTORS: DesktopStatusTemplateDescriptor[] = [
   {
     kind: "resident",
@@ -35,31 +44,31 @@ export const DESKTOP_STATUS_TEMPLATE_DESCRIPTORS: DesktopStatusTemplateDescripto
   {
     kind: "media",
     label: "媒体态",
-    description: "播放中的媒体信息与进度。",
+    description: "展示正在播放的媒体信息与进度。",
     providerHint: "media session",
   },
   {
     kind: "download",
     label: "下载态",
-    description: "下载任务与传输进度。",
+    description: "展示下载任务和传输进度。",
     providerHint: "download watcher",
   },
   {
     kind: "update",
     label: "更新态",
-    description: "系统或应用更新进度。",
+    description: "展示系统或应用更新进度。",
     providerHint: "update service",
   },
   {
     kind: "clipboard",
     label: "剪贴板态",
-    description: "最近复制内容与来源。",
+    description: "展示最近复制内容与来源。",
     providerHint: "clipboard watcher",
   },
   {
     kind: "focus",
     label: "专注态",
-    description: "专注模式或计时状态。",
+    description: "展示专注模式或计时状态。",
     providerHint: "focus assist",
   },
 ];

@@ -117,7 +117,20 @@ export type DesktopStatusResolverInput = {
   metrics: SystemPerformanceMetric[];
   preferredKind?: DesktopStatusKind;
   activeKinds?: DesktopStatusKind[];
+  availableKinds?: DesktopStatusKind[];
   states?: Partial<DesktopStatusStateMap>;
+};
+
+export type DesktopStatusSchedulerInput = Pick<
+  DesktopStatusResolverInput,
+  "preferredKind" | "activeKinds"
+> & {
+  availableKinds?: DesktopStatusKind[];
+};
+
+export type DesktopStatusScheduleDecision = {
+  kind: DesktopStatusKind;
+  reason: "preferred" | "priority" | "fallback";
 };
 
 export type DesktopStatusPreferenceKey = "alwaysFloat" | "avoidFullscreen" | "lockPosition";
