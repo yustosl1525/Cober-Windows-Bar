@@ -22,24 +22,30 @@ export async function loadSystemPerformance({
   invoke?: TauriInvoke;
 } = {}): Promise<SystemPerformanceMetric[]> {
   if (!invoke) {
-    return systemPerformanceMetrics;
+    return snapshotSystemPerformanceMetrics(systemPerformanceMetrics);
   }
 
   try {
     const snapshot = parseSystemPerformanceSnapshot(await invoke(TAURI_SYSTEM_PERFORMANCE_COMMAND));
 
     if (!snapshot) {
-      return systemPerformanceMetrics;
+      return snapshotSystemPerformanceMetrics(systemPerformanceMetrics);
     }
 
-    return [
-      { id: "cpu", label: SYSTEM_PERFORMANCE_LABELS.cpu, value: snapshot.cpu, tone: "blue" },
-      { id: "memory", label: SYSTEM_PERFORMANCE_LABELS.memory, value: snapshot.memory, tone: "violet" },
-      { id: "network", label: SYSTEM_PERFORMANCE_LABELS.network, value: snapshot.network, tone: "cyan" },
-    ];
+    return createSystemPerformanceMetrics(snapshot);
   } catch {
-    return systemPerformanceMetrics;
+    return snapshotSystemPerformanceMetrics(systemPerformanceMetrics);
   }
+}
+
+export function createSystemPerformanceMetrics(
+  snapshot: SystemPerformanceSnapshot,
+): SystemPerformanceMetric[] {
+  return [
+    { id: "cpu", label: SYSTEM_PERFORMANCE_LABELS.cpu, value: snapshot.cpu, tone: "blue" },
+    { id: "memory", label: SYSTEM_PERFORMANCE_LABELS.memory, value: snapshot.memory, tone: "violet" },
+    { id: "network", label: SYSTEM_PERFORMANCE_LABELS.network, value: snapshot.network, tone: "cyan" },
+  ];
 }
 
 function parseSystemPerformanceSnapshot(value: unknown): SystemPerformanceSnapshot | undefined {
@@ -68,4 +74,8 @@ function toPercent(value: unknown): number | undefined {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function snapshotSystemPerformanceMetrics(metrics: SystemPerformanceMetric[]): SystemPerformanceMetric[] {
+  return metrics.map((metric) => ({ ...metric }));
 }
