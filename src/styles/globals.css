@@ -511,13 +511,33 @@ button {
   }
 
   .product-status-settings-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 8px;
+  }
+
+  .product-status-settings-actions-copy {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 2px;
+  }
+
+  .product-status-settings-actions-copy strong {
+    color: #152033;
+    font-size: 12px;
+    font-weight: 760;
+    line-height: 1.2;
+  }
+
+  .product-status-settings-actions-copy span {
+    color: #5f6f88;
+    font-size: 11px;
+    font-weight: 640;
+    line-height: 1.35;
   }
 
   .product-status-settings-action {
     min-height: 34px;
+    width: fit-content;
     border: 1px solid rgba(203, 213, 225, 0.88);
     border-radius: 999px;
     background:
@@ -536,6 +556,10 @@ button {
       color 160ms ease,
       transform 160ms ease,
       box-shadow 160ms ease;
+  }
+
+  .product-status-settings-actions > .product-status-settings-action {
+    justify-self: start;
   }
 
   .product-status-settings-action:hover {

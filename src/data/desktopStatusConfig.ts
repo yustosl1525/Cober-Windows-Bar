@@ -128,6 +128,7 @@ const COPY = {
     sections: {
       windowBehavior: "窗口行为",
       statusTemplates: "状态模板",
+      quickActions: "快捷控制",
     },
     toggles: {
       alwaysFloat: {
@@ -154,6 +155,8 @@ const COPY = {
       resetPosition: "重置位置",
       openNativeSettings: "打开原生设置入口",
       recallStatusCenter: "召回状态中心",
+      quickPanelTitle: "快捷控制",
+      quickPanelDescription: "像 Windows 11 状态中心一样快速调整当前窗口行为。",
     },
   },
 } as const;

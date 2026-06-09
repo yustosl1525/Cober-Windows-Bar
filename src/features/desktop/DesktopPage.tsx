@@ -591,6 +591,10 @@ export function DesktopPage() {
             </div>
 
             <div className="product-status-settings-actions">
+              <div className="product-status-settings-actions-copy">
+                <strong>{settingsCopy.actions.quickPanelTitle}</strong>
+                <span>{settingsCopy.actions.quickPanelDescription}</span>
+              </div>
               <button type="button" className="product-status-settings-action" onClick={() => void refresh()}>
                 {settingsCopy.actions.refresh}
               </button>
