@@ -24,7 +24,7 @@ export function HubShell({ mode, tasks = [], music, notification }: HubShellProp
   const multiTaskDisplay = tasks.length > 0 ? tasks : multiTasks;
 
   return (
-    <GlassPanel className="inline-flex rounded-[24px]">
+    <GlassPanel className="inline-flex rounded-[32px] border border-white/18 bg-transparent p-0 shadow-none">
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}
@@ -32,6 +32,7 @@ export function HubShell({ mode, tasks = [], music, notification }: HubShellProp
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -6, scale: 0.98 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="min-w-0"
         >
           {mode === "idle" && <IdleHub />}
           {mode === "music" && <MusicHub music={musicDisplay} />}

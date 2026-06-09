@@ -1,41 +1,62 @@
 import type { ReactNode } from "react";
-import { Bot, Download, Folder, Music2, PanelTop, Search } from "lucide-react";
-import { ProgressBar } from "../../../shared/ui/ProgressBar";
+import { Bot, Download, Folder, GitBranch, LayoutGrid, MessageCircleMore, Music2, PanelTop, Search } from "lucide-react";
+import { FluentIconChip, FluentProgressRail } from "./ShowcaseFluentTokens";
 
 export function FluentStyleGuide() {
   return (
-    <section className="grid gap-4 font-['Segoe_UI','Microsoft_YaHei',system-ui,sans-serif] xl:grid-cols-[1fr_1fr]">
+    <section className="grid gap-4 font-['Segoe_UI','Microsoft_YaHei',system-ui,sans-serif] xl:grid-cols-[1.05fr_0.95fr]">
       <div>
-        <h2 className="mb-4 text-xl font-semibold text-white">Windows 11 Fluent Tokens</h2>
+        <h2 className="mb-4 text-xl font-semibold text-white">Windows 11 Fluent System</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 min-[1700px]:grid-cols-5">
-          <SpecCard title="Mica background" value="Low contrast layers" swatch="bg-[linear-gradient(135deg,rgba(244,249,255,0.14),rgba(18,31,48,0.56))]" />
-          <SpecCard title="Acrylic panel" value="blur 24-32px" swatch="bg-white/[0.12] backdrop-blur-2xl" />
-          <SpecCard title="Radius scale" value="12 / 18 / 24px" swatch="bg-[#60cdff]/18" />
-          <SpecCard title="Typography" value="Segoe UI + system" swatch="bg-slate-100/14" />
-          <SpecCard title="Accent color" value="#60CDFF" swatch="bg-[#60cdff]" />
+          <SpecCard
+            title="Acrylic capsule"
+            value="Soft glass surface"
+            swatch="bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(255,255,255,0.42))]"
+          />
+          <SpecCard title="Backdrop blur" value="24px + saturate" swatch="bg-white/[0.12] backdrop-blur-2xl" />
+          <SpecCard title="Shape language" value="9999px / 30px / 22px" swatch="bg-violet-300/18" />
+          <SpecCard title="Typography" value="Segoe UI hierarchy" swatch="bg-slate-100/14" />
+          <SpecCard title="Mode accents" value="AI / Media / Download / Notify / Git / Multi" swatch="bg-[linear-gradient(90deg,#7c3aed,#ec4899,#10b981,#f59e0b,#0ea5e9)]" />
+
           <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl">
-            <div className="text-sm text-slate-300">Icon tone</div>
-            <div className="mt-3 flex gap-2">
-              <IconToken tone="rose"><Music2 size={18} /></IconToken>
-              <IconToken tone="sky"><Bot size={18} /></IconToken>
-              <IconToken tone="green"><Download size={18} /></IconToken>
+            <div className="text-sm text-slate-300">Mode chips</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <FluentIconChip mode="music" compact />
+              <FluentIconChip mode="ai" compact />
+              <FluentIconChip mode="download" compact />
+              <FluentIconChip mode="notification" compact />
+              <FluentIconChip mode="git" compact />
+              <FluentIconChip mode="multiTask" compact />
             </div>
           </div>
+
           <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl md:col-span-2 min-[1700px]:col-span-2">
-            <div className="text-sm text-slate-300">Progress bars</div>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <ProgressBar value={64} tone="pink" label="Fluent music progress token" />
-              <ProgressBar value={68} tone="blue" label="Fluent AI progress token" />
-              <ProgressBar value={48} tone="green" label="Fluent download progress token" />
+            <div className="text-sm text-slate-300">Progress rails</div>
+            <div className="mt-3 grid gap-3">
+              <FluentRailRow label="AI" mode="ai" value={68} />
+              <FluentRailRow label="Music" mode="music" value={56} />
+              <FluentRailRow label="Download" mode="download" value={48} />
             </div>
           </div>
-          <SpecCard title="Motion" value="ease-out 180-220ms" swatch="bg-white/[0.08]" />
+
+          <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl md:col-span-2 min-[1700px]:col-span-2">
+            <div className="text-sm text-slate-300">Future mode palette</div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-100 min-[1700px]:grid-cols-3">
+              <ModePill icon={<Bot size={14} />} label="AI" tint="bg-violet-300/16 text-violet-100" />
+              <ModePill icon={<Music2 size={14} />} label="Music" tint="bg-fuchsia-300/16 text-fuchsia-100" />
+              <ModePill icon={<Download size={14} />} label="Download" tint="bg-emerald-300/16 text-emerald-100" />
+              <ModePill icon={<MessageCircleMore size={14} />} label="Notification" tint="bg-amber-300/16 text-amber-100" />
+              <ModePill icon={<GitBranch size={14} />} label="Git" tint="bg-sky-300/16 text-sky-100" />
+              <ModePill icon={<LayoutGrid size={14} />} label="MultiTask" tint="bg-slate-200/16 text-slate-100" />
+            </div>
+          </div>
         </div>
       </div>
+
       <div>
-        <h2 className="mb-4 text-xl font-semibold text-white">Position mock</h2>
-        <div className="relative h-[236px] overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,rgba(86,159,255,0.28),rgba(32,49,73,0.5)_45%,rgba(8,17,31,0.9))] p-5 shadow-[0_20px_58px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.16)]">
-          <div className="absolute inset-x-8 top-7 h-20 rounded-[22px] border border-white/10 bg-white/[0.045] backdrop-blur-xl" />
+        <h2 className="mb-4 text-xl font-semibold text-white">Desktop placement</h2>
+        <div className="relative h-[248px] overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(86,159,255,0.28),rgba(32,49,73,0.5)_45%,rgba(8,17,31,0.9))] p-5 shadow-[0_20px_58px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.16)]">
+          <div className="absolute inset-x-8 top-7 h-20 rounded-[24px] border border-white/10 bg-white/[0.045] backdrop-blur-xl" />
           <div className="absolute bottom-0 left-0 right-0 flex h-14 items-center justify-center gap-3 border-t border-white/15 bg-[rgba(14,22,34,0.72)] px-4 backdrop-blur-2xl">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-white/[0.07]">
               <Search size={17} />
@@ -56,19 +77,25 @@ export function FluentStyleGuide() {
               2024/05/20
             </span>
           </div>
-          <div className="absolute bottom-[66px] right-5">
-            <div className="rounded-[24px] border border-[#60cdff]/28 bg-[#60cdff]/12 p-3 shadow-[0_16px_40px_rgba(14,116,144,0.25),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl">
-              <div className="flex gap-3">
-                <Music2 className="text-rose-300" />
-                <Bot className="text-[#8bd8ff]" />
-                <Download className="text-emerald-300" />
+
+          <div className="absolute bottom-[66px] right-5 min-w-[242px] rounded-[9999px] border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.70),rgba(255,255,255,0.48))] px-4 py-3 text-slate-900 shadow-[0_16px_40px_rgba(14,116,144,0.18),inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-2xl">
+            <div className="flex items-center gap-3">
+              <FluentIconChip mode="ai" compact />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold text-slate-900">GPT-5.5</div>
+                <div className="truncate text-[11px] font-medium text-slate-600">Generating code...</div>
               </div>
+              <span className="text-[10px] font-semibold uppercase text-violet-700">Live</span>
+            </div>
+            <div className="mt-2.5">
+              <FluentProgressRail mode="ai" value={68} label="Desktop placement sample progress" />
             </div>
           </div>
+
           <div className="absolute right-8 top-8 rounded-[14px] border border-white/12 bg-white/[0.11] px-4 py-3 text-sm text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl">
-            Floats above the taskbar
+            Floats above windowed apps
             <br />
-            10px gap
+            Avoids fullscreen surfaces
           </div>
         </div>
       </div>
@@ -86,12 +113,29 @@ function SpecCard({ title, value, swatch }: { title: string; value: string; swat
   );
 }
 
-function IconToken({ children, tone }: { children: ReactNode; tone: "rose" | "sky" | "green" }) {
-  const toneClass = {
-    rose: "bg-rose-300/12 text-rose-300",
-    sky: "bg-[#60cdff]/14 text-[#8bd8ff]",
-    green: "bg-emerald-300/12 text-emerald-300",
-  }[tone];
+function FluentRailRow({
+  label,
+  mode,
+  value,
+}: {
+  label: string;
+  mode: Parameters<typeof FluentProgressRail>[0]["mode"];
+  value: number;
+}) {
+  return (
+    <div className="grid grid-cols-[48px_minmax(0,1fr)_36px] items-center gap-3">
+      <span className="text-xs font-semibold text-slate-200">{label}</span>
+      <FluentProgressRail mode={mode} value={value} label={`${label} token progress`} />
+      <span className="text-right text-[11px] font-medium tabular-nums text-slate-300">{value}%</span>
+    </div>
+  );
+}
 
-  return <div className={`grid h-9 w-9 place-items-center rounded-[10px] ${toneClass}`}>{children}</div>;
+function ModePill({ icon, label, tint }: { icon: ReactNode; label: string; tint: string }) {
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 ${tint}`}>
+      {icon}
+      <span>{label}</span>
+    </div>
+  );
 }
