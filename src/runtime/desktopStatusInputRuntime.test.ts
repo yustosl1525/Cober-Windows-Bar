@@ -75,6 +75,8 @@ async function testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource() {
 
   const initialSnapshot = runtime.getSnapshot();
   assert.equal(initialSnapshot.source, "mock");
+  assert.equal(initialSnapshot.sourceStatus.activeSource, "mock");
+  assert.equal(initialSnapshot.sourceStatus.quality, "fallback");
   assert.deepEqual(
     initialSnapshot.state.events.map((event) => event.id),
     getActiveHubEvents(mockHubEvents).map((event) => event.id),
@@ -82,6 +84,9 @@ async function testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource() {
 
   const refreshedSnapshot = await runtime.refresh();
   assert.equal(refreshedSnapshot.source, "tauri-fixture");
+  assert.equal(refreshedSnapshot.sourceStatus.activeSource, "tauri-fixture");
+  assert.equal(refreshedSnapshot.sourceStatus.lastSuccessfulSource, "tauri-fixture");
+  assert.equal(refreshedSnapshot.sourceStatus.quality, "live");
   assert.deepEqual(
     refreshedSnapshot.state.events.map((event) => event.id),
     ["fixture-download"],
@@ -168,6 +173,33 @@ async function testDesktopStatusRuntimeAcceptsPushListenerUpdates() {
   assert.equal(observedSources[observedSources.length - 1], "tauri-fixture");
 
   unsubscribe();
+  runtime.dispose();
+}
+
+async function testDesktopStatusRuntimeMarksFallbackAsStaleAfterSuccessfulNativeRefresh() {
+  let invokeCalls = 0;
+  const runtime = createDesktopStatusRuntime({
+    invoke: async () => {
+      invokeCalls += 1;
+      if (invokeCalls === 1) {
+        return fixtureEvents;
+      }
+
+      throw new Error("fixture bridge failed");
+    },
+  });
+
+  const liveSnapshot = await runtime.refresh();
+  assert.equal(liveSnapshot.sourceStatus.quality, "live");
+  assert.equal(liveSnapshot.sourceStatus.lastSuccessfulSource, "tauri-fixture");
+
+  const fallbackSnapshot = await runtime.refresh();
+  assert.equal(fallbackSnapshot.source, "mock");
+  assert.equal(fallbackSnapshot.sourceStatus.activeSource, "mock");
+  assert.equal(fallbackSnapshot.sourceStatus.lastSuccessfulSource, "tauri-fixture");
+  assert.equal(fallbackSnapshot.sourceStatus.quality, "stale");
+  assert.equal(fallbackSnapshot.sourceStatus.fallbackReason, "invoke-failed");
+
   runtime.dispose();
 }
 
@@ -276,6 +308,10 @@ async function testDesktopStatusRuntimeUsesTauriEventSourceAndUnlistensOnDispose
   assert.deepEqual(observedEventIds[0], getActiveHubEvents(mockHubEvents).map((event) => event.id));
   assert.deepEqual(observedEventIds[observedEventIds.length - 1], ["fixture-download"]);
   assert.equal(observedSources[observedSources.length - 1], "tauri-event");
+  const liveSnapshot = runtime.getSnapshot();
+  assert.equal(liveSnapshot.sourceStatus.activeSource, "tauri-event");
+  assert.equal(liveSnapshot.sourceStatus.lastSuccessfulSource, "tauri-event");
+  assert.equal(liveSnapshot.sourceStatus.quality, "live");
 
   runtime.dispose();
   await Promise.resolve();
@@ -302,6 +338,7 @@ await testFallsBackToMockWhenFixtureLoadFails();
 await testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource();
 await testDesktopStatusRuntimeSubscribersReceiveBusUpdates();
 await testDesktopStatusRuntimeAcceptsPushListenerUpdates();
+await testDesktopStatusRuntimeMarksFallbackAsStaleAfterSuccessfulNativeRefresh();
 await testDesktopStatusRuntimeDisposeUnsubscribesPushListener();
 await testTauriDesktopStatusEventSourceEmitsCanonicalEvents();
 await testDesktopStatusRuntimeUsesTauriEventSourceAndUnlistensOnDispose();

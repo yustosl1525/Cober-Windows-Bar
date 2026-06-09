@@ -4,13 +4,15 @@ type DesktopStatusTemplateFrameProps = {
   eyebrow: string;
   title: string;
   subtitle: string;
-  children: ReactNode;
+  meta?: ReactNode;
+  children?: ReactNode;
 };
 
 export function DesktopStatusTemplateFrame({
   eyebrow,
   title,
   subtitle,
+  meta,
   children,
 }: DesktopStatusTemplateFrameProps) {
   return (
@@ -20,7 +22,10 @@ export function DesktopStatusTemplateFrame({
         <strong>{title}</strong>
         <span>{subtitle}</span>
       </div>
-      <div className="product-status-state-body">{children}</div>
+      <div className="product-status-state-body">
+        {meta ? <div className="product-status-template-meta">{meta}</div> : null}
+        {children}
+      </div>
     </div>
   );
 }

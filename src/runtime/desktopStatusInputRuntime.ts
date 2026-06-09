@@ -13,6 +13,14 @@ import { listen } from "@tauri-apps/api/event";
 export const DESKTOP_STATUS_INPUT_EVENT = "status-center://hub-events";
 
 export type DesktopStatusEventSource = "mock" | "tauri-fixture" | "tauri-event";
+export type DesktopStatusRuntimeQuality = "live" | "fallback" | "stale";
+
+export type DesktopStatusRuntimeSourceStatus = {
+  activeSource: DesktopStatusEventSource;
+  lastSuccessfulSource?: Exclude<DesktopStatusEventSource, "mock">;
+  quality: DesktopStatusRuntimeQuality;
+  fallbackReason?: TauriRuntimeDiagnostic["code"];
+};
 
 export type DesktopStatusEventsResult = {
   events: HubEvent[];
@@ -24,6 +32,7 @@ export type DesktopStatusRuntimeSnapshot = {
   state: HubStoreState;
   source: DesktopStatusEventSource;
   diagnostic?: TauriRuntimeDiagnostic;
+  sourceStatus: DesktopStatusRuntimeSourceStatus;
 };
 
 export type DesktopStatusRuntime = {
@@ -103,6 +112,7 @@ export function createDesktopStatusRuntime({
 }: CreateDesktopStatusRuntimeOptions = {}): DesktopStatusRuntime {
   let source: DesktopStatusEventSource = "mock";
   let diagnostic: TauriRuntimeDiagnostic | undefined;
+  let lastSuccessfulSource: Exclude<DesktopStatusEventSource, "mock"> | undefined;
   let disposed = false;
   const snapshotFallbackEvents = snapshotHubEvents(fallbackEvents);
   const runtimeSubscribers = new Set<(snapshot: DesktopStatusRuntimeSnapshot) => void>();
@@ -114,10 +124,17 @@ export function createDesktopStatusRuntime({
   eventBus.replaceHubEvents(snapshotFallbackEvents);
 
   function snapshot(now?: number): DesktopStatusRuntimeSnapshot {
+    const sourceStatus = createSourceStatus({
+      source,
+      diagnostic,
+      lastSuccessfulSource,
+    });
+
     return {
       state: eventBus.getState(now),
       source,
       diagnostic,
+      sourceStatus,
     };
   }
 
@@ -150,6 +167,9 @@ export function createDesktopStatusRuntime({
 
       source = nextSource;
       diagnostic = nextDiagnostic;
+      if (nextSource !== "mock") {
+        lastSuccessfulSource = nextSource;
+      }
       eventBus.replaceHubEvents(snapshotHubEvents(events));
     });
 
@@ -176,6 +196,9 @@ export function createDesktopStatusRuntime({
 
     source = result.source;
     diagnostic = result.diagnostic;
+    if (result.source !== "mock") {
+      lastSuccessfulSource = result.source;
+    }
     eventBus.replaceHubEvents(result.events);
 
     return snapshot();
@@ -267,6 +290,48 @@ function parseDesktopStatusInputEventPayload(
       : undefined;
 
   return events ? { events } : undefined;
+}
+
+function createSourceStatus({
+  source,
+  diagnostic,
+  lastSuccessfulSource,
+}: {
+  source: DesktopStatusEventSource;
+  diagnostic?: TauriRuntimeDiagnostic;
+  lastSuccessfulSource?: Exclude<DesktopStatusEventSource, "mock">;
+}): DesktopStatusRuntimeSourceStatus {
+  if (source !== "mock") {
+    return {
+      activeSource: source,
+      lastSuccessfulSource: source,
+      quality: "live",
+    };
+  }
+
+  if (diagnostic && lastSuccessfulSource) {
+    return {
+      activeSource: source,
+      lastSuccessfulSource,
+      quality: "stale",
+      fallbackReason: diagnostic.code,
+    };
+  }
+
+  if (diagnostic) {
+    return {
+      activeSource: source,
+      lastSuccessfulSource,
+      quality: "fallback",
+      fallbackReason: diagnostic.code,
+    };
+  }
+
+  return {
+    activeSource: source,
+    lastSuccessfulSource,
+    quality: "fallback",
+  };
 }
 
 function parseHubEvents(value: unknown[]): HubEvent[] | undefined {

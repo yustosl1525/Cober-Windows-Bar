@@ -12,15 +12,20 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
 
   return (
     <>
-      <div className="product-status-icon" aria-hidden="true">
-        <Clipboard size={33} strokeWidth={2.2} />
+      <div className="product-status-icon product-status-icon-clipboard" aria-hidden="true">
+        <Clipboard size={18} strokeWidth={2.1} />
       </div>
-      <DesktopStatusTemplateFrame eyebrow={copy.clipboardEyebrow} title={state.title} subtitle={state.subtitle}>
-        <div className="product-status-template-meta">
-          <span>{state.copiedText}</span>
-          <span>{state.detail}</span>
-        </div>
-      </DesktopStatusTemplateFrame>
+      <DesktopStatusTemplateFrame
+        eyebrow={copy.clipboardEyebrow}
+        title={state.title}
+        subtitle={state.subtitle}
+        meta={
+          <>
+            <span>{state.copiedText}</span>
+            <span>{state.detail}</span>
+          </>
+        }
+      />
     </>
   );
 }

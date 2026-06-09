@@ -9,52 +9,48 @@ type MediaStatusTemplateProps = {
 
 export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
   const copy = getDesktopStatusTemplateChromeCopy();
-  const progressLabel = `${copy.mediaProgress} ${state.progress}%`;
 
   return (
     <>
-      <div className="product-status-icon" aria-hidden="true">
-        <Music4 size={34} strokeWidth={2.2} />
+      <div className="product-status-icon product-status-icon-media" aria-hidden="true">
+        <Music4 size={18} strokeWidth={2.1} />
       </div>
-      <DesktopStatusTemplateFrame eyebrow={copy.mediaEyebrow} title={state.title} subtitle={state.subtitle}>
-        <div className="product-status-template-meta">
-          <span>{state.artist}</span>
-          <span>{state.timeLabel}</span>
-        </div>
-        <StatusLine value={state.progress} accent={state.accent} label={progressLabel} />
+      <DesktopStatusTemplateFrame
+        eyebrow={copy.mediaEyebrow}
+        title={state.title}
+        subtitle={state.subtitle}
+        meta={
+          <>
+            <span>{state.artist}</span>
+            <span>{state.timeLabel}</span>
+          </>
+        }
+      >
+        <StatusRail value={state.progress} label={`${copy.mediaProgress} ${state.progress}%`} accent="violet" />
       </DesktopStatusTemplateFrame>
     </>
   );
 }
 
-type StatusLineProps = {
+function StatusRail({
+  value,
+  label,
+  accent,
+}: {
   value: number;
-  accent: string;
   label: string;
-};
-
-function StatusLine({ value, accent, label }: StatusLineProps) {
+  accent: "violet" | "green" | "orange";
+}) {
   return (
     <span
-      className="product-status-track"
+      className={`product-status-track product-status-track-${accent}`}
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
     >
-      <span style={{ width: `${Math.max(8, Math.min(100, value))}%`, background: accentColor(accent) }} />
+      <span style={{ width: `${Math.max(12, Math.min(100, value))}%` }} />
     </span>
   );
-}
-
-function accentColor(accent: string) {
-  switch (accent) {
-    case "violet":
-      return "linear-gradient(90deg, #7c6cff 0%, #a78bfa 100%)";
-    case "pink":
-      return "linear-gradient(90deg, #ec4899 0%, #f472b6 100%)";
-    default:
-      return "linear-gradient(90deg, #2f8fed 0%, #60a5fa 100%)";
-  }
 }

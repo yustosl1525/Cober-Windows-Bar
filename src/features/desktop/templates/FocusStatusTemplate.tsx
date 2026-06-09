@@ -12,15 +12,20 @@ export function FocusStatusTemplate({ state }: FocusStatusTemplateProps) {
 
   return (
     <>
-      <div className="product-status-icon" aria-hidden="true">
-        <MoonStar size={33} strokeWidth={2.2} />
+      <div className="product-status-icon product-status-icon-focus" aria-hidden="true">
+        <MoonStar size={18} strokeWidth={2.1} />
       </div>
-      <DesktopStatusTemplateFrame eyebrow={copy.focusEyebrow} title={state.title} subtitle={state.subtitle}>
-        <div className="product-status-template-meta">
-          <span>{state.sessionLabel}</span>
-          <span>{state.detail}</span>
-        </div>
-      </DesktopStatusTemplateFrame>
+      <DesktopStatusTemplateFrame
+        eyebrow={copy.focusEyebrow}
+        title={state.title}
+        subtitle={state.subtitle}
+        meta={
+          <>
+            <span>{state.sessionLabel}</span>
+            <span>{state.detail}</span>
+          </>
+        }
+      />
     </>
   );
 }
