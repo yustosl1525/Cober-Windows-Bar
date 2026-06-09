@@ -33,6 +33,18 @@ export type DesktopStatusPreferenceKey = "alwaysFloat" | "avoidFullscreen" | "lo
 
 export type DesktopStatusPreferences = Record<DesktopStatusPreferenceKey, boolean>;
 
+export type DesktopStatusMenuActionId =
+  | "refresh-data"
+  | "always-float"
+  | "avoid-fullscreen"
+  | "lock-position"
+  | "toggle-always-float"
+  | "toggle-avoid-fullscreen"
+  | "toggle-lock-position"
+  | "reset-position"
+  | "open-settings"
+  | "quit";
+
 export type DesktopStatusLabels = {
   metrics: Record<SystemPerformanceMetricId, string>;
   currentUsage: string;
@@ -48,10 +60,14 @@ export type DesktopStatusLabels = {
 };
 
 export type DesktopStatusMenuAction = {
-  id: string;
+  id: DesktopStatusMenuActionId;
   label: string;
   kind: "action" | "toggle";
   preferenceKey?: DesktopStatusPreferenceKey;
+};
+
+export type DesktopStatusPreferencesPayload = {
+  preferences: DesktopStatusPreferences;
 };
 
 export type DesktopStatusConfig = {

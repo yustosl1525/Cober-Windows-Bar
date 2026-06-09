@@ -33,8 +33,8 @@ export type TauriRuntimeResult =
 export type TauriRuntimeCapabilities = {
   runtime: "tauri";
   fixtureIpc: true;
-  tray: false;
-  alwaysOnTop: boolean;
+  tray: true;
+  alwaysOnTop: true;
   windowsProviders: boolean;
   configuredShellWindow: TauriConfiguredShellWindow;
 };
@@ -258,8 +258,8 @@ function parseRuntimeCapabilities(value: unknown): TauriRuntimeCapabilities | un
   if (
     value.runtime !== "tauri" ||
     value.fixtureIpc !== true ||
-    value.tray !== false ||
-    typeof value.alwaysOnTop !== "boolean" ||
+    value.tray !== true ||
+    value.alwaysOnTop !== true ||
     typeof value.windowsProviders !== "boolean" ||
     !isConfiguredShellWindow(value.configuredShellWindow)
   ) {

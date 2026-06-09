@@ -1,20 +1,37 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Cpu } from "lucide-react";
 import { systemPerformanceMetrics } from "../../data/mockHubData";
-import type { SystemPerformanceMetric } from "../../types/hub";
+import type {
+  DesktopStatusPreferences,
+  DesktopStatusPreferencesPayload,
+  SystemPerformanceMetric,
+} from "../../types/hub";
+import {
+  listenStatusCenterMenuActions,
+  listenStatusCenterSettings,
+  type StatusCenterMenuAction,
+} from "../../runtime/desktopProductRuntime";
 import { loadSystemPerformance } from "../../runtime/systemPerformanceRuntime";
 import { getTauriInvoke } from "../../runtime/tauriRuntime";
 import {
   captureStatusWindowDragState,
+  correctStatusWindowPosition,
   correctStatusWindowPositionForDisplayChange,
   createDebouncedWindowCorrection,
-  correctStatusWindowPosition,
   createStatusWindowOverlayState,
   enforceStatusWindowOverlay,
   moveStatusWindowDrag,
   scheduleOverlayStartupReassert,
+  STATUS_WINDOW_CORRECT_POSITION_COMMAND,
   STATUS_WINDOW_DISPLAY_CHANGE_DEBOUNCE_MS,
+  STATUS_WINDOW_FLOATING_COMMAND,
   STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS,
   type StatusWindowDragState,
 } from "../../runtime/statusWindowRuntime";
@@ -22,6 +39,14 @@ import {
 const STATUS_REFRESH_MS = 1800;
 const OVERLAY_POLICY_MS = 700;
 const CURRENT_USAGE_LABEL = "\u5F53\u524D\u4F7F\u7528\u7387";
+const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
+const STATUS_CENTER_SETTINGS_COMMAND = "get_status_center_settings";
+
+const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
+  alwaysFloat: true,
+  avoidFullscreen: true,
+  lockPosition: false,
+};
 
 type DragPointer = {
   x: number;
@@ -30,6 +55,7 @@ type DragPointer = {
 
 export function DesktopPage() {
   const [metrics, setMetrics] = useState<SystemPerformanceMetric[]>(systemPerformanceMetrics);
+  const [preferences, setPreferences] = useState<DesktopStatusPreferences>(DEFAULT_PREFERENCES);
   const dragStateRef = useRef<StatusWindowDragState | null>(null);
   const dragPointerRef = useRef<DragPointer | null>(null);
   const dragFrameRef = useRef<number | null>(null);
@@ -37,9 +63,14 @@ export function DesktopPage() {
   const pendingPositionCorrectionRef = useRef(false);
   const isDraggingRef = useRef(false);
   const overlayStateRef = useRef(createStatusWindowOverlayState());
+  const appWindowRef = useRef(getCurrentWindow());
+
+  function mergePreferences(nextPreferences: Partial<DesktopStatusPreferences>) {
+    setPreferences((previous) => ({ ...previous, ...nextPreferences }));
+  }
 
   async function handlePointerDown(event: ReactPointerEvent<HTMLElement>) {
-    if (event.button !== 0) {
+    if (preferences.lockPosition || event.button !== 0) {
       return;
     }
 
@@ -57,10 +88,101 @@ export function DesktopPage() {
     }
   }
 
+  async function refresh() {
+    if (isDraggingRef.current) {
+      return;
+    }
+
+    const nextMetrics = await loadSystemPerformance();
+    setMetrics(nextMetrics);
+  }
+
+  async function showNativeContextMenu(x: number, y: number) {
+    const invoke = getTauriInvoke();
+    if (!invoke || isDraggingRef.current) {
+      return;
+    }
+
+    await invoke(STATUS_CENTER_CONTEXT_MENU_COMMAND, { x, y });
+  }
+
+  async function resetPosition() {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return;
+    }
+
+    await invoke(STATUS_WINDOW_CORRECT_POSITION_COMMAND);
+  }
+
+  async function setAlwaysFloat(nextValue: boolean) {
+    const invoke = getTauriInvoke();
+    mergePreferences({ alwaysFloat: nextValue });
+
+    if (!invoke) {
+      return;
+    }
+
+    await invoke(STATUS_WINDOW_FLOATING_COMMAND, { floating: nextValue });
+  }
+
+  function setAvoidFullscreen(nextValue: boolean) {
+    mergePreferences({ avoidFullscreen: nextValue });
+    scheduleOverlayStartupReassert(overlayStateRef.current);
+  }
+
+  function setLockPosition(nextValue: boolean) {
+    mergePreferences({ lockPosition: nextValue });
+
+    if (nextValue) {
+      isDraggingRef.current = false;
+      dragStateRef.current = null;
+      dragPointerRef.current = null;
+    }
+  }
+
+  async function quitStatusCenter() {
+    await appWindowRef.current.close();
+  }
+
+  async function handleMenuAction(action: StatusCenterMenuAction, checked?: boolean) {
+    switch (action) {
+      case "refresh-data":
+        await refresh();
+        return;
+      case "toggle-always-float":
+        if (typeof checked === "boolean") {
+          await setAlwaysFloat(checked);
+        }
+        return;
+      case "toggle-avoid-fullscreen":
+        if (typeof checked === "boolean") {
+          setAvoidFullscreen(checked);
+        }
+        return;
+      case "toggle-lock-position":
+        if (typeof checked === "boolean") {
+          setLockPosition(checked);
+        }
+        return;
+      case "reset-position":
+        await resetPosition();
+        return;
+      case "open-settings":
+        window.alert(
+          "\u8BBE\u7F6E\u9762\u677F\u5C06\u5728\u4E0B\u4E00\u6CE2\u7248\u672C\u63A5\u5165\u3002",
+        );
+        return;
+      case "quit":
+        await quitStatusCenter();
+        return;
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
 
-    async function refresh() {
+    async function refreshMetrics() {
       if (isDraggingRef.current) {
         return;
       }
@@ -71,8 +193,10 @@ export function DesktopPage() {
       }
     }
 
-    refresh();
-    const timer = window.setInterval(refresh, STATUS_REFRESH_MS);
+    void refreshMetrics();
+    const timer = window.setInterval(() => {
+      void refreshMetrics();
+    }, STATUS_REFRESH_MS);
 
     return () => {
       mounted = false;
@@ -85,7 +209,7 @@ export function DesktopPage() {
     if (!invoke) {
       return;
     }
-    const tauriInvoke = invoke;
+
     scheduleOverlayStartupReassert(overlayStateRef.current);
 
     async function updateOverlayPolicy() {
@@ -94,14 +218,16 @@ export function DesktopPage() {
       }
 
       try {
-        await enforceStatusWindowOverlay(overlayStateRef.current, { invoke: tauriInvoke });
+        await enforceStatusWindowOverlay(overlayStateRef.current, { invoke });
       } catch {
         // Keep the last known floating state if foreground-window detection is unavailable.
       }
     }
 
-    updateOverlayPolicy();
-    const timer = window.setInterval(updateOverlayPolicy, OVERLAY_POLICY_MS);
+    void updateOverlayPolicy();
+    const timer = window.setInterval(() => {
+      void updateOverlayPolicy();
+    }, OVERLAY_POLICY_MS);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -112,7 +238,7 @@ export function DesktopPage() {
       return;
     }
 
-    const appWindow = getCurrentWindow();
+    const appWindow = appWindowRef.current;
     const scaleCorrection = createDebouncedWindowCorrection(async () => {
       if (isDraggingRef.current) {
         return;
@@ -161,6 +287,46 @@ export function DesktopPage() {
       for (const cleanup of cleanups) {
         cleanup();
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return;
+    }
+
+    let disposed = false;
+    let offMenuActions: (() => void) | undefined;
+    let offSettings: (() => void) | undefined;
+
+    function applySettings(payload: DesktopStatusPreferencesPayload) {
+      if (disposed) {
+        return;
+      }
+
+      setPreferences({ ...payload.preferences });
+    }
+
+    void (async () => {
+      const settingsResult = await invoke(STATUS_CENTER_SETTINGS_COMMAND);
+      if (!disposed && isPreferencesPayload(settingsResult)) {
+        setPreferences({ ...settingsResult.preferences });
+      }
+
+      offMenuActions = await listenStatusCenterMenuActions(async ({ action, checked }) => {
+        await handleMenuAction(action, checked);
+      });
+
+      offSettings = await listenStatusCenterSettings((payload) => {
+        applySettings(payload);
+      });
+    })();
+
+    return () => {
+      disposed = true;
+      offMenuActions?.();
+      offSettings?.();
     };
   }, []);
 
@@ -258,8 +424,18 @@ export function DesktopPage() {
     };
   }, []);
 
+  async function handleContextMenu(event: ReactMouseEvent<HTMLElement>) {
+    event.preventDefault();
+    await showNativeContextMenu(event.clientX, event.clientY);
+  }
+
   return (
-    <main className="product-status-window" data-testid="desktop-preview" onPointerDownCapture={handlePointerDown}>
+    <main
+      className="product-status-window"
+      data-testid="desktop-preview"
+      onContextMenu={handleContextMenu}
+      onPointerDownCapture={handlePointerDown}
+    >
       <section className="product-status-center" aria-label="Cober system performance status center">
         <div className="product-status-icon" aria-hidden="true">
           <Cpu size={36} strokeWidth={2.35} />
@@ -297,6 +473,20 @@ export function DesktopPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function isPreferencesPayload(value: unknown): value is DesktopStatusPreferencesPayload {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const preferences = (value as DesktopStatusPreferencesPayload).preferences;
+
+  return (
+    typeof preferences?.alwaysFloat === "boolean" &&
+    typeof preferences.avoidFullscreen === "boolean" &&
+    typeof preferences.lockPosition === "boolean"
   );
 }
 
