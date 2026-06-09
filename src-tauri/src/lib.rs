@@ -24,6 +24,7 @@ use windows_sys::Win32::{
 
 const STATUS_WINDOW_EDGE_MARGIN: i32 = 8;
 const STATUS_WINDOW_LABEL: &str = "main";
+const STATUS_CENTER_HUB_EVENTS_EVENT: &str = "status-center://hub-events";
 const STATUS_CENTER_MENU_ACTION_EVENT: &str = "status-center://menu-action";
 const STATUS_CENTER_SETTINGS_EVENT: &str = "status-center://settings";
 const STATUS_CENTER_OPEN_SETTINGS_EVENT: &str = "status-center://open-settings";
@@ -100,7 +101,7 @@ impl<R: tauri::Runtime> Default for DesktopProductState<R> {
 
 type SharedDesktopProductState<R> = Arc<Mutex<DesktopProductState<R>>>;
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct HubEventFixture {
   id: String,
@@ -111,6 +112,12 @@ struct HubEventFixture {
   progress: Option<u8>,
   payload: Value,
   metadata: Value,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StatusCenterHubEventsPayload {
+  events: Vec<HubEventFixture>,
 }
 
 #[derive(Serialize)]
@@ -182,6 +189,14 @@ fn get_hub_event_fixtures() -> Vec<HubEventFixture> {
       "version": "0.7.0"
     }),
   }]
+}
+
+#[tauri::command]
+fn emit_hub_event_fixtures(app: tauri::AppHandle) -> Result<usize, String> {
+  let fixtures = get_hub_event_fixtures();
+  let emitted = fixtures.len();
+  emit_hub_events(&app, fixtures);
+  Ok(emitted)
 }
 
 #[tauri::command]
@@ -660,6 +675,14 @@ fn emit_status_center_settings<R: tauri::Runtime>(
   );
 }
 
+fn emit_hub_events<R: tauri::Runtime>(app: &tauri::AppHandle<R>, events: Vec<HubEventFixture>) {
+  let _ = app.emit_to(
+    STATUS_WINDOW_LABEL,
+    STATUS_CENTER_HUB_EVENTS_EVENT,
+    StatusCenterHubEventsPayload { events },
+  );
+}
+
 fn emit_open_settings_requested<R: tauri::Runtime>(app: &tauri::AppHandle<R>, source: &'static str) {
   let _ = app.emit_to(
     STATUS_WINDOW_LABEL,
@@ -907,6 +930,7 @@ pub fn run() {
       }
 
       emit_status_center_settings(app.handle(), &preferences);
+      emit_hub_events(app.handle(), get_hub_event_fixtures());
 
       Ok(())
     })
@@ -918,6 +942,7 @@ pub fn run() {
     })
     .invoke_handler(tauri::generate_handler![
       get_hub_event_fixtures,
+      emit_hub_event_fixtures,
       get_runtime_capabilities,
       get_system_performance,
       get_overlay_policy,

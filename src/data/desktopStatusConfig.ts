@@ -104,6 +104,17 @@ const COPY = {
     sessionLabel: "\u6df1\u5ea6\u5de5\u4f5c 25 \u5206\u949f",
     detail: "\u5269\u4f59 12 \u5206\u949f",
   },
+  templateChrome: {
+    residentEyebrow: "\u5e38\u9a7b\u6001",
+    mediaEyebrow: "\u5a92\u4f53\u6001",
+    downloadEyebrow: "\u4e0b\u8f7d\u6001",
+    updateEyebrow: "\u66f4\u65b0\u6001",
+    clipboardEyebrow: "\u526a\u8d34\u677f\u6001",
+    focusEyebrow: "\u4e13\u6ce8\u6001",
+    mediaProgress: "\u5a92\u4f53\u8fdb\u5ea6",
+    downloadProgress: "\u4e0b\u8f7d\u8fdb\u5ea6",
+    updateProgress: "\u66f4\u65b0\u8fdb\u5ea6",
+  },
 } as const;
 
 export const DESKTOP_STATUS_TEMPLATE_ORDER: DesktopStatusKind[] = [
@@ -243,4 +254,8 @@ export function createDesktopStatusStateTemplates(
       accent: "pink",
     },
   };
+}
+
+export function getDesktopStatusTemplateChromeCopy() {
+  return COPY.templateChrome;
 }

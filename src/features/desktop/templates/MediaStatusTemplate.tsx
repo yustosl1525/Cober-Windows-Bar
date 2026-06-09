@@ -1,4 +1,5 @@
 import { Music4 } from "lucide-react";
+import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
 import type { DesktopMediaState } from "../../../types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 
@@ -7,17 +8,20 @@ type MediaStatusTemplateProps = {
 };
 
 export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
+  const copy = getDesktopStatusTemplateChromeCopy();
+  const progressLabel = `${copy.mediaProgress} ${state.progress}%`;
+
   return (
     <>
       <div className="product-status-icon" aria-hidden="true">
         <Music4 size={34} strokeWidth={2.2} />
       </div>
-      <DesktopStatusTemplateFrame eyebrow="媒体态" title={state.title} subtitle={state.subtitle}>
+      <DesktopStatusTemplateFrame eyebrow={copy.mediaEyebrow} title={state.title} subtitle={state.subtitle}>
         <div className="product-status-template-meta">
           <span>{state.artist}</span>
           <span>{state.timeLabel}</span>
         </div>
-        <StatusLine value={state.progress} accent={state.accent} label={`媒体进度 ${state.progress}%`} />
+        <StatusLine value={state.progress} accent={state.accent} label={progressLabel} />
       </DesktopStatusTemplateFrame>
     </>
   );
