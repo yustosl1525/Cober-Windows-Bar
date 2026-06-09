@@ -122,8 +122,98 @@ async function testDesktopStatusRuntimeSubscribersReceiveBusUpdates() {
   runtime.dispose();
 }
 
+async function testDesktopStatusRuntimeAcceptsPushListenerUpdates() {
+  let emit: ((events: typeof fixtureEvents, source?: "mock" | "tauri-fixture") => void) | undefined;
+  const runtime = createDesktopStatusRuntime({
+    fallbackEvents: fixtureEvents,
+    subscribeToEvents(listener) {
+      emit = (events, source) => listener(events, source);
+      return () => {
+        emit = undefined;
+      };
+    },
+  });
+  const observedEventIds: string[][] = [];
+  const observedSources: string[] = [];
+  const unsubscribe = runtime.subscribe((snapshot) => {
+    observedEventIds.push(snapshot.state.events.map((event) => event.id));
+    observedSources.push(snapshot.source);
+  });
+
+  emit?.(
+    [
+      {
+        id: "push-download",
+        type: "download",
+        source: "download",
+        createdAt: 789,
+        progress: 87,
+        payload: {
+          id: "push-download",
+          type: "download",
+          title: "push.bin",
+          subtitle: "87 / 100",
+          progress: 87,
+          accent: "green",
+        },
+      },
+    ],
+    "tauri-fixture",
+  );
+
+  assert.deepEqual(observedEventIds[0], ["fixture-download"]);
+  assert.deepEqual(observedEventIds[observedEventIds.length - 1], ["push-download"]);
+  assert.equal(observedSources[observedSources.length - 1], "tauri-fixture");
+
+  unsubscribe();
+  runtime.dispose();
+}
+
+async function testDesktopStatusRuntimeDisposeUnsubscribesPushListener() {
+  let unsubscribeCalls = 0;
+  let emit: ((events: typeof fixtureEvents) => void) | undefined;
+  const runtime = createDesktopStatusRuntime({
+    fallbackEvents: fixtureEvents,
+    subscribeToEvents(listener) {
+      emit = (events) => listener(events);
+      return () => {
+        unsubscribeCalls += 1;
+        emit = undefined;
+      };
+    },
+  });
+  const observedEventIds: string[][] = [];
+  runtime.subscribe((snapshot) => {
+    observedEventIds.push(snapshot.state.events.map((event) => event.id));
+  });
+
+  runtime.dispose();
+  emit?.([
+    {
+      id: "late-download",
+      type: "download",
+      source: "download",
+      createdAt: 999,
+      progress: 10,
+      payload: {
+        id: "late-download",
+        type: "download",
+        title: "late.bin",
+        subtitle: "10 / 100",
+        progress: 10,
+        accent: "green",
+      },
+    },
+  ]);
+
+  assert.equal(unsubscribeCalls, 1);
+  assert.deepEqual(observedEventIds, [["fixture-download"]]);
+}
+
 await testFallsBackToMockWithoutInvoke();
 await testLoadsFixtureEventsFromTauriInvoke();
 await testFallsBackToMockWhenFixtureLoadFails();
 await testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource();
 await testDesktopStatusRuntimeSubscribersReceiveBusUpdates();
+await testDesktopStatusRuntimeAcceptsPushListenerUpdates();
+await testDesktopStatusRuntimeDisposeUnsubscribesPushListener();

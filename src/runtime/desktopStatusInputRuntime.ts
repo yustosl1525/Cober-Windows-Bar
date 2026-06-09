@@ -29,10 +29,27 @@ export type DesktopStatusRuntime = {
   dispose(): void;
 };
 
+export type DesktopStatusEventListener = (
+  events: HubEvent[],
+  source?: DesktopStatusEventSource,
+  diagnostic?: TauriRuntimeDiagnostic,
+) => void;
+
+export type DesktopStatusEventListenerUnsubscribe = () => void;
+
+export type DesktopStatusEventListenerSource = (
+  listener: DesktopStatusEventListener,
+) => DesktopStatusEventListenerUnsubscribe | Promise<DesktopStatusEventListenerUnsubscribe>;
+
+function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
+  return typeof value === "object" && value !== null && "then" in value && typeof value.then === "function";
+}
+
 type CreateDesktopStatusRuntimeOptions = {
   invoke?: TauriInvoke;
   fallbackEvents?: HubEvent[];
   eventBus?: HubEventBus;
+  subscribeToEvents?: DesktopStatusEventListenerSource;
 };
 
 const desktopStatusRuntimeCache = new WeakMap<TauriInvoke | typeof globalThis, DesktopStatusRuntime>();
@@ -71,6 +88,7 @@ export function createDesktopStatusRuntime({
   invoke = getTauriInvoke(),
   fallbackEvents = mockHubEvents,
   eventBus = createHubEventBus(),
+  subscribeToEvents,
 }: CreateDesktopStatusRuntimeOptions = {}): DesktopStatusRuntime {
   let source: DesktopStatusEventSource = "mock";
   let diagnostic: TauriRuntimeDiagnostic | undefined;
@@ -78,6 +96,7 @@ export function createDesktopStatusRuntime({
   const snapshotFallbackEvents = snapshotHubEvents(fallbackEvents);
   const runtimeSubscribers = new Set<(snapshot: DesktopStatusRuntimeSnapshot) => void>();
   let unsubscribeBus: (() => void) | undefined;
+  let unsubscribePushSource: (() => void) | undefined;
 
   eventBus.replaceHubEvents(snapshotFallbackEvents);
 
@@ -109,6 +128,31 @@ export function createDesktopStatusRuntime({
 
     notify();
   });
+
+  if (subscribeToEvents) {
+    const subscription = subscribeToEvents((events, nextSource = "tauri-fixture", nextDiagnostic) => {
+      if (disposed) {
+        return;
+      }
+
+      source = nextSource;
+      diagnostic = nextDiagnostic;
+      eventBus.replaceHubEvents(snapshotHubEvents(events));
+    });
+
+    if (isPromiseLike(subscription)) {
+      void subscription.then((unsubscribe) => {
+        if (disposed) {
+          unsubscribe();
+          return;
+        }
+
+        unsubscribePushSource = unsubscribe;
+      });
+    } else {
+      unsubscribePushSource = subscription;
+    }
+  }
 
   async function refresh() {
     const result = await loadDesktopStatusEvents({ invoke, fallbackEvents: snapshotFallbackEvents });
@@ -146,6 +190,8 @@ export function createDesktopStatusRuntime({
       runtimeSubscribers.clear();
       unsubscribeBus?.();
       unsubscribeBus = undefined;
+      unsubscribePushSource?.();
+      unsubscribePushSource = undefined;
     },
   };
 }

@@ -66,6 +66,30 @@ const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   lockPosition: false,
 };
 
+const SETTINGS_TOGGLE_COPY: Record<
+  keyof DesktopStatusPreferences,
+  { title: string; description: string; activeLabel: string; inactiveLabel: string }
+> = {
+  alwaysFloat: {
+    title: "\u59cb\u7ec8\u60ac\u6d6e",
+    description: "\u8ba9\u72b6\u6001\u4e2d\u5fc3\u4fdd\u6301\u5728\u684c\u9762\u524d\u666f\u3002",
+    activeLabel: "\u5f53\u524d\u5df2\u5f00\u542f",
+    inactiveLabel: "\u5f53\u524d\u5df2\u5173\u95ed",
+  },
+  avoidFullscreen: {
+    title: "\u5168\u5c4f\u65f6\u907f\u8ba9",
+    description: "\u68c0\u6d4b\u5230\u5168\u5c4f\u5e94\u7528\u65f6\u81ea\u52a8\u907f\u5f00\u8986\u76d6\u3002",
+    activeLabel: "\u5f53\u524d\u5df2\u5f00\u542f",
+    inactiveLabel: "\u5f53\u524d\u5df2\u5173\u95ed",
+  },
+  lockPosition: {
+    title: "\u9501\u5b9a\u4f4d\u7f6e",
+    description: "\u56fa\u5b9a\u5f53\u524d\u505c\u9760\u4f4d\u7f6e\uff0c\u907f\u514d\u8bef\u62d6\u52a8\u3002",
+    activeLabel: "\u5f53\u524d\u4f4d\u7f6e\u5df2\u9501\u5b9a",
+    inactiveLabel: "\u53ef\u81ea\u7531\u62d6\u52a8",
+  },
+};
+
 type DragPointer = {
   x: number;
   y: number;
@@ -544,21 +568,22 @@ export function DesktopPage() {
       </section>
 
       {settingsOpen ? (
-        <section className="product-status-settings" aria-label="状态中心设置">
+        <section className="product-status-settings" aria-label={"\u72b6\u6001\u4e2d\u5fc3\u8bbe\u7f6e"}>
           <header className="product-status-settings-header">
             <div className="product-status-settings-title">
               <div className="product-status-settings-icon" aria-hidden="true">
                 <MonitorCog size={18} strokeWidth={2.1} />
               </div>
               <div>
-                <strong>状态中心设置</strong>
-                <span>桌面能力与状态模板入口</span>
+                <strong>{"\u72b6\u6001\u4e2d\u5fc3\u8bbe\u7f6e"}</strong>
+                <span>{"\u6574\u7406\u684c\u9762\u60ac\u6d6e\u72b6\u6001\u7684\u663e\u793a\u65b9\u5f0f\u4e0e\u6a21\u677f\u5165\u53e3\u3002"}</span>
               </div>
             </div>
             <button
               className="product-status-settings-close"
               type="button"
-              aria-label="关闭设置"
+              aria-label={"\u5173\u95ed\u8bbe\u7f6e"}
+              title={"\u5173\u95ed\u8bbe\u7f6e"}
               onClick={closeSettings}
             >
               <X size={16} strokeWidth={2.2} />
@@ -567,37 +592,52 @@ export function DesktopPage() {
 
           <div className="product-status-settings-body">
             <div className="product-status-settings-section">
-              <span className="product-status-settings-label">窗口行为</span>
+              <span className="product-status-settings-label">{"\u7a97\u53e3\u884c\u4e3a"}</span>
               <div className="product-status-settings-grid">
                 <button
                   type="button"
                   className={settingsToggleClassName(preferences.alwaysFloat)}
                   onClick={() => void setAlwaysFloat(!preferences.alwaysFloat)}
                 >
-                  <strong>总是悬浮</strong>
-                  <span>{preferences.alwaysFloat ? "已开启" : "已关闭"}</span>
+                  <strong>{SETTINGS_TOGGLE_COPY.alwaysFloat.title}</strong>
+                  <span>{SETTINGS_TOGGLE_COPY.alwaysFloat.description}</span>
+                  <small>
+                    {preferences.alwaysFloat
+                      ? SETTINGS_TOGGLE_COPY.alwaysFloat.activeLabel
+                      : SETTINGS_TOGGLE_COPY.alwaysFloat.inactiveLabel}
+                  </small>
                 </button>
                 <button
                   type="button"
                   className={settingsToggleClassName(preferences.avoidFullscreen)}
                   onClick={() => setAvoidFullscreen(!preferences.avoidFullscreen)}
                 >
-                  <strong>全屏时避让</strong>
-                  <span>{preferences.avoidFullscreen ? "已开启" : "已关闭"}</span>
+                  <strong>{SETTINGS_TOGGLE_COPY.avoidFullscreen.title}</strong>
+                  <span>{SETTINGS_TOGGLE_COPY.avoidFullscreen.description}</span>
+                  <small>
+                    {preferences.avoidFullscreen
+                      ? SETTINGS_TOGGLE_COPY.avoidFullscreen.activeLabel
+                      : SETTINGS_TOGGLE_COPY.avoidFullscreen.inactiveLabel}
+                  </small>
                 </button>
                 <button
                   type="button"
                   className={settingsToggleClassName(preferences.lockPosition)}
                   onClick={() => setLockPosition(!preferences.lockPosition)}
                 >
-                  <strong>锁定位置</strong>
-                  <span>{preferences.lockPosition ? "已开启" : "已关闭"}</span>
+                  <strong>{SETTINGS_TOGGLE_COPY.lockPosition.title}</strong>
+                  <span>{SETTINGS_TOGGLE_COPY.lockPosition.description}</span>
+                  <small>
+                    {preferences.lockPosition
+                      ? SETTINGS_TOGGLE_COPY.lockPosition.activeLabel
+                      : SETTINGS_TOGGLE_COPY.lockPosition.inactiveLabel}
+                  </small>
                 </button>
               </div>
             </div>
 
             <div className="product-status-settings-section">
-              <span className="product-status-settings-label">状态模板</span>
+              <span className="product-status-settings-label">{"\u72b6\u6001\u6a21\u677f"}</span>
               <div className="product-status-settings-kinds">
                 {DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => {
                   const active = descriptor.kind === activeStatusKind;
@@ -620,24 +660,24 @@ export function DesktopPage() {
 
             <div className="product-status-settings-actions">
               <button type="button" className="product-status-settings-action" onClick={() => void refresh()}>
-                刷新数据
+                {"\u5237\u65b0\u6570\u636e"}
               </button>
               <button type="button" className="product-status-settings-action" onClick={() => void resetPosition()}>
-                重置位置
+                {"\u91cd\u7f6e\u4f4d\u7f6e"}
               </button>
               <button
                 type="button"
                 className="product-status-settings-action is-primary"
                 onClick={() => void handleOpenSettingsClick()}
               >
-                触发原生设置入口
+                {"\u6253\u5f00\u539f\u751f\u8bbe\u7f6e\u5165\u53e3"}
               </button>
               <button
                 type="button"
                 className="product-status-settings-action"
                 onClick={() => void recallStatusCenter()}
               >
-                召回状态中心
+                {"\u53ec\u56de\u72b6\u6001\u4e2d\u5fc3"}
               </button>
             </div>
           </div>
