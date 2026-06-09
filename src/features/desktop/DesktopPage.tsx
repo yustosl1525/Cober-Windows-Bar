@@ -224,7 +224,11 @@ export function DesktopPage() {
       return;
     }
 
-    await appWindowRef.current.hide();
+    try {
+      await invoke("quit_status_center");
+    } catch {
+      await appWindowRef.current.hide();
+    }
   }
 
   function openSettings() {

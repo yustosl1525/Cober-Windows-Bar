@@ -194,14 +194,14 @@ fn get_runtime_capabilities() -> RuntimeCapabilities {
     always_on_top: true,
     windows_providers: true,
     configured_shell_window: ConfiguredShellWindow {
-      configured: true,
-      title: "Cober Windows Bar".into(),
-      width: 350,
-      height: 70,
-      min_width: 350,
-      min_height: 70,
-      resizable: false,
-      centered: true,
+     configured: true,
+     title: "Cober Windows Bar".into(),
+      width: 420,
+      height: 80,
+      min_width: 420,
+      min_height: 80,
+     resizable: false,
+     centered: true,
     },
   }
 }
@@ -378,15 +378,25 @@ fn open_status_center_settings(app: tauri::AppHandle) -> Result<(), String> {
   Ok(())
 }
 
+#[tauri::command]
+fn quit_status_center(app: tauri::AppHandle) -> Result<(), String> {
+  app.exit(0);
+  Ok(())
+}
+
 fn sample_network_percent() -> u8 {
   let mut networks = Networks::new_with_refreshed_list();
-  std::thread::sleep(std::time::Duration::from_millis(750));
   networks.refresh();
 
-  let total_bytes: u64 = networks
+  let total_bytes_received: u64 = networks
     .values()
-    .map(|data| data.received() + data.transmitted())
+    .map(|data| data.received())
     .sum();
+  let total_bytes_transmitted: u64 = networks
+    .values()
+    .map(|data| data.transmitted())
+    .sum();
+  let total_bytes = total_bytes_received + total_bytes_transmitted;
 
   clamp_percent((total_bytes as f64 / 1_250_000.0) * 100.0)
 }
@@ -1043,6 +1053,8 @@ pub fn run() {
       set_status_center_preferences,
       show_status_center_window,
       open_status_center_settings
+      ,
+      quit_status_center
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
