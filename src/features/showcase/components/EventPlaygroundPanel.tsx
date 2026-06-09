@@ -153,18 +153,16 @@ export function EventPlaygroundPanel({
 
   return (
     <section className="font-['Segoe_UI','Microsoft_YaHei',system-ui,sans-serif]">
-      <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(248,251,255,0.12),rgba(226,238,255,0.065))] shadow-[0_18px_52px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl">
+      <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(248,251,255,0.12),rgba(226,238,255,0.065))] shadow-[0_18px_52px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-sky-200/20 bg-sky-300/12 text-sky-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
               <Radio size={18} strokeWidth={1.8} />
             </span>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold leading-6 text-white">
-                Showcase event controls
-              </h2>
+              <h2 className="truncate text-lg font-semibold leading-6 text-white">Diagnostics and replay</h2>
               <p className="truncate text-sm leading-5 text-slate-300">
-                Mock scenarios, mock providers, and fixtures drive the resolved Hub preview.
+                Inspect the current resolver path, replay known states, and compare provider versus fixture sources.
               </p>
             </div>
           </div>
@@ -176,25 +174,29 @@ export function EventPlaygroundPanel({
             className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#60cdff]/30 bg-[#60cdff]/14 px-4 text-sm font-semibold text-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-[#60cdff]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isAutoRunning ? <Sparkles size={16} /> : <Play size={16} />}
-            {isAutoRunning ? "Demo running" : "Start Demo"}
+            {isAutoRunning ? "Replay running" : "Start replay"}
           </button>
         </div>
 
-        <div className="grid gap-2 border-b border-white/10 px-4 py-3 text-xs leading-5 text-slate-300 md:grid-cols-2">
-          <div className="rounded-[12px] border border-white/10 bg-white/[0.045] px-3 py-2">
-            <div className="font-semibold text-slate-100">Scenario buttons</div>
-            <p>Publish canned mock event states into the preview and event list.</p>
-          </div>
-          <div className="rounded-[12px] border border-white/10 bg-white/[0.045] px-3 py-2">
-            <div className="font-semibold text-slate-100">Provider and fixture controls</div>
-            <p>Run mock providers or the explicit Tauri fixture proof, without native Windows APIs.</p>
-          </div>
+        <div className="grid gap-2 border-b border-white/10 px-4 py-3 text-xs leading-5 text-slate-300 md:grid-cols-3">
+          <InsightCard
+            title="State replay"
+            description="Inject known event bundles to verify how the current hub surface resolves."
+          />
+          <InsightCard
+            title="Source checks"
+            description="Compare mock providers with the explicit Tauri fixture path before native wiring."
+          />
+          <InsightCard
+            title="Resolver trace"
+            description="Track active count, mode priority, and the source label shown in the event list."
+          />
         </div>
 
         <div className="border-b border-white/10 px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="mr-1 min-w-[124px]">
-              <div className="text-xs font-semibold uppercase tracking-normal text-slate-400">Provider Demo</div>
+              <div className="text-xs font-semibold uppercase tracking-normal text-slate-400">Source replay</div>
               <div className="truncate text-[12px] leading-4 text-slate-300">
                 {activeProviderLabel ?? "Stopped, events stay"}
               </div>
@@ -204,8 +206,8 @@ export function EventPlaygroundPanel({
             <ProviderButton label="Download" icon={Download} onClick={onProviderDownload} tone="emerald" />
             <ProviderButton label="Notify" icon={Bell} onClick={onProviderNotification} tone="amber" />
             <ProviderButton label="Tauri Fixture" icon={Sparkles} onClick={onTauriFixture} tone="violet" />
-            <ProviderButton label="Stop provider" icon={CircleStop} onClick={onProviderStop} tone="slate" />
-            <ProviderButton label="Clear to idle" icon={Trash2} onClick={onProviderClear} tone="slate" />
+            <ProviderButton label="Stop source" icon={CircleStop} onClick={onProviderStop} tone="slate" />
+            <ProviderButton label="Return to idle" icon={Trash2} onClick={onProviderClear} tone="slate" />
             <span
               className={`ml-auto rounded-full border px-2.5 py-1 text-xs font-semibold ${
                 activeProviderLabel
@@ -213,7 +215,7 @@ export function EventPlaygroundPanel({
                   : "border-white/10 bg-white/[0.055] text-slate-300"
               }`}
             >
-              {activeProviderLabel ? "Provider running" : "Provider stopped"}
+              {activeProviderLabel ? "Source active" : "Source idle"}
             </span>
             {tauriFixtureLabel && (
               <span className="rounded-full border border-violet-200/20 bg-violet-300/10 px-2.5 py-1 text-xs font-semibold text-violet-100">
@@ -251,7 +253,7 @@ export function EventPlaygroundPanel({
 
             <div className="rounded-[16px] border border-white/10 bg-black/[0.12] px-3 py-3">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-white">Resolver Flow</span>
+                <span className="text-sm font-semibold text-white">Resolver trace</span>
                 <span className="rounded-full border border-white/10 bg-white/[0.075] px-2.5 py-1 text-xs font-medium text-sky-100">
                   Active: {activeEvents.length}
                 </span>
@@ -269,7 +271,7 @@ export function EventPlaygroundPanel({
           <div className="rounded-[16px] border border-white/10 bg-[rgba(5,12,22,0.24)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-white">Active Events</div>
+                <div className="text-sm font-semibold text-white">Recent events</div>
                 <div className="text-xs text-slate-400">Current mode: {modeLabel[currentMode]}</div>
               </div>
               <span
@@ -286,9 +288,9 @@ export function EventPlaygroundPanel({
             {activeEvents.length === 0 ? (
               <div className="grid min-h-[132px] place-items-center rounded-[12px] border border-dashed border-white/12 bg-white/[0.035] px-4 text-center">
                 <div>
-                  <div className="text-sm font-semibold text-slate-100">Idle event stream</div>
+                  <div className="text-sm font-semibold text-slate-100">No active replay input</div>
                   <div className="mt-1 text-xs leading-5 text-slate-400">
-                    Trigger an event or start the demo sequence.
+                    Trigger a state replay or start the automated sequence.
                   </div>
                 </div>
               </div>
@@ -303,6 +305,15 @@ export function EventPlaygroundPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function InsightCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-[12px] border border-white/10 bg-white/[0.045] px-3 py-2">
+      <div className="font-semibold text-slate-100">{title}</div>
+      <p>{description}</p>
+    </div>
   );
 }
 
