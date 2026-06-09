@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Cober Windows Bar",
-        "width": 350,
-        "height": 70,
-        "minWidth": 350,
-        "minHeight": 70,
+        "width": 420,
+        "height": 80,
+        "minWidth": 420,
+        "minHeight": 80,
         "center": true,
         "resizable": false,
         "fullscreen": false,

@@ -63,6 +63,7 @@ const STATUS_CENTER_SETTINGS_COMMAND = "get_status_center_settings";
 const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
 const SET_STATUS_CENTER_PREFERENCES_COMMAND = "set_status_center_preferences";
 const SHOW_STATUS_CENTER_WINDOW_COMMAND = "show_status_center_window";
+const STATUS_WINDOW_DRAG_COMMAND = "start_window_drag";
 
 const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   alwaysFloat: true,
@@ -118,10 +119,23 @@ export function DesktopPage() {
     pendingPositionCorrectionRef.current = false;
     dragPointerRef.current = { x: event.screenX, y: event.screenY };
 
-    const nextDragState = await captureStatusWindowDragState(event.screenX, event.screenY);
-    dragStateRef.current = nextDragState;
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      isDraggingRef.current = false;
+      dragPointerRef.current = null;
+      return;
+    }
 
-    if (!nextDragState) {
+    const started = await (async () => {
+      try {
+        await invoke(STATUS_WINDOW_DRAG_COMMAND);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+
+    if (!started) {
       isDraggingRef.current = false;
       dragPointerRef.current = null;
     }
