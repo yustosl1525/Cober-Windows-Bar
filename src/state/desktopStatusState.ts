@@ -19,6 +19,7 @@ function cloneStateMap(states: DesktopStatusStateMap): DesktopStatusStateMap {
     resident: {
       ...states.resident,
       metrics: cloneMetrics(states.resident.metrics),
+      sourceStatus: states.resident.sourceStatus ? { ...states.resident.sourceStatus } : undefined,
     },
     media: { ...states.media },
     download: { ...states.download },
@@ -41,6 +42,11 @@ export function resolveDesktopStatusState(input: DesktopStatusResolverInput): De
       ...defaults.resident,
       ...input.states?.resident,
       metrics: cloneMetrics(input.states?.resident?.metrics ?? input.metrics),
+      sourceStatus: input.systemPerformanceSourceStatus
+        ? { ...input.systemPerformanceSourceStatus }
+        : input.states?.resident?.sourceStatus
+          ? { ...input.states.resident.sourceStatus }
+          : undefined,
     },
   });
   const availableKinds =

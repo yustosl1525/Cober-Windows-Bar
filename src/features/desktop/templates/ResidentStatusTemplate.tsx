@@ -1,5 +1,9 @@
 import { Cpu } from "lucide-react";
-import type { DesktopResidentState, SystemPerformanceMetric } from "../../../types/hub";
+import type {
+  DesktopResidentState,
+  SystemPerformanceMetric,
+  SystemPerformanceSourceQuality,
+} from "../../../types/hub";
 
 type ResidentStatusTemplateProps = {
   state: DesktopResidentState;
@@ -16,9 +20,9 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
         <span className="product-status-resident-eyebrow">System</span>
         <strong>{state.title}</strong>
         <span>{state.subtitle}</span>
-        <span className="product-status-resident-live">
+        <span className={`product-status-resident-health ${sourceQualityClassName(state.sourceStatus?.quality)}`}>
           <span />
-          Live
+          {sourceQualityLabel(state.sourceStatus?.quality)}
         </span>
       </div>
 
@@ -63,6 +67,34 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
 
 function visibleMetricValue(value: number) {
   return value <= 0 ? 10 : Math.max(value, 10);
+}
+
+function sourceQualityLabel(quality: SystemPerformanceSourceQuality | undefined) {
+  switch (quality) {
+    case "live":
+      return "Live";
+    case "stale":
+      return "Stale";
+    case "unavailable":
+      return "Unavailable";
+    case "fallback":
+    default:
+      return "Fallback";
+  }
+}
+
+function sourceQualityClassName(quality: SystemPerformanceSourceQuality | undefined) {
+  switch (quality) {
+    case "live":
+      return "is-live";
+    case "stale":
+      return "is-stale";
+    case "unavailable":
+      return "is-unavailable";
+    case "fallback":
+    default:
+      return "is-fallback";
+  }
 }
 
 function metricAccent(metric: SystemPerformanceMetric) {

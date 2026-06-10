@@ -23,6 +23,12 @@ export type SystemPerformanceMetric = {
   tone: SystemPerformanceMetricTone;
 };
 
+export type SystemPerformanceSourceQuality = "live" | "fallback" | "stale" | "unavailable";
+
+export type SystemPerformanceSourceStatus = {
+  quality: SystemPerformanceSourceQuality;
+};
+
 export type SystemPerformanceSnapshot = {
   cpu: number;
   memory: number;
@@ -58,6 +64,7 @@ export type DesktopStatusBaseState = {
 export type DesktopResidentState = DesktopStatusBaseState & {
   kind: "resident";
   metrics: SystemPerformanceMetric[];
+  sourceStatus?: SystemPerformanceSourceStatus;
 };
 
 export type DesktopMediaState = DesktopStatusBaseState & {
@@ -115,6 +122,7 @@ export type DesktopStatusStateMap = {
 
 export type DesktopStatusResolverInput = {
   metrics: SystemPerformanceMetric[];
+  systemPerformanceSourceStatus?: SystemPerformanceSourceStatus;
   preferredKind?: DesktopStatusKind;
   activeKinds?: DesktopStatusKind[];
   availableKinds?: DesktopStatusKind[];

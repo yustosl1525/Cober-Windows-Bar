@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { createSystemPerformanceMetricSnapshot } from "../data/desktopStatusConfig";
 import { createDesktopStatusStateMap, listDesktopStatusStates, resolveDesktopStatusState } from "./desktopStatusState";
+import type { SystemPerformanceSourceStatus } from "../types/hub";
 
 const metrics = createSystemPerformanceMetricSnapshot({
   cpu: 23,
@@ -62,6 +63,20 @@ test("desktop status state map snapshots metrics instead of leaking caller refer
 
   stateMap.resident.metrics[0]!.label = "Mutated";
   assert.equal(metrics[0]!.label, "CPU");
+});
+
+test("desktop status resolver snapshots system performance source status", () => {
+  const sourceStatus: SystemPerformanceSourceStatus = { quality: "stale" };
+  const state = resolveDesktopStatusState({
+    metrics,
+    systemPerformanceSourceStatus: sourceStatus,
+  });
+
+  assert.equal(state.kind, "resident");
+  assert.deepEqual(state.sourceStatus, { quality: "stale" });
+
+  sourceStatus.quality = "live";
+  assert.deepEqual(state.sourceStatus, { quality: "stale" });
 });
 
 test("desktop status state listing exposes all six status templates in product order", () => {

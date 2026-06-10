@@ -35,7 +35,7 @@ import {
   STATUS_WINDOW_FLOATING_COMMAND,
   STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS,
 } from "../../runtime/statusWindowRuntime";
-import { loadSystemPerformance } from "../../runtime/systemPerformanceRuntime";
+import { loadSystemPerformanceStatus, type SystemStatusDiagnostic } from "../../runtime/systemPerformanceRuntime";
 import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
 import { aggregateDesktopStatusInput } from "../../state/desktopStatusAggregation";
 import { resolveDesktopStatusState } from "../../state/desktopStatusState";
@@ -69,10 +69,17 @@ const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
   lockPosition: false,
 };
 
+type TauriAppWindow = ReturnType<typeof getCurrentWindow>;
+
 export function DesktopPage() {
   const desktopStatusRuntime = getDesktopStatusRuntime();
   const initialDesktopStatusSnapshot = desktopStatusRuntime.getSnapshot();
   const [metrics, setMetrics] = useState<SystemPerformanceMetric[]>(systemPerformanceMetrics);
+  const [systemPerformanceDiagnostic, setSystemPerformanceDiagnostic] = useState<SystemStatusDiagnostic>({
+    quality: "fallback",
+    code: "unavailable",
+    source: "mock",
+  });
   const [preferences, setPreferences] = useState<DesktopStatusPreferences>(DEFAULT_PREFERENCES);
   const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
   const [preferredUntil, setPreferredUntil] = useState<number | undefined>(undefined);
@@ -82,11 +89,13 @@ export function DesktopPage() {
   const settingsCopy = getDesktopStatusSettingsCopy();
   const isDraggingRef = useRef(false);
   const overlayStateRef = useRef(createStatusWindowOverlayState());
-  const appWindowRef = useRef(getCurrentWindow());
+  const appWindowRef = useRef<TauriAppWindow | undefined>(getSafeCurrentWindow());
   const desktopStatusRuntimeRef = useRef(desktopStatusRuntime);
   const previousResolvedKindRef = useRef<DesktopStatusKind | undefined>(undefined);
   const previousResolvedChangedAtRef = useRef<number | undefined>(undefined);
   const activatedAtByKindRef = useRef<Partial<Record<DesktopStatusKind, number>>>({});
+  const metricsRef = useRef(metrics);
+  const systemPerformanceDiagnosticRef = useRef(systemPerformanceDiagnostic);
   const now = Date.now();
 
   const aggregatedStatus = aggregateDesktopStatusInput({
@@ -108,6 +117,9 @@ export function DesktopPage() {
 
   const resolvedState = resolveDesktopStatusState({
     metrics,
+    systemPerformanceSourceStatus: {
+      quality: systemPerformanceDiagnostic.quality,
+    },
     activeKinds: aggregatedStatus.activeKinds,
     availableKinds: aggregatedStatus.availableKinds,
     states: aggregatedStatus.states,
@@ -123,6 +135,9 @@ export function DesktopPage() {
     previousResolvedKindRef.current = resolvedState.kind;
     previousResolvedChangedAtRef.current = now;
   }
+
+  metricsRef.current = metrics;
+  systemPerformanceDiagnosticRef.current = systemPerformanceDiagnostic;
 
   async function handlePointerDown(event: ReactPointerEvent<HTMLElement>) {
     if (preferences.lockPosition || event.button !== 0) {
@@ -162,11 +177,19 @@ export function DesktopPage() {
       await emitTauriFixtureEvents({ invoke });
     }
 
-    const [nextMetrics, nextDesktopStatusSnapshot] = await Promise.all([
-      loadSystemPerformance({ invoke }),
+    const [nextPerformance, nextDesktopStatusSnapshot] = await Promise.all([
+      loadSystemPerformanceStatus({
+        invoke,
+        fallbackMetrics: metricsRef.current,
+        lastSuccessfulSource:
+          systemPerformanceDiagnosticRef.current.quality === "live"
+            ? systemPerformanceDiagnosticRef.current.source
+            : systemPerformanceDiagnosticRef.current.lastSuccessfulSource,
+      }),
       desktopStatusRuntimeRef.current.refresh(),
     ]);
-    setMetrics(nextMetrics);
+    setMetrics(nextPerformance.metrics);
+    setSystemPerformanceDiagnostic(nextPerformance.diagnostic);
     applyDesktopStatusSnapshot(nextDesktopStatusSnapshot, setDesktopHubState);
   }
 
@@ -229,14 +252,14 @@ export function DesktopPage() {
   async function quitStatusCenter() {
     const invoke = getTauriInvoke();
     if (!invoke) {
-      await appWindowRef.current.hide();
+      await appWindowRef.current?.hide();
       return;
     }
 
     try {
       await invoke("quit_status_center");
     } catch {
-      await appWindowRef.current.hide();
+      await appWindowRef.current?.hide();
     }
   }
 
@@ -288,9 +311,16 @@ export function DesktopPage() {
         return;
       }
 
-      const nextMetrics = await loadSystemPerformance();
+      const nextPerformance = await loadSystemPerformanceStatus({
+        fallbackMetrics: metricsRef.current,
+        lastSuccessfulSource:
+          systemPerformanceDiagnosticRef.current.quality === "live"
+            ? systemPerformanceDiagnosticRef.current.source
+            : systemPerformanceDiagnosticRef.current.lastSuccessfulSource,
+      });
       if (mounted) {
-        setMetrics(nextMetrics);
+        setMetrics(nextPerformance.metrics);
+        setSystemPerformanceDiagnostic(nextPerformance.diagnostic);
       }
     }
 
@@ -392,6 +422,10 @@ export function DesktopPage() {
     }
 
     const appWindow = appWindowRef.current;
+    if (!appWindow) {
+      return;
+    }
+
     const scaleCorrection = createDebouncedWindowCorrection(async () => {
       if (isDraggingRef.current) {
         return;
@@ -463,22 +497,26 @@ export function DesktopPage() {
     }
 
     void (async () => {
-      const settingsResult = await invoke(STATUS_CENTER_SETTINGS_COMMAND);
-      if (!disposed && isPreferencesPayload(settingsResult)) {
-        setPreferences({ ...settingsResult.preferences });
+      try {
+        const settingsResult = await invoke(STATUS_CENTER_SETTINGS_COMMAND);
+        if (!disposed && isPreferencesPayload(settingsResult)) {
+          setPreferences({ ...settingsResult.preferences });
+        }
+
+        offMenuActions = await listenStatusCenterMenuActions(async ({ action, checked }) => {
+          await handleMenuAction(action, checked);
+        });
+
+        offSettings = await listenStatusCenterSettings((payload) => {
+          applySettings(payload);
+        });
+
+        offOpenSettings = await listenStatusCenterOpenSettings(() => {
+          openSettings();
+        });
+      } catch {
+        // Keep browser diagnostics usable when the native product event bridge is absent.
       }
-
-      offMenuActions = await listenStatusCenterMenuActions(async ({ action, checked }) => {
-        await handleMenuAction(action, checked);
-      });
-
-      offSettings = await listenStatusCenterSettings((payload) => {
-        applySettings(payload);
-      });
-
-      offOpenSettings = await listenStatusCenterOpenSettings(() => {
-        openSettings();
-      });
     })();
 
     return () => {
@@ -528,8 +566,8 @@ export function DesktopPage() {
   async function recallStatusCenter() {
     const invoke = getTauriInvoke();
     if (!invoke) {
-      await appWindowRef.current.show();
-      await appWindowRef.current.setFocus();
+      await appWindowRef.current?.show();
+      await appWindowRef.current?.setFocus();
       return;
     }
 
@@ -685,6 +723,14 @@ function isPreferencesPayload(value: unknown): value is DesktopStatusPreferences
     typeof preferences.avoidFullscreen === "boolean" &&
     typeof preferences.lockPosition === "boolean"
   );
+}
+
+function getSafeCurrentWindow(): TauriAppWindow | undefined {
+  try {
+    return getCurrentWindow();
+  } catch {
+    return undefined;
+  }
 }
 
 function applyDesktopStatusSnapshot(
