@@ -3,7 +3,8 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "statusIndicators": "Status indicators"
   },
   "shell": {
     "ariaLabel": "Cober Windows Status Center"

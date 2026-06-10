@@ -5,10 +5,11 @@ import {
   type DesktopStatusRuntimeSnapshot,
 } from "../../../runtime/desktopStatusInputRuntime";
 import { aggregateDesktopStatusInput } from "../../../state/desktopStatusAggregation";
-import { resolveDesktopStatusState } from "../../../state/desktopStatusState";
+import { createDesktopStatusStateMap, resolveDesktopStatusState } from "../../../state/desktopStatusState";
 import { DESKTOP_STATUS_PREFERRED_WINDOW_MS } from "../../../state/desktopStatusScheduler";
 import type {
   DesktopStatusKind,
+  DesktopStatusState,
   DesktopStatusStateMap,
   HubStoreState,
   SystemPerformanceMetric,
@@ -17,7 +18,9 @@ import { DESKTOP_STATUS_TEMPLATE_ORDER } from "../../../data/desktopStatusConfig
 
 export type UseDesktopStatusRuntimeResult = {
   hubState: HubStoreState;
-  resolvedState: ReturnType<typeof resolveDesktopStatusState>;
+  resolvedState: DesktopStatusState;
+  resolvedStates: Partial<DesktopStatusStateMap>;
+  activeKinds: DesktopStatusKind[];
   activeStatusKind: DesktopStatusKind | null;
   preferredUntil: number | undefined;
   setActiveStatusKind: (kind: DesktopStatusKind | null) => void;
@@ -78,6 +81,25 @@ export function useDesktopStatusRuntime(
 
   const now = Date.now();
 
+  // Build full resolved state map (defaults + aggregated overrides)
+  const defaultStates = createDesktopStatusStateMap(metrics);
+  const resolvedStates: Partial<DesktopStatusStateMap> = { ...defaultStates };
+  if (aggregatedStatus.states) {
+    for (const [kind, state] of Object.entries(aggregatedStatus.states)) {
+      if (state) {
+        (resolvedStates as Record<string, DesktopStatusState>)[kind] = state;
+      }
+    }
+  }
+  // Ensure resident always has live metrics and source status
+  resolvedStates.resident = {
+    ...defaultStates.resident,
+    ...aggregatedStatus.states?.resident,
+    metrics: aggregatedStatus.states?.resident?.metrics ?? metrics,
+    sourceStatus: aggregatedStatus.states?.resident?.sourceStatus ??
+      defaultStates.resident.sourceStatus ?? { quality: systemPerformanceSourceQuality as "live" | "fallback" | "stale" | "unavailable" },
+  };
+
   // Track activation timestamps for each active kind
   for (const kind of aggregatedStatus.activeKinds) {
     if (activatedAtByKindRef.current[kind] === undefined) {
@@ -119,6 +141,8 @@ export function useDesktopStatusRuntime(
   return {
     hubState,
     resolvedState,
+    resolvedStates,
+    activeKinds: aggregatedStatus.activeKinds,
     activeStatusKind,
     preferredUntil,
     setActiveStatusKind,

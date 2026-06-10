@@ -118,6 +118,110 @@ button {
       inset 0 -1px 0 rgba(120, 137, 166, 0.08);
   }
 
+  /* ── Multi-status layout ────────────────────────────────────────── */
+
+  .product-status-center.has-indicators {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition:
+      width 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 180ms ease,
+      background 180ms ease;
+  }
+
+  .product-status-center.has-indicators > .product-status-icon-resident {
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .product-status-center.has-indicators > .product-status-icon-resident.is-focused {
+    box-shadow:
+      0 9px 18px rgba(109, 93, 252, 0.22),
+      0 0 0 2px rgba(109, 93, 252, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      inset 0 -8px 16px rgba(97, 88, 232, 0.08);
+  }
+
+  .product-status-center.has-indicators > .product-status-state,
+  .product-status-center.has-indicators > .product-status-metrics {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Indicator rail ─────────────────────────────────────────────── */
+
+  .product-status-indicator-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    padding: 2px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .product-status-indicator {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(241, 245, 249, 0.6);
+    color: #64748b;
+    cursor: pointer;
+    padding: 0;
+    transition:
+      background 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 120ms ease;
+  }
+
+  .product-status-indicator svg {
+    width: 13px;
+    height: 13px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .product-status-indicator:hover {
+    background: rgba(224, 231, 255, 0.82);
+    color: #4f46e5;
+    border-color: rgba(129, 140, 248, 0.36);
+    transform: scale(1.08);
+  }
+
+  .product-status-indicator.is-focused {
+    background: linear-gradient(145deg, #ede9fe, #dbeafe);
+    color: #6d5dfc;
+    border-color: rgba(109, 93, 252, 0.42);
+    box-shadow:
+      0 2px 8px rgba(109, 93, 252, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  /* Per-kind accent colors */
+  .product-status-indicator-media { color: #7c3aed; }
+  .product-status-indicator-media.is-focused { color: #7c3aed; border-color: rgba(124, 58, 237, 0.4); }
+
+  .product-status-indicator-download { color: #059669; }
+  .product-status-indicator-download.is-focused { color: #059669; border-color: rgba(5, 150, 105, 0.4); }
+
+  .product-status-indicator-update { color: #d97706; }
+  .product-status-indicator-update.is-focused { color: #d97706; border-color: rgba(217, 119, 6, 0.4); }
+
+  .product-status-indicator-clipboard { color: #2563eb; }
+  .product-status-indicator-clipboard.is-focused { color: #2563eb; border-color: rgba(37, 99, 235, 0.4); }
+
+  .product-status-indicator-focus { color: #db2777; }
+  .product-status-indicator-focus.is-focused { color: #db2777; border-color: rgba(219, 39, 119, 0.4); }
+
   .product-status-stage {
     position: relative;
     z-index: 1;
