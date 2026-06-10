@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::{Networks, System};
@@ -42,7 +42,6 @@ const STATUS_CENTER_CLIPBOARD_EVENT: &str = "status-center://clipboard-changed";
 const STATUS_CENTER_FOCUS_ASSIST_EVENT: &str = "status-center://focus-assist-changed";
 const STATUS_CENTER_NOTIFICATION_EVENT: &str = "status-center://notifications-changed";
 const FOCUS_ASSIST_MONITOR_INTERVAL: Duration = Duration::from_secs(2);
-const NOTIFICATION_MONITOR_INTERVAL: Duration = Duration::from_secs(5);
 const TRAY_ID: &str = "status-center-tray";
 const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
@@ -298,50 +297,54 @@ fn get_runtime_capabilities() -> RuntimeCapabilities {
 }
 
 #[tauri::command]
-fn get_guest_provider_capabilities() -> GuestProviderCapabilitiesPayload {
-  let last_checked_at = unix_time_ms();
-  let media_capability = get_media_provider_capability(last_checked_at);
-  let focus_capability = get_focus_provider_capability(last_checked_at);
+async fn get_guest_provider_capabilities() -> GuestProviderCapabilitiesPayload {
+  tauri::async_runtime::spawn_blocking(|| {
+    let last_checked_at = unix_time_ms();
+    let media_capability = get_media_provider_capability(last_checked_at);
+    let focus_capability = get_focus_provider_capability(last_checked_at);
 
-  GuestProviderCapabilitiesPayload {
-    providers: vec![
-      GuestProviderCapability {
-        kind: "update",
-        quality: "unavailable",
-        code: "not-implemented",
-        safe_to_display: false,
-        last_checked_at,
-      },
-      GuestProviderCapability {
-        kind: focus_capability.kind,
-        quality: focus_capability.quality,
-        code: focus_capability.code,
-        safe_to_display: focus_capability.safe_to_display,
-        last_checked_at: focus_capability.last_checked_at,
-      },
-      GuestProviderCapability {
-        kind: media_capability.kind,
-        quality: media_capability.quality,
-        code: media_capability.code,
-        safe_to_display: media_capability.safe_to_display,
-        last_checked_at: media_capability.last_checked_at,
-      },
-      GuestProviderCapability {
-        kind: "download",
-        quality: "unavailable",
-        code: "not-implemented",
-        safe_to_display: false,
-        last_checked_at,
-      },
-      GuestProviderCapability {
-        kind: "clipboard",
-        quality: "native",
-        code: "available",
-        safe_to_display: true,
-        last_checked_at,
-      },
-    ],
-  }
+    GuestProviderCapabilitiesPayload {
+      providers: vec![
+        GuestProviderCapability {
+          kind: "update",
+          quality: "unavailable",
+          code: "not-implemented",
+          safe_to_display: false,
+          last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: focus_capability.kind,
+          quality: focus_capability.quality,
+          code: focus_capability.code,
+          safe_to_display: focus_capability.safe_to_display,
+          last_checked_at: focus_capability.last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: media_capability.kind,
+          quality: media_capability.quality,
+          code: media_capability.code,
+          safe_to_display: media_capability.safe_to_display,
+          last_checked_at: media_capability.last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: "download",
+          quality: "unavailable",
+          code: "not-implemented",
+          safe_to_display: false,
+          last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: "clipboard",
+          quality: "native",
+          code: "available",
+          safe_to_display: true,
+          last_checked_at,
+        },
+      ],
+    }
+  })
+  .await
+  .unwrap_or_else(|_| GuestProviderCapabilitiesPayload { providers: vec![] })
 }
 
 fn get_focus_provider_capability(last_checked_at: u64) -> GuestProviderCapability {
@@ -362,8 +365,18 @@ fn get_focus_provider_capability(last_checked_at: u64) -> GuestProviderCapabilit
 }
 
 #[tauri::command]
-fn get_media_session_status() -> MediaSessionStatus {
-  read_media_session_status()
+async fn get_media_session_status() -> MediaSessionStatus {
+  tauri::async_runtime::spawn_blocking(read_media_session_status)
+    .await
+    .unwrap_or_else(|_| MediaSessionStatus {
+      available: false,
+      playback_status: "unavailable",
+      progress: 0,
+      position_ms: None,
+      duration_ms: None,
+      code: "task-failed",
+      checked_at: unix_time_ms(),
+    })
 }
 
 #[tauri::command]
@@ -445,8 +458,10 @@ fn try_media_session_action(_action: &str) -> Result<MediaControlResult, String>
 }
 
 #[tauri::command]
-fn media_control(action: String) -> Result<MediaControlResult, String> {
-  try_media_session_action(&action)
+async fn media_control(action: String) -> Result<MediaControlResult, String> {
+  tauri::async_runtime::spawn_blocking(move || try_media_session_action(&action))
+    .await
+    .map_err(|e| format!("media control task failed: {e}"))?
 }
 
 // ---------- Focus Assist Detection (Windows Registry) ----------
@@ -717,7 +732,11 @@ fn open_status_center_settings(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn quit_status_center(app: tauri::AppHandle) -> Result<(), String> {
+fn quit_status_center(
+  app: tauri::AppHandle,
+  shutdown: tauri::State<'_, Arc<AtomicBool>>,
+) -> Result<(), String> {
+  shutdown.store(true, Ordering::SeqCst);
   app.exit(0);
   Ok(())
 }
@@ -1351,6 +1370,9 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
     MENU_OPEN_SETTINGS => request_open_settings(app, "menu"),
     MENU_QUIT => {
       emit_status_center_action(app, "quit", None);
+      if let Some(shutdown) = app.try_state::<Arc<AtomicBool>>() {
+        shutdown.store(true, Ordering::SeqCst);
+      }
       app.exit(0);
     }
     _ => {}
@@ -1395,9 +1417,11 @@ pub fn run() {
   let desktop_product_state: SharedDesktopProductState<tauri::Wry> =
     Arc::new(Mutex::new(DesktopProductState::default()));
   let setup_state = Arc::clone(&desktop_product_state);
+  let app_shutdown: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
   tauri::Builder::default()
     .manage(desktop_product_state.clone())
+    .manage(app_shutdown.clone())
     .setup(move |app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -1472,59 +1496,66 @@ pub fn run() {
 
       emit_status_center_settings(app.handle(), &preferences);
 
-      // Start clipboard change monitor
+      // Shared shutdown flag for background monitor threads (from managed state)
+      let app_shutdown = app.handle().state::<Arc<AtomicBool>>().inner().clone();
+
+      // Start clipboard change monitor (reuses Clipboard instance, checks shutdown flag)
       {
         let clipboard_app_handle = app.handle().clone();
+        let clipboard_shutdown = Arc::clone(&app_shutdown);
         std::thread::spawn(move || {
           let mut last_text = String::new();
+          let mut clipboard = match arboard::Clipboard::new() {
+            Ok(c) => c,
+            Err(_) => return,
+          };
           loop {
             std::thread::sleep(Duration::from_millis(800));
-            if let Ok(mut clipboard) = arboard::Clipboard::new() {
-              if let Ok(text) = clipboard.get_text() {
-                if text != last_text && !text.is_empty() {
-                  last_text = text.clone();
-                  let payload = ClipboardContent {
-                    text,
-                    source_app: String::new(),
-                    copied_at: unix_time_ms(),
-                  };
-                  let _ = clipboard_app_handle.emit(STATUS_CENTER_CLIPBOARD_EVENT, &payload);
-                }
+            if clipboard_shutdown.load(Ordering::Relaxed) {
+              break;
+            }
+            if let Ok(text) = clipboard.get_text() {
+              if text != last_text && !text.is_empty() {
+                last_text = text.clone();
+                let payload = ClipboardContent {
+                  text,
+                  source_app: String::new(),
+                  copied_at: unix_time_ms(),
+                };
+                let _ = clipboard_app_handle.emit(STATUS_CENTER_CLIPBOARD_EVENT, &payload);
               }
             }
           }
         });
       }
 
-      // Start Focus Assist state monitor
+      // Start Focus Assist + Notification unified monitor (eliminates redundant registry polling)
       {
-        let focus_app_handle = app.handle().clone();
-        std::thread::spawn(move || {
-          let mut last_active = false;
-          let mut last_profile = String::new();
-          loop {
-            std::thread::sleep(FOCUS_ASSIST_MONITOR_INTERVAL);
-            let state = read_focus_assist_state();
-            if state.active != last_active || state.profile != last_profile {
-              last_active = state.active;
-              last_profile = state.profile.clone();
-              let _ = focus_app_handle.emit(STATUS_CENTER_FOCUS_ASSIST_EVENT, &state);
-            }
-          }
-        });
-      }
-
-      // Start notification summary monitor
-      {
-        let notif_app_handle = app.handle().clone();
+        let monitor_app_handle = app.handle().clone();
+        let monitor_shutdown = Arc::clone(&app_shutdown);
         std::thread::spawn(move || {
           let mut last_focus_active = false;
+          let mut last_profile = String::new();
+          let mut last_notif_active = false;
           loop {
-            std::thread::sleep(NOTIFICATION_MONITOR_INTERVAL);
-            let summary = read_notification_summary();
-            if summary.focus_assist_active != last_focus_active {
-              last_focus_active = summary.focus_assist_active;
-              let _ = notif_app_handle.emit(STATUS_CENTER_NOTIFICATION_EVENT, &summary);
+            std::thread::sleep(FOCUS_ASSIST_MONITOR_INTERVAL);
+            if monitor_shutdown.load(Ordering::Relaxed) {
+              break;
+            }
+            let focus_state = read_focus_assist_state();
+            if focus_state.active != last_focus_active || focus_state.profile != last_profile {
+              last_focus_active = focus_state.active;
+              last_profile = focus_state.profile.clone();
+              let _ = monitor_app_handle.emit(STATUS_CENTER_FOCUS_ASSIST_EVENT, &focus_state);
+            }
+            // Derive notification summary from the same focus state (no redundant registry read)
+            if focus_state.active != last_notif_active {
+              last_notif_active = focus_state.active;
+              let summary = NotificationSummaryPayload {
+                focus_assist_active: focus_state.active,
+                checked_at: unix_time_ms(),
+              };
+              let _ = monitor_app_handle.emit(STATUS_CENTER_NOTIFICATION_EVENT, &summary);
             }
           }
         });

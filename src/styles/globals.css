@@ -676,7 +676,10 @@ button {
     background: rgba(74, 222, 128, 0.08);
   }
 
-  .product-status-settings {
+
+  /* ---- Settings Panel (matches SettingsPanel.tsx class names) ---- */
+
+  .product-settings-panel {
     position: absolute;
     right: 12px;
     top: 72px;
@@ -695,7 +698,7 @@ button {
     isolation: isolate;
   }
 
-  .product-status-settings::before {
+  .product-settings-panel::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -707,7 +710,7 @@ button {
     opacity: 0.92;
   }
 
-  .product-status-settings-header {
+  .product-settings-panel__header {
     position: relative;
     z-index: 1;
     display: flex;
@@ -717,48 +720,23 @@ button {
     margin-bottom: 16px;
   }
 
-  .product-status-settings-title {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .product-status-settings-title strong,
-  .product-status-settings-title span {
-    display: block;
-  }
-
-  .product-status-settings-title strong {
+  .product-settings-panel__header h2 {
     color: #152033;
     font-size: 15px;
     font-weight: 780;
     line-height: 1.15;
+    margin: 0;
   }
 
-  .product-status-settings-title span {
+  .product-settings-panel__header p {
     color: #5f6f88;
     font-size: 12px;
     font-weight: 640;
     line-height: 1.35;
+    margin: 2px 0 0;
   }
 
-  .product-status-settings-icon {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    place-items: center;
-    border-radius: 14px;
-    background:
-      radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.78), transparent 42%),
-      linear-gradient(145deg, rgba(229, 236, 255, 0.98), rgba(214, 225, 255, 0.84));
-    color: #5b63f6;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.84),
-      0 10px 20px rgba(91, 99, 246, 0.14);
-  }
-
-  .product-status-settings-close {
+  .product-settings-panel__close {
     display: grid;
     width: 30px;
     height: 30px;
@@ -768,6 +746,7 @@ button {
     background: rgba(255, 255, 255, 0.76);
     color: #43506a;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    cursor: pointer;
     transition:
       background 160ms ease,
       color 160ms ease,
@@ -775,29 +754,28 @@ button {
       transform 160ms ease;
   }
 
-  .product-status-settings-close:hover {
+  .product-settings-panel__close:hover {
     border-color: rgba(148, 163, 184, 0.82);
     background: rgba(241, 245, 249, 0.96);
     color: #1f2a44;
     transform: translateY(-1px);
   }
 
-  .product-status-settings-close:focus-visible,
-  .product-status-toggle:focus-visible,
-  .product-status-kind:focus-visible,
-  .product-status-settings-action:focus-visible {
+  .product-settings-panel__close:focus-visible,
+  .product-settings-toggle:focus-visible,
+  .product-settings-btn:focus-visible {
     outline: 2px solid rgba(82, 110, 255, 0.42);
     outline-offset: 2px;
   }
 
-  .product-status-settings-body {
+  .product-settings-panel__body {
     position: relative;
     z-index: 1;
     display: grid;
     gap: 16px;
   }
 
-  .product-status-settings-section {
+  .product-settings-section {
     display: grid;
     gap: 10px;
     padding: 12px;
@@ -807,21 +785,29 @@ button {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 
-  .product-status-settings-label {
+  .product-settings-section h3 {
     color: #40506f;
     font-size: 11px;
     font-weight: 760;
     text-transform: uppercase;
+    margin: 0;
   }
 
-  .product-status-settings-grid,
-  .product-status-settings-kinds {
+  .product-settings-section__hint {
+    color: #5f6f88;
+    font-size: 11px;
+    font-weight: 640;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .product-settings-toggle-grid,
+  .product-settings-template-grid {
     display: grid;
     gap: 8px;
   }
 
-  .product-status-toggle,
-  .product-status-kind {
+  .product-settings-toggle {
     display: grid;
     position: relative;
     gap: 4px;
@@ -835,6 +821,7 @@ button {
     color: #152033;
     padding: 12px 14px;
     text-align: left;
+    cursor: pointer;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.84),
       0 6px 14px rgba(148, 163, 184, 0.08);
@@ -845,8 +832,7 @@ button {
       transform 160ms ease;
   }
 
-  .product-status-toggle:hover,
-  .product-status-kind:hover {
+  .product-settings-toggle:hover {
     border-color: rgba(148, 163, 184, 0.88);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
@@ -854,30 +840,25 @@ button {
     transform: translateY(-1px);
   }
 
-  .product-status-toggle strong,
-  .product-status-kind strong {
+  .product-settings-toggle strong {
     font-size: 12px;
     font-weight: 760;
   }
 
-  .product-status-toggle span,
-  .product-status-kind span,
-  .product-status-toggle small,
-  .product-status-kind small {
+  .product-settings-toggle span,
+  .product-settings-toggle small {
     color: #5f6f88;
     font-size: 11px;
     font-weight: 640;
     line-height: 1.35;
   }
 
-  .product-status-toggle small,
-  .product-status-kind small {
+  .product-settings-toggle small {
     color: #3f4f6b;
     font-weight: 700;
   }
 
-  .product-status-toggle.is-active,
-  .product-status-kind.is-active {
+  .product-settings-toggle.is-active {
     border-color: rgba(82, 110, 255, 0.48);
     background:
       linear-gradient(180deg, rgba(239, 244, 255, 0.98), rgba(228, 236, 255, 0.9)),
@@ -887,8 +868,7 @@ button {
       0 12px 22px rgba(82, 110, 255, 0.12);
   }
 
-  .product-status-toggle.is-active::after,
-  .product-status-kind.is-active::after {
+  .product-settings-toggle.is-active::after {
     content: "";
     position: absolute;
     top: 14px;
@@ -900,32 +880,12 @@ button {
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
   }
 
-  .product-status-settings-actions {
+  .product-settings-actions {
     display: grid;
     gap: 8px;
   }
 
-  .product-status-settings-actions-copy {
-    display: grid;
-    gap: 4px;
-    margin-bottom: 2px;
-  }
-
-  .product-status-settings-actions-copy strong {
-    color: #152033;
-    font-size: 12px;
-    font-weight: 760;
-    line-height: 1.2;
-  }
-
-  .product-status-settings-actions-copy span {
-    color: #5f6f88;
-    font-size: 11px;
-    font-weight: 640;
-    line-height: 1.35;
-  }
-
-  .product-status-settings-action {
+  .product-settings-btn {
     min-height: 34px;
     width: fit-content;
     border: 1px solid rgba(203, 213, 225, 0.88);
@@ -937,6 +897,7 @@ button {
     padding: 8px 13px;
     font-size: 11px;
     font-weight: 730;
+    cursor: pointer;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.88),
       0 6px 14px rgba(148, 163, 184, 0.08);
@@ -948,11 +909,7 @@ button {
       box-shadow 160ms ease;
   }
 
-  .product-status-settings-actions > .product-status-settings-action {
-    justify-self: start;
-  }
-
-  .product-status-settings-action:hover {
+  .product-settings-btn:hover {
     border-color: rgba(148, 163, 184, 0.92);
     color: #0f172a;
     transform: translateY(-1px);
@@ -960,16 +917,6 @@ button {
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
       0 10px 20px rgba(148, 163, 184, 0.12);
   }
-
-  .product-status-settings-action.is-primary {
-    border-color: rgba(82, 110, 255, 0.34);
-    background: linear-gradient(180deg, rgba(236, 240, 255, 0.98), rgba(223, 231, 255, 0.9));
-    color: #3045d5;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.92),
-      0 12px 22px rgba(82, 110, 255, 0.14);
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     .product-status-icon {
       animation: product-status-breathe 3.8s ease-in-out infinite;
