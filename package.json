@@ -13,6 +13,8 @@
     "test:state": "tsx src/state/hubState.test.ts && tsx src/state/desktopStatusScheduler.test.ts && tsx src/state/desktopStatusState.test.ts && tsx src/state/desktopStatusAggregation.test.ts && tsx src/features/desktop/templates/ResidentStatusTemplate.test.ts",
     "test:providers": "tsx src/providers/provider.test.ts",
     "test:runtime": "tsx src/runtime/tauriRuntime.test.ts && tsx src/runtime/statusWindowRuntime.test.ts && tsx src/runtime/systemPerformanceRuntime.test.ts && tsx src/runtime/desktopProductRuntime.test.ts && tsx src/runtime/desktopStatusInputRuntime.test.ts && tsx src/data/mockHubData.test.ts",
+    "test:vitest": "vitest run --reporter=verbose",
+    "test:all": "npm run test:state && npm run test:providers && npm run test:runtime && npm run test:vitest",
     "preview": "vite preview",
     "desktop:mock": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop-mock.ps1",
     "tauri": "tauri"
@@ -32,12 +34,16 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.22.4"
+    "tsx": "^4.22.4",
+    "vitest": "^4.1.8"
   }
 }
