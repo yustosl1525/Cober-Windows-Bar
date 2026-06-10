@@ -1,5 +1,7 @@
-import { MonitorCog, X } from "lucide-react";
-import { DESKTOP_STATUS_TEMPLATE_DESCRIPTORS, getDesktopStatusSettingsCopy } from "../../../data/desktopStatusConfig";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
+import { getDesktopStatusTemplateDescriptors, getDesktopStatusSettingsCopy } from "../../../data/desktopStatusConfig";
 import type { DesktopStatusKind, DesktopStatusPreferences } from "../../../types/hub";
 
 export type SettingsPanelProps = {
@@ -19,7 +21,12 @@ export type SettingsPanelProps = {
 };
 
 function settingsToggleClassName(active: boolean) {
-  return active ? "product-status-toggle is-active" : "product-status-toggle";
+  return [
+    "product-settings-toggle",
+    active ? "is-active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function SettingsPanel({
@@ -37,35 +44,35 @@ export function SettingsPanel({
   onRecallStatusCenter,
   onClose,
 }: SettingsPanelProps) {
+  const { t, i18n: i18nInstance } = useTranslation();
   const settingsCopy = getDesktopStatusSettingsCopy();
+  const templateDescriptors = useMemo(() => getDesktopStatusTemplateDescriptors(), [i18nInstance.language]);
 
   return (
-    <section className="product-status-settings" aria-label={settingsCopy.panel.ariaLabel}>
-      <header className="product-status-settings-header">
-        <div className="product-status-settings-title">
-          <div className="product-status-settings-icon" aria-hidden="true">
-            <MonitorCog size={18} strokeWidth={2.1} />
-          </div>
-          <div>
-            <strong>{settingsCopy.panel.title}</strong>
-            <span>{settingsCopy.panel.description}</span>
-          </div>
+    <aside
+      className="product-settings-panel"
+      role="dialog"
+      aria-label={settingsCopy.panel.ariaLabel}
+    >
+      <header className="product-settings-panel__header">
+        <div>
+          <h2>{settingsCopy.panel.title}</h2>
+          <p>{settingsCopy.panel.description}</p>
         </div>
         <button
-          className="product-status-settings-close"
           type="button"
-          aria-label={settingsCopy.panel.closeLabel}
-          title={settingsCopy.panel.closeLabel}
+          className="product-settings-panel__close"
           onClick={onClose}
+          aria-label={settingsCopy.panel.closeLabel}
         >
-          <X size={16} strokeWidth={2.2} />
+          <X size={18} strokeWidth={2.1} />
         </button>
       </header>
 
-      <div className="product-status-settings-body">
-        <div className="product-status-settings-section">
-          <span className="product-status-settings-label">{settingsCopy.sections.windowBehavior}</span>
-          <div className="product-status-settings-grid">
+      <div className="product-settings-panel__body">
+        <section className="product-settings-section">
+          <h3>{settingsCopy.sections.windowBehavior}</h3>
+          <div className="product-settings-toggle-grid">
             <button
               type="button"
               className={settingsToggleClassName(preferences.alwaysFloat)}
@@ -110,26 +117,27 @@ export function SettingsPanel({
               className={settingsToggleClassName(autostartEnabled)}
               onClick={onToggleAutostart}
             >
-              <strong>开机自启</strong>
-              <span>系统启动时自动运行状态中心。</span>
+              <strong>{t("settings.toggles.autostart.title")}</strong>
+              <span>{t("settings.toggles.autostart.description")}</span>
               <small>
-                {autostartEnabled ? "已启用" : "未启用"}
+                {autostartEnabled
+                  ? t("settings.toggles.autostart.activeLabel")
+                  : t("settings.toggles.autostart.inactiveLabel")}
               </small>
             </button>
           </div>
-        </div>
+        </section>
 
-        <div className="product-status-settings-section">
-          <span className="product-status-settings-label">{settingsCopy.sections.statusTemplates}</span>
-          <div className="product-status-settings-kinds">
-            {DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => {
-              const active = descriptor.kind === activeStatusKind;
-
+        <section className="product-settings-section">
+          <h3>{settingsCopy.sections.statusTemplates}</h3>
+          <div className="product-settings-template-grid">
+            {templateDescriptors.map((descriptor) => {
+              const isActive = descriptor.kind === activeStatusKind;
               return (
                 <button
                   key={descriptor.kind}
                   type="button"
-                  className={active ? "product-status-kind is-active" : "product-status-kind"}
+                  className={settingsToggleClassName(isActive)}
                   onClick={() => onKindSelect(descriptor.kind)}
                 >
                   <strong>{descriptor.label}</strong>
@@ -139,35 +147,49 @@ export function SettingsPanel({
               );
             })}
           </div>
-        </div>
+        </section>
 
-        <div className="product-status-settings-actions">
-          <div className="product-status-settings-actions-copy">
-            <strong>{settingsCopy.actions.quickPanelTitle}</strong>
-            <span>{settingsCopy.actions.quickPanelDescription}</span>
+        <section className="product-settings-section">
+          <h3>{t("settings.language.title")}</h3>
+          <div className="product-settings-toggle-grid">
+            <button
+              type="button"
+              className={settingsToggleClassName(i18nInstance.language === "zh-CN")}
+              onClick={() => void i18nInstance.changeLanguage("zh-CN")}
+            >
+              <strong>{t("settings.language.zh-CN")}</strong>
+              <small>{i18nInstance.language === "zh-CN" ? t("common.enabled") : t("common.disabled")}</small>
+            </button>
+            <button
+              type="button"
+              className={settingsToggleClassName(i18nInstance.language === "en")}
+              onClick={() => void i18nInstance.changeLanguage("en")}
+            >
+              <strong>{t("settings.language.en")}</strong>
+              <small>{i18nInstance.language === "en" ? t("common.enabled") : t("common.disabled")}</small>
+            </button>
           </div>
-          <button type="button" className="product-status-settings-action" onClick={onRefresh}>
-            {settingsCopy.actions.refresh}
-          </button>
-          <button type="button" className="product-status-settings-action" onClick={onResetPosition}>
-            {settingsCopy.actions.resetPosition}
-          </button>
-          <button
-            type="button"
-            className="product-status-settings-action is-primary"
-            onClick={onOpenNativeSettings}
-          >
-            {settingsCopy.actions.openNativeSettings}
-          </button>
-          <button
-            type="button"
-            className="product-status-settings-action"
-            onClick={onRecallStatusCenter}
-          >
-            {settingsCopy.actions.recallStatusCenter}
-          </button>
-        </div>
+        </section>
+
+        <section className="product-settings-section">
+          <h3>{settingsCopy.actions.quickPanelTitle}</h3>
+          <p className="product-settings-section__hint">{settingsCopy.actions.quickPanelDescription}</p>
+          <div className="product-settings-actions">
+            <button type="button" className="product-settings-btn" onClick={onRefresh}>
+              {settingsCopy.actions.refresh}
+            </button>
+            <button type="button" className="product-settings-btn" onClick={onResetPosition}>
+              {settingsCopy.actions.resetPosition}
+            </button>
+            <button type="button" className="product-settings-btn" onClick={onOpenNativeSettings}>
+              {settingsCopy.actions.openNativeSettings}
+            </button>
+            <button type="button" className="product-settings-btn" onClick={onRecallStatusCenter}>
+              {settingsCopy.actions.recallStatusCenter}
+            </button>
+          </div>
+        </section>
       </div>
-    </section>
+    </aside>
   );
 }

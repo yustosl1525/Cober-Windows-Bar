@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
+import i18n from "../i18n";
 import {
-  DESKTOP_STATUS_TEMPLATE_DESCRIPTORS,
+  getDesktopStatusTemplateDescriptors,
   createDesktopStatusStateTemplates,
   createSystemPerformanceMetricSnapshot,
   getDesktopStatusLabels,
@@ -9,6 +10,9 @@ import {
   getDesktopStatusSettingsCopy,
 } from "./desktopStatusConfig";
 import { systemPerformanceMetrics } from "./mockHubData";
+
+// Ensure Chinese for predictable test labels
+i18n.changeLanguage("zh-CN");
 
 const mojibakePattern = /[\uFFFD\u951F\u4fd9\u7ca8\u93c9\u3128\u6d63\u51aa\u5f42\u6d63\u9903\u5890\u6577]/;
 
@@ -49,7 +53,7 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
-  DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => descriptor.label),
+  getDesktopStatusTemplateDescriptors().map((descriptor) => descriptor.label),
   [
     "\u5e38\u9a7b\u6001",
     "\u5a92\u4f53\u6001",
@@ -92,7 +96,7 @@ for (const value of [
     toggle.inactiveLabel,
   ]),
   ...Object.values(settingsCopy.actions),
-  ...DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.flatMap((descriptor) => [descriptor.label, descriptor.description]),
+  ...getDesktopStatusTemplateDescriptors().flatMap((descriptor) => [descriptor.label, descriptor.description]),
   stateTemplates.resident.title,
   stateTemplates.resident.subtitle,
   stateTemplates.media.subtitle,

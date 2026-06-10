@@ -1,4 +1,5 @@
 import { Music4, Play, SkipBack, SkipForward } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
 import { sendMediaControl, type MediaControlAction } from "../../../runtime/mediaControlRuntime";
 import type { DesktopMediaState } from "../../../types/hub";
@@ -10,6 +11,7 @@ type MediaStatusTemplateProps = {
 };
 
 export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
+  const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
 
   async function handleMediaAction(action: MediaControlAction) {
@@ -38,7 +40,7 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
           <button
             type="button"
             className="product-status-media-btn"
-            aria-label="Previous"
+            aria-label={t("media.previous")}
             onClick={() => void handleMediaAction("previous")}
           >
             <SkipBack size={14} strokeWidth={2.2} />
@@ -46,7 +48,7 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
           <button
             type="button"
             className="product-status-media-btn product-status-media-btn-primary"
-            aria-label="Play/Pause"
+            aria-label={t("media.playPause")}
             onClick={() => void handleMediaAction("play-pause")}
           >
             <Play size={16} strokeWidth={2.4} />
@@ -54,7 +56,7 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
           <button
             type="button"
             className="product-status-media-btn"
-            aria-label="Next"
+            aria-label={t("media.next")}
             onClick={() => void handleMediaAction("next")}
           >
             <SkipForward size={14} strokeWidth={2.2} />

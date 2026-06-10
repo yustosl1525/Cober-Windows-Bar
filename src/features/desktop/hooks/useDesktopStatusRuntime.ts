@@ -13,7 +13,7 @@ import type {
   HubStoreState,
   SystemPerformanceMetric,
 } from "../../../types/hub";
-import { DESKTOP_STATUS_TEMPLATE_DESCRIPTORS } from "../../../data/desktopStatusConfig";
+import { DESKTOP_STATUS_TEMPLATE_ORDER } from "../../../data/desktopStatusConfig";
 
 export type UseDesktopStatusRuntimeResult = {
   hubState: HubStoreState;
@@ -71,7 +71,7 @@ export function useDesktopStatusRuntime(
   // Aggregation + resolution (computed during render)
   const aggregatedStatus = aggregateDesktopStatusInput({
     hubState,
-    availableKinds: DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => descriptor.kind),
+    availableKinds: DESKTOP_STATUS_TEMPLATE_ORDER,
     externalActiveKinds: systemMonitors?.externalActiveKinds,
     externalStates: systemMonitors?.externalStates,
   });

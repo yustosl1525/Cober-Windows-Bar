@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
+import i18n from "../../../i18n";
 import {
   sourceQualityClassName,
   sourceQualityLabel,
 } from "./ResidentStatusTemplate";
 import type { SystemPerformanceSourceQuality } from "../../../types/hub";
+
+// Ensure English for predictable test labels
+i18n.changeLanguage("en");
 
 const expectedLabels: Record<SystemPerformanceSourceQuality, string> = {
   live: "Live",

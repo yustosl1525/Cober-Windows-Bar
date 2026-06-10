@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import { clampProgress, dedupeKinds } from "../shared/runtimeGuards";
 import { createHubStoreState, getActiveHubEvents } from "./hubState";
 import type {
@@ -39,7 +40,7 @@ function snapshotMusicState(music: MusicState): DesktopMediaState {
   return {
     kind: "media",
     title: music.title,
-    subtitle: "正在播放",
+    subtitle: i18n.t("aggregation.nowPlaying"),
     source: "mock",
     artist: music.subtitle,
     timeLabel: music.time,
@@ -52,9 +53,9 @@ function snapshotDownloadTask(task: HubTask): DesktopDownloadState {
   return {
     kind: "download",
     title: task.title,
-    subtitle: "下载任务",
+    subtitle: i18n.t("aggregation.downloadTask"),
     source: "mock",
-    detail: task.subtitle || "传输中",
+    detail: task.subtitle || i18n.t("aggregation.transferring"),
     progress: clampProgress(task.progress),
     accent: "green",
   };
@@ -64,9 +65,9 @@ function snapshotAiTask(task: HubTask): DesktopUpdateState {
   return {
     kind: "update",
     title: task.title,
-    subtitle: "进行中",
+    subtitle: i18n.t("aggregation.inProgress"),
     source: "mock",
-    detail: task.subtitle || "系统任务处理中",
+    detail: task.subtitle || i18n.t("aggregation.systemTaskProcessing"),
     progress: clampProgress(task.progress),
     accent: "orange",
   };
@@ -78,11 +79,11 @@ function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | Des
 
     return {
       kind: "clipboard",
-      title: payload?.app ?? "桌面通知",
-      subtitle: "最近消息",
+      title: payload?.app ?? i18n.t("aggregation.desktopNotification"),
+      subtitle: i18n.t("aggregation.recentMessage"),
       source: "mock",
-      copiedText: payload?.message ?? "收到新的通知",
-      detail: payload?.sender ?? "通知中心",
+      copiedText: payload?.message ?? i18n.t("aggregation.newNotificationReceived"),
+      detail: payload?.sender ?? i18n.t("aggregation.notificationCenter"),
       accent: "blue",
     };
   }
@@ -90,11 +91,11 @@ function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | Des
   if (event.source === "system" && event.metadata?.["focus"] === true) {
     return {
       kind: "focus",
-      title: "专注模式",
-      subtitle: "系统状态",
+      title: i18n.t("aggregation.focusMode"),
+      subtitle: i18n.t("aggregation.systemStatus"),
       source: "system",
-      sessionLabel: typeof event.metadata["label"] === "string" ? event.metadata["label"] : "已启用专注模式",
-      detail: typeof event.metadata["detail"] === "string" ? event.metadata["detail"] : "暂不打扰",
+      sessionLabel: typeof event.metadata["label"] === "string" ? event.metadata["label"] : i18n.t("aggregation.focusModeEnabled"),
+      detail: typeof event.metadata["detail"] === "string" ? event.metadata["detail"] : i18n.t("aggregation.doNotDisturb"),
       accent: "pink",
     };
   }

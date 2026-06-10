@@ -1,4 +1,6 @@
 import { Cpu } from "lucide-react";
+import i18n from "../../../i18n";
+import { useTranslation } from "react-i18next";
 import type {
   DesktopResidentState,
   SystemPerformanceMetric,
@@ -10,7 +12,8 @@ type ResidentStatusTemplateProps = {
 };
 
 export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
-  const sourceLabel = sourceQualityLabel(state.sourceStatus?.quality);
+  const { t } = useTranslation();
+  const sourceLabel = sourceQualityLabel(state.sourceStatus?.quality, t);
 
   return (
     <>
@@ -18,8 +21,8 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
         <Cpu size={20} strokeWidth={2.2} />
         <span
           className={`product-status-source-health ${sourceQualityClassName(state.sourceStatus?.quality)}`}
-          aria-label={`System status diagnostic source ${sourceLabel}`}
-          title={`Diagnostic source: ${sourceLabel}`}
+          aria-label={`${sourceLabel}`}
+          title={sourceLabel}
         >
           <span />
           <span className="product-status-source-health-label">{sourceLabel}</span>
@@ -29,7 +32,7 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
       <div className="product-status-metrics">
         {state.metrics.map((metric) => {
           const accent = metricAccent(metric);
-          const label = `${metric.label} 使用率 ${metric.value}%`;
+          const label = t("metrics.usageRate", { label: metric.label, value: metric.value });
 
           return (
             <div
@@ -69,17 +72,20 @@ function visibleMetricValue(value: number) {
   return value <= 0 ? 10 : Math.max(value, 10);
 }
 
-export function sourceQualityLabel(quality: SystemPerformanceSourceQuality | undefined) {
+type TranslationFn = (key: string) => string;
+
+export function sourceQualityLabel(quality: SystemPerformanceSourceQuality | undefined, t?: TranslationFn) {
+  const translate = t ?? i18n.t.bind(i18n);
   switch (quality) {
     case "live":
-      return "Live";
+      return translate("diagnostics.live");
     case "stale":
-      return "Stale";
+      return translate("diagnostics.stale");
     case "unavailable":
-      return "Unavailable";
+      return translate("diagnostics.unavailable");
     case "fallback":
     default:
-      return "Fallback";
+      return translate("diagnostics.fallback");
   }
 }
 

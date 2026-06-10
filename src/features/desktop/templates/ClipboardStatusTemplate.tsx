@@ -1,5 +1,6 @@
 import { Clipboard, Copy } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
 import { setClipboardContent } from "../../../runtime/mediaControlRuntime";
 import type { DesktopClipboardState } from "../../../types/hub";
@@ -11,6 +12,7 @@ type ClipboardStatusTemplateProps = {
 };
 
 export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps) {
+  const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
   const [justCopied, setJustCopied] = useState(false);
 
@@ -42,11 +44,11 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
         <button
           type="button"
           className={justCopied ? "product-status-clipboard-copy is-copied" : "product-status-clipboard-copy"}
-          aria-label={justCopied ? "Copied!" : "Copy to clipboard"}
+          aria-label={justCopied ? t("common.copied") : t("clipboard.copyToClipboard")}
           onClick={() => void handleCopy()}
         >
           <Copy size={13} strokeWidth={2.2} />
-          <span>{justCopied ? "已复制" : "复制"}</span>
+          <span>{justCopied ? t("common.copied") : t("common.copy")}</span>
         </button>
       </DesktopStatusTemplateFrame>
     </>

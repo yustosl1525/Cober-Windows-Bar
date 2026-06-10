@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import i18n from "../../../i18n";
 import {
   getFocusAssistState,
   onFocusAssistChanged,
@@ -22,19 +23,20 @@ export type SystemMonitorResult = {
 };
 
 function buildFocusState(focus: FocusAssistState): DesktopFocusState {
+  const t = i18n.t.bind(i18n);
   const profileLabel = focus.profile
     ? focus.profile.replace("Microsoft.Windows.Focus_", "")
     : "";
 
   return {
     kind: "focus",
-    title: "专注模式",
-    subtitle: "系统状态",
+    title: t("aggregation.focusMode"),
+    subtitle: t("aggregation.systemStatus"),
     source: "system",
     sessionLabel: profileLabel
-      ? `${profileLabel} 模式已启用`
-      : "专注助手已启用",
-    detail: "暂不打扰",
+      ? t("aggregation.profileModeEnabled", { profile: profileLabel })
+      : t("aggregation.focusAssistEnabled"),
+    detail: t("aggregation.doNotDisturb"),
     accent: "pink",
     sourceHealth: {
       kind: "focus",
