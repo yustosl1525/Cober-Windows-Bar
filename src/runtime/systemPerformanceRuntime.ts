@@ -142,6 +142,9 @@ export function normalizeSystemStatusDiagnostic(value: unknown): SystemStatusDia
   };
 
   if (value.lastSuccessfulSource !== undefined) {
+    if (!canCarryLastSuccessfulSource(value.quality)) {
+      return undefined;
+    }
     if (!isSystemStatusDiagnosticSource(value.lastSuccessfulSource)) {
       return undefined;
     }
@@ -275,6 +278,10 @@ function isSystemStatusDiagnosticCode(value: unknown): value is SystemStatusDiag
 
 function isSystemStatusDiagnosticSource(value: unknown): value is SystemStatusDiagnosticSource {
   return SYSTEM_STATUS_DIAGNOSTIC_SOURCES.includes(value as SystemStatusDiagnosticSource);
+}
+
+function canCarryLastSuccessfulSource(quality: SystemStatusDiagnosticQuality): boolean {
+  return quality === "fallback" || quality === "stale";
 }
 
 function toPercent(value: unknown): number | undefined {

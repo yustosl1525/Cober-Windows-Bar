@@ -235,6 +235,70 @@ test("normalizes only approved diagnostic fields and values", () => {
   );
 });
 
+test("rejects last successful source unless diagnostic quality explains fallback or stale state", async () => {
+  for (const quality of ["live", "unavailable"] as const) {
+    assert.equal(
+      normalizeSystemStatusDiagnostic({
+        quality,
+        code: "unavailable",
+        source: "preflight",
+        lastSuccessfulSource: "tauri-event",
+      }),
+      undefined,
+    );
+  }
+
+  for (const quality of ["fallback", "stale"] as const) {
+    assert.deepEqual(
+      normalizeSystemStatusDiagnostic({
+        quality,
+        code: "timeout",
+        source: "preflight",
+        lastSuccessfulSource: "tauri-event",
+      }),
+      {
+        quality,
+        code: "timeout",
+        source: "preflight",
+        lastSuccessfulSource: "tauri-event",
+      },
+    );
+  }
+
+  const fallbackMetrics: SystemPerformanceMetric[] = [
+    { id: "cpu", label: "CPU", value: 11, tone: "blue" },
+    { id: "memory", label: "Memory", value: 22, tone: "violet" },
+    { id: "network", label: "Network", value: 33, tone: "cyan" },
+  ];
+
+  const result = await loadSystemPerformanceStatus({
+    fallbackMetrics,
+    invoke: async () => ({
+      snapshot: {
+        cpu: 17,
+        memory: 61,
+        network: 42,
+      },
+      diagnostic: {
+        quality: "live",
+        code: "unavailable",
+        source: "preflight",
+        lastSuccessfulSource: "tauri-event",
+      },
+    }),
+  });
+
+  assert.deepEqual(result.diagnostic, {
+    quality: "unavailable",
+    code: "malformed",
+    source: "preflight",
+  });
+  assert.deepEqual(
+    result.metrics.map((metric) => metric.value),
+    [11, 22, 33],
+  );
+});
+
 for (const { name, run } of tests) {
   try {
     await run();
