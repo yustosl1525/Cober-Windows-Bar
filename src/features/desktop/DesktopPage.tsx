@@ -7,6 +7,7 @@ import {
   STATUS_WINDOW_CORRECT_POSITION_COMMAND,
 } from "../../runtime/statusWindowRuntime";
 import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
+import { getAutostartEnabled, setAutostartEnabled as applyAutostart } from "../../runtime/autostartRuntime";
 import { resolveDesktopStatusState } from "../../state/desktopStatusState";
 import type { DesktopStatusKind } from "../../types/hub";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -60,6 +61,12 @@ export function DesktopPage() {
   const appWindowRef = useRef<TauriAppWindow | undefined>(getSafeCurrentWindow());
   const shellCopy = getDesktopStatusShellCopy();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [autostartEnabled, setAutostartEnabled] = useState(false);
+
+  // Load initial autostart state
+  useEffect(() => {
+    void getAutostartEnabled().then(setAutostartEnabled);
+  }, []);
 
   // Drag controller
   const { isDraggingRef, lockPositionRef, handlePointerDown } = useDragController();
@@ -174,6 +181,14 @@ export function DesktopPage() {
     }
   }
 
+  async function toggleAutostart() {
+    const nextValue = !autostartEnabled;
+    const success = await applyAutostart(nextValue);
+    if (success) {
+      setAutostartEnabled(nextValue);
+    }
+  }
+
   async function quitStatusCenter() {
     const invoke = getTauriInvoke();
     if (!invoke) {
@@ -267,9 +282,11 @@ export function DesktopPage() {
         <SettingsPanel
           preferences={preferences}
           activeStatusKind={activeStatusKind}
+          autostartEnabled={autostartEnabled}
           onToggleAlwaysFloat={() => void toggleAlwaysFloat()}
           onToggleAvoidFullscreen={toggleAvoidFullscreen}
           onToggleLockPosition={toggleLockPosition}
+          onToggleAutostart={() => void toggleAutostart()}
           onKindSelect={handleKindSelect}
           onRefresh={() => void refresh()}
           onResetPosition={() => void resetPosition()}

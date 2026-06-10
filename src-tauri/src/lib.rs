@@ -11,6 +11,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Emitter, Manager, PhysicalPosition, Position, WebviewWindow, WindowEvent};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use tauri_plugin_global_shortcut::ShortcutState;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use tauri_plugin_autostart::MacosLauncher;
 
 #[cfg(windows)]
 use windows_sys::Win32::{
@@ -408,6 +410,28 @@ fn try_media_session_action(_action: &str) -> Result<MediaControlResult, String>
 #[tauri::command]
 fn media_control(action: String) -> Result<MediaControlResult, String> {
   try_media_session_action(&action)
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[tauri::command]
+fn get_autostart_enabled(
+  autostart: tauri::State<'_, tauri_plugin_autostart::AutoLaunchManager>,
+) -> bool {
+  autostart.is_enabled().unwrap_or(false)
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[tauri::command]
+fn set_autostart_enabled(
+  autostart: tauri::State<'_, tauri_plugin_autostart::AutoLaunchManager>,
+  enabled: bool,
+) -> Result<(), String> {
+  if enabled {
+    autostart.enable().map_err(|e| format!("enable autostart failed: {e}"))?;
+  } else {
+    autostart.disable().map_err(|e| format!("disable autostart failed: {e}"))?;
+  }
+  Ok(())
 }
 
 #[tauri::command]
@@ -1298,6 +1322,11 @@ pub fn run() {
           .build(),
       )?;
 
+      #[cfg(not(any(target_os = "android", target_os = "ios")))]
+      app.handle().plugin(
+        tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"])),
+      )?;
+
       let preferences = load_status_center_preferences(app.handle());
       let menu_items = create_status_center_menu(app.handle(), &preferences)?;
       let tray_menu = create_tray_menu(app.handle())?;
@@ -1393,7 +1422,9 @@ pub fn run() {
       quit_status_center,
       get_clipboard_content,
       set_clipboard_content,
-      media_control
+      media_control,
+      get_autostart_enabled,
+      set_autostart_enabled
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

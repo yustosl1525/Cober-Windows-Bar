@@ -5,9 +5,11 @@ import type { DesktopStatusKind, DesktopStatusPreferences } from "../../../types
 export type SettingsPanelProps = {
   preferences: DesktopStatusPreferences;
   activeStatusKind: DesktopStatusKind | null;
+  autostartEnabled: boolean;
   onToggleAlwaysFloat: () => void;
   onToggleAvoidFullscreen: () => void;
   onToggleLockPosition: () => void;
+  onToggleAutostart: () => void;
   onKindSelect: (kind: DesktopStatusKind) => void;
   onRefresh: () => void;
   onResetPosition: () => void;
@@ -23,9 +25,11 @@ function settingsToggleClassName(active: boolean) {
 export function SettingsPanel({
   preferences,
   activeStatusKind,
+  autostartEnabled,
   onToggleAlwaysFloat,
   onToggleAvoidFullscreen,
   onToggleLockPosition,
+  onToggleAutostart,
   onKindSelect,
   onRefresh,
   onResetPosition,
@@ -99,6 +103,17 @@ export function SettingsPanel({
                 {preferences.lockPosition
                   ? settingsCopy.toggles.lockPosition.activeLabel
                   : settingsCopy.toggles.lockPosition.inactiveLabel}
+              </small>
+            </button>
+            <button
+              type="button"
+              className={settingsToggleClassName(autostartEnabled)}
+              onClick={onToggleAutostart}
+            >
+              <strong>开机自启</strong>
+              <span>系统启动时自动运行状态中心。</span>
+              <small>
+                {autostartEnabled ? "已启用" : "未启用"}
               </small>
             </button>
           </div>
