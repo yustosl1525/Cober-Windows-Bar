@@ -11,6 +11,10 @@ import {
   type TauriRuntimeDiagnostic,
   type TauriInvoke,
 } from "./tauriRuntime";
+import {
+  SYSTEM_STATUS_DIAGNOSTIC_CODES,
+  type SystemStatusDiagnosticCode,
+} from "./systemPerformanceRuntime";
 import type { HubEvent } from "../types/hub";
 import type { HubProviderCapability } from "../providers/types";
 
@@ -52,14 +56,7 @@ type SystemStatusRuntimePayloadFixture = {
     batteryState: "charging" | "discharging" | "full" | "low" | "critical" | "unknown";
     networkAvailability: "offline" | "online" | "limited" | "metered" | "unknown";
   };
-  diagnosticCodes: Array<
-    | "unsupported"
-    | "unavailable"
-    | "permission-denied"
-    | "malformed"
-    | "timeout"
-    | "invoke-failed"
-  >;
+  diagnosticCodes: SystemStatusDiagnosticCode[];
 };
 
 const systemStatusRuntimePayloadFixture: SystemStatusRuntimePayloadFixture = {
@@ -80,14 +77,7 @@ const systemStatusRuntimePayloadFixture: SystemStatusRuntimePayloadFixture = {
     batteryState: "charging",
     networkAvailability: "online",
   },
-  diagnosticCodes: [
-    "unsupported",
-    "unavailable",
-    "permission-denied",
-    "malformed",
-    "timeout",
-    "invoke-failed",
-  ],
+  diagnosticCodes: [...SYSTEM_STATUS_DIAGNOSTIC_CODES],
 };
 
 const allowedSystemStatusRuntimePayloadValues = new Set<string>([
@@ -111,12 +101,7 @@ const allowedSystemStatusRuntimePayloadValues = new Set<string>([
   "online",
   "limited",
   "metered",
-  "unsupported",
-  "unavailable",
-  "permission-denied",
-  "malformed",
-  "timeout",
-  "invoke-failed",
+  ...SYSTEM_STATUS_DIAGNOSTIC_CODES,
 ]);
 
 const forbiddenSystemStatusRuntimePayloadKeys = new Set([
@@ -262,14 +247,7 @@ function assertSystemStatusRuntimePayloadFixture(value: SystemStatusRuntimePaylo
     "memoryPressure",
     "networkAvailability",
   ]);
-  assert.deepEqual(value.diagnosticCodes, [
-    "unsupported",
-    "unavailable",
-    "permission-denied",
-    "malformed",
-    "timeout",
-    "invoke-failed",
-  ]);
+  assert.deepEqual(value.diagnosticCodes, [...SYSTEM_STATUS_DIAGNOSTIC_CODES]);
 
   for (const key of collectKeys(value)) {
     assert.equal(

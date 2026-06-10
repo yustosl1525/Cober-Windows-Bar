@@ -17,15 +17,30 @@ export type SystemPerformanceSnapshot = {
   network: number;
 };
 
-export type SystemStatusDiagnosticQuality = "live" | "fallback" | "stale" | "unavailable";
-export type SystemStatusDiagnosticCode =
-  | "unsupported"
-  | "unavailable"
-  | "permission-denied"
-  | "malformed"
-  | "timeout"
-  | "invoke-failed";
-export type SystemStatusDiagnosticSource = "mock" | "tauri-fixture" | "tauri-event" | "preflight";
+export const SYSTEM_STATUS_DIAGNOSTIC_QUALITIES = [
+  "live",
+  "fallback",
+  "stale",
+  "unavailable",
+] as const;
+export const SYSTEM_STATUS_DIAGNOSTIC_CODES = [
+  "unsupported",
+  "unavailable",
+  "permission-denied",
+  "malformed",
+  "timeout",
+  "invoke-failed",
+] as const;
+export const SYSTEM_STATUS_DIAGNOSTIC_SOURCES = [
+  "mock",
+  "tauri-fixture",
+  "tauri-event",
+  "preflight",
+] as const;
+
+export type SystemStatusDiagnosticQuality = (typeof SYSTEM_STATUS_DIAGNOSTIC_QUALITIES)[number];
+export type SystemStatusDiagnosticCode = (typeof SYSTEM_STATUS_DIAGNOSTIC_CODES)[number];
+export type SystemStatusDiagnosticSource = (typeof SYSTEM_STATUS_DIAGNOSTIC_SOURCES)[number];
 
 export type SystemStatusDiagnostic = {
   quality: SystemStatusDiagnosticQuality;
@@ -251,22 +266,15 @@ function classifySystemStatusInvokeError(error: unknown): SystemStatusDiagnostic
 }
 
 function isSystemStatusDiagnosticQuality(value: unknown): value is SystemStatusDiagnosticQuality {
-  return value === "live" || value === "fallback" || value === "stale" || value === "unavailable";
+  return SYSTEM_STATUS_DIAGNOSTIC_QUALITIES.includes(value as SystemStatusDiagnosticQuality);
 }
 
 function isSystemStatusDiagnosticCode(value: unknown): value is SystemStatusDiagnosticCode {
-  return (
-    value === "unsupported" ||
-    value === "unavailable" ||
-    value === "permission-denied" ||
-    value === "malformed" ||
-    value === "timeout" ||
-    value === "invoke-failed"
-  );
+  return SYSTEM_STATUS_DIAGNOSTIC_CODES.includes(value as SystemStatusDiagnosticCode);
 }
 
 function isSystemStatusDiagnosticSource(value: unknown): value is SystemStatusDiagnosticSource {
-  return value === "mock" || value === "tauri-fixture" || value === "tauri-event" || value === "preflight";
+  return SYSTEM_STATUS_DIAGNOSTIC_SOURCES.includes(value as SystemStatusDiagnosticSource);
 }
 
 function toPercent(value: unknown): number | undefined {

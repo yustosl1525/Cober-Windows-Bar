@@ -1,12 +1,8 @@
 import { strict as assert } from "node:assert";
-
-type SystemStatusDiagnosticCode =
-  | "unsupported"
-  | "unavailable"
-  | "permission-denied"
-  | "malformed"
-  | "timeout"
-  | "invoke-failed";
+import {
+  SYSTEM_STATUS_DIAGNOSTIC_CODES,
+  type SystemStatusDiagnosticCode,
+} from "../runtime/systemPerformanceRuntime";
 
 type SystemStatusFacts = {
   cpuLoadRange?: "low" | "medium" | "high" | "critical" | "unknown";
@@ -136,14 +132,7 @@ const systemStatusDiagnostics: SystemStatusDiagnosticFixture[] = [
   },
 ];
 
-const expectedDiagnosticCodes: SystemStatusDiagnosticCode[] = [
-  "unsupported",
-  "unavailable",
-  "permission-denied",
-  "malformed",
-  "timeout",
-  "invoke-failed",
-];
+const expectedDiagnosticCodes: SystemStatusDiagnosticCode[] = [...SYSTEM_STATUS_DIAGNOSTIC_CODES];
 
 const allowedFactValues = new Set([
   "low",
