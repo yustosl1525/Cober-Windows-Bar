@@ -36,6 +36,7 @@ const STATUS_CENTER_HUB_EVENTS_EVENT: &str = "status-center://hub-events";
 const STATUS_CENTER_MENU_ACTION_EVENT: &str = "status-center://menu-action";
 const STATUS_CENTER_SETTINGS_EVENT: &str = "status-center://settings";
 const STATUS_CENTER_OPEN_SETTINGS_EVENT: &str = "status-center://open-settings";
+const STATUS_CENTER_CLIPBOARD_EVENT: &str = "status-center://clipboard-changed";
 const TRAY_ID: &str = "status-center-tray";
 const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
@@ -212,6 +213,20 @@ struct SystemPerformanceSnapshot {
   network: u8,
 }
 
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ClipboardContent {
+  text: String,
+  source_app: String,
+  copied_at: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MediaControlResult {
+  success: bool,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OverlayPolicy {
@@ -298,9 +313,9 @@ fn get_guest_provider_capabilities() -> GuestProviderCapabilitiesPayload {
       },
       GuestProviderCapability {
         kind: "clipboard",
-        quality: "unavailable",
-        code: "not-implemented",
-        safe_to_display: false,
+        quality: "native",
+        code: "available",
+        safe_to_display: true,
         last_checked_at,
       },
     ],
@@ -310,6 +325,89 @@ fn get_guest_provider_capabilities() -> GuestProviderCapabilitiesPayload {
 #[tauri::command]
 fn get_media_session_status() -> MediaSessionStatus {
   read_media_session_status()
+}
+
+#[tauri::command]
+fn get_clipboard_content() -> Result<ClipboardContent, String> {
+  let mut clipboard = arboard::Clipboard::new().map_err(|e| format!("clipboard init failed: {e}"))?;
+  let text = clipboard.get_text().map_err(|e| format!("clipboard read failed: {e}"))?;
+  let source_app = String::new(); // arboard does not expose source app
+
+  Ok(ClipboardContent {
+    text,
+    source_app,
+    copied_at: unix_time_ms(),
+  })
+}
+
+#[tauri::command]
+fn set_clipboard_content(text: String) -> Result<(), String> {
+  let mut clipboard = arboard::Clipboard::new().map_err(|e| format!("clipboard init failed: {e}"))?;
+  clipboard.set_text(&text).map_err(|e| format!("clipboard write failed: {e}"))?;
+  Ok(())
+}
+
+#[cfg(windows)]
+fn try_media_session_action(action: &str) -> Result<MediaControlResult, String> {
+  use windows::Media::Control::{
+    GlobalSystemMediaTransportControlsSessionManager,
+    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+  };
+
+  let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+    .map_err(|e| format!("media manager request failed: {e}"))?
+    .get()
+    .map_err(|e| format!("media manager get failed: {e}"))?;
+  let session = manager
+    .GetCurrentSession()
+    .map_err(|e| format!("no active media session: {e}"))?;
+
+  let success = match action {
+    "play-pause" => {
+      let playback_info = session.GetPlaybackInfo()
+        .map_err(|e| format!("playback info failed: {e}"))?;
+      let is_playing = playback_info.PlaybackStatus()
+        .map(|s| s == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
+        .unwrap_or(false);
+
+      if is_playing {
+        session.TryPauseAsync()
+          .map_err(|e| format!("pause dispatch failed: {e}"))?
+          .get()
+          .map_err(|e| format!("pause failed: {e}"))?
+      } else {
+        session.TryPlayAsync()
+          .map_err(|e| format!("play dispatch failed: {e}"))?
+          .get()
+          .map_err(|e| format!("play failed: {e}"))?
+      }
+    }
+    "next" => {
+      session.TrySkipNextAsync()
+        .map_err(|e| format!("skip next dispatch failed: {e}"))?
+        .get()
+        .map_err(|e| format!("skip next failed: {e}"))?
+    }
+    "previous" => {
+      session.TrySkipPreviousAsync()
+        .map_err(|e| format!("skip previous dispatch failed: {e}"))?
+        .get()
+        .map_err(|e| format!("skip previous failed: {e}"))?
+    }
+    _ => return Err(format!("unknown media action: {action}")),
+  };
+
+  Ok(MediaControlResult { success })
+}
+
+#[cfg(not(windows))]
+fn try_media_session_action(_action: &str) -> Result<MediaControlResult, String> {
+  Err("media control is only supported on Windows".into())
+}
+
+#[tauri::command]
+fn media_control(action: String) -> Result<MediaControlResult, String> {
+  try_media_session_action(&action)
 }
 
 #[tauri::command]
@@ -1244,6 +1342,30 @@ pub fn run() {
 
       emit_status_center_settings(app.handle(), &preferences);
 
+      // Start clipboard change monitor
+      {
+        let clipboard_app_handle = app.handle().clone();
+        std::thread::spawn(move || {
+          let mut last_text = String::new();
+          loop {
+            std::thread::sleep(Duration::from_millis(800));
+            if let Ok(mut clipboard) = arboard::Clipboard::new() {
+              if let Ok(text) = clipboard.get_text() {
+                if text != last_text && !text.is_empty() {
+                  last_text = text.clone();
+                  let payload = ClipboardContent {
+                    text,
+                    source_app: String::new(),
+                    copied_at: unix_time_ms(),
+                  };
+                  let _ = clipboard_app_handle.emit(STATUS_CENTER_CLIPBOARD_EVENT, &payload);
+                }
+              }
+            }
+          }
+        });
+      }
+
       Ok(())
     })
     .on_menu_event({
@@ -1267,9 +1389,11 @@ pub fn run() {
       get_status_center_settings,
       set_status_center_preferences,
       show_status_center_window,
-      open_status_center_settings
-      ,
-      quit_status_center
+      open_status_center_settings,
+      quit_status_center,
+      get_clipboard_content,
+      set_clipboard_content,
+      media_control
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

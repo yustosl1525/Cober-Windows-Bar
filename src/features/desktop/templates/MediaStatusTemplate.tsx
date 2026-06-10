@@ -1,5 +1,6 @@
-import { Music4 } from "lucide-react";
+import { Music4, Play, SkipBack, SkipForward } from "lucide-react";
 import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
+import { sendMediaControl, type MediaControlAction } from "../../../runtime/mediaControlRuntime";
 import type { DesktopMediaState } from "../../../types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
@@ -10,6 +11,10 @@ type MediaStatusTemplateProps = {
 
 export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
   const copy = getDesktopStatusTemplateChromeCopy();
+
+  async function handleMediaAction(action: MediaControlAction) {
+    await sendMediaControl(action);
+  }
 
   return (
     <>
@@ -29,6 +34,32 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
         }
       >
         <StatusRail value={state.progress} label={`${copy.mediaProgress} ${state.progress}%`} accent="violet" />
+        <div className="product-status-media-controls">
+          <button
+            type="button"
+            className="product-status-media-btn"
+            aria-label="Previous"
+            onClick={() => void handleMediaAction("previous")}
+          >
+            <SkipBack size={14} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            className="product-status-media-btn product-status-media-btn-primary"
+            aria-label="Play/Pause"
+            onClick={() => void handleMediaAction("play-pause")}
+          >
+            <Play size={16} strokeWidth={2.4} />
+          </button>
+          <button
+            type="button"
+            className="product-status-media-btn"
+            aria-label="Next"
+            onClick={() => void handleMediaAction("next")}
+          >
+            <SkipForward size={14} strokeWidth={2.2} />
+          </button>
+        </div>
       </DesktopStatusTemplateFrame>
     </>
   );
