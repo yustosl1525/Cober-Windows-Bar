@@ -177,34 +177,83 @@ async function run() {
     window.__TAURI__ = {
       core: {
         invoke: async (command) => {
-          if (command !== "get_hub_event_fixtures") {
-            throw new Error(`Unexpected Tauri command: ${command}`);
-          }
-
           if (window.__qaTauriInvokeDelayMs > 0) {
             await new Promise((resolve) =>
               setTimeout(resolve, window.__qaTauriInvokeDelayMs),
             );
           }
 
-          return [
-            {
-              id: "qa-tauri-fixture-ai",
-              type: "ai",
-              source: "mock",
-              createdAt: 1780743600000,
-              progress: 64,
-              payload: {
-                id: "qa-tauri-fixture-ai-task",
-                type: "ai",
-                title: "QA Tauri Fixture",
-                subtitle: "Injected runtime fixture",
-                progress: 64,
-                accent: "blue",
-              },
-              metadata: { runtime: "tauri", fixture: true },
-            },
-          ];
+          switch (command) {
+            case "get_hub_event_fixtures":
+              return [
+                {
+                  id: "qa-tauri-fixture-ai",
+                  type: "ai",
+                  source: "mock",
+                  createdAt: 1780743600000,
+                  progress: 64,
+                  payload: {
+                    id: "qa-tauri-fixture-ai-task",
+                    type: "ai",
+                    title: "QA Tauri Fixture",
+                    subtitle: "Injected runtime fixture",
+                    progress: 64,
+                    accent: "blue",
+                  },
+                  metadata: { runtime: "tauri", fixture: true },
+                },
+              ];
+            case "emit_hub_event_fixtures":
+              return 1;
+            case "get_runtime_capabilities":
+              return {
+                runtime: "tauri",
+                fixtureIpc: true,
+                tray: true,
+                alwaysOnTop: true,
+                windowsProviders: false,
+                configuredShellWindow: {
+                  configured: true,
+                  title: "Cober Windows Bar",
+                  width: 420,
+                  height: 170,
+                  minWidth: 320,
+                  minHeight: 120,
+                  resizable: false,
+                  centered: false,
+                },
+              };
+            case "get_system_performance":
+              return {
+                snapshot: { cpu: 28, memory: 54, network: 12 },
+                diagnostic: {
+                  quality: "fallback",
+                  code: "unavailable",
+                  source: "tauri-fixture",
+                },
+              };
+            case "get_overlay_policy":
+              return { foregroundFullscreen: false, shouldFloat: true };
+            case "get_status_center_settings":
+              return {
+                preferences: {
+                  alwaysFloat: true,
+                  avoidFullscreen: true,
+                  lockPosition: false,
+                },
+              };
+            case "set_status_window_floating":
+            case "correct_status_window_position":
+            case "show_status_center_context_menu":
+            case "open_status_center_settings":
+            case "set_status_center_preferences":
+            case "show_status_center_window":
+            case "start_window_drag":
+            case "quit_status_center":
+              return undefined;
+            default:
+              throw new Error(`Unexpected Tauri command: ${command}`);
+          }
         },
       },
     };
@@ -228,9 +277,9 @@ async function run() {
 
     const panel = page
       .locator("div")
-      .filter({ has: page.getByText("Provider Demo", { exact: true }) })
+      .filter({ has: page.getByText("Diagnostics and replay", { exact: true }) })
       .filter({
-        has: page.getByRole("button", { name: "Stop provider", exact: true }),
+        has: page.getByRole("button", { name: "Stop source", exact: true }),
       })
       .first();
     const mainPreview = page.getByTestId("showcase-main-preview");
@@ -239,14 +288,19 @@ async function run() {
     await expectButton(page, "File shortcut mock");
     await expectButton(page, "Browser shortcut mock");
     await expectProgressBar(page, "Taskbar AI progress");
-    await expectText(page, "Mica background");
-    await expectText(page, "Position mock");
-    await expectProgressBar(page, "Fluent music progress token");
-    await expectProgressBar(page, "Fluent AI progress token");
-    await expectProgressBar(page, "Fluent download progress token");
+    await expectText(page, "Taskbar-style composition mock");
+    await expectText(page, "Windows 11 Fluent System");
+    await expectText(page, "Desktop placement");
+    await expectText(page, "Acrylic capsule");
+    await expectText(page, "State inspection board");
+    await expectText(page, "Resolver notes");
+    await expectProgressBar(page, "AI token progress");
+    await expectProgressBar(page, "Music token progress");
+    await expectProgressBar(page, "Download token progress");
+    await expectProgressBar(page, "Desktop placement sample progress");
 
     await expectText(panel, "Stopped, events stay");
-    await expectText(panel, "Provider stopped");
+    await expectText(panel, "Source idle");
 
     await clickButton(panel, "Music");
     await expectText(panel, "Mock Music Provider");
@@ -271,18 +325,18 @@ async function run() {
     await clickButton(panel, "Notify");
     await expectText(panel, "Mock Notification Provider");
 
-    await clickButton(panel, "Stop provider");
+    await clickButton(panel, "Stop source");
     await expectText(panel, "Stopped, events stay");
-    await expectText(panel, "Provider stopped");
+    await expectText(panel, "Source idle");
 
     await clickButton(panel, "Music");
     await expectText(panel, "Mock Music Provider");
 
-    await clickButton(panel, "Clear to idle");
+    await clickButton(panel, "Return to idle");
     await expectText(panel, "Stopped, events stay");
-    await expectText(panel, "Provider stopped");
+    await expectText(panel, "Source idle");
     await expectText(page, "Current mode: Idle");
-    await expectText(page, "Idle event stream");
+    await expectText(page, "Store-driven Preview - Idle event stream");
 
     await clickButton(panel, "Tauri Fixture");
     await expectText(panel, "Tauri fixture published");
@@ -294,9 +348,9 @@ async function run() {
       window.__qaTauriInvokeDelayMs = 350;
     });
     await clickButton(panel, "Tauri Fixture");
-    await clickButton(panel, "Clear to idle");
+    await clickButton(panel, "Return to idle");
     await expectText(page, "Current mode: Idle");
-    await expectText(page, "Idle event stream");
+    await expectText(page, "Store-driven Preview - Idle event stream");
     await expectNoText(mainPreview, "QA Tauri Fixture");
     await expectNoText(panel, "Tauri fixture published");
 
@@ -307,7 +361,7 @@ async function run() {
       .count();
     if (staleFixtureCount > 0) {
       throw new Error(
-        "Stale Tauri fixture request published after Clear to idle",
+        "Stale Tauri fixture request published after Return to idle",
       );
     }
 
@@ -316,7 +370,7 @@ async function run() {
       .count();
     if (stalePublishedLabelCount > 0) {
       throw new Error(
-        "Stale Tauri fixture request updated the playground label after Clear to idle",
+        "Stale Tauri fixture request updated the playground label after Return to idle",
       );
     }
 
@@ -355,23 +409,26 @@ async function run() {
     await page
       .getByTestId("desktop-preview")
       .waitFor({ state: "visible", timeout: 5_000 });
-    await expectText(page, "Cober Windows Bar");
-    await expectText(page, "Status bar prototype with adaptive islands");
-    await expectHeading(page, /Default State/);
-    await expectHeading(page, /Single Task States/);
-    await expectHeading(page, /Multi Task Stack/);
-    await expectHeading(page, /Theme Modes/);
-    await expectHeading(page, /Interaction States/);
-    await page
-      .getByRole("button", { name: "Search", exact: true })
-      .first()
-      .waitFor({ state: "visible", timeout: 5_000 });
+    await expectText(page, "QA Tauri Fixture");
+    await expectText(page, "进行中");
+    await expectNoText(page, "permission-denied");
+    await expectNoText(page, "invoke-failed");
+    await expectNoText(page, "tauri-fixture");
 
     console.log(
       `Showcase interaction QA passed at ${showcaseUrl}${startedServer ? " (started Vite)" : ""}`,
     );
   } catch (error) {
     await captureFailureScreenshot(page);
+    if (consoleErrors.length > 0 || pageErrors.length > 0) {
+      throw new Error(
+        [
+          error instanceof Error ? error.message : String(error),
+          ...consoleErrors.map((entry) => `console error: ${entry}`),
+          ...pageErrors.map((entry) => `page error: ${entry}`),
+        ].join("\n"),
+      );
+    }
     throw error;
   } finally {
     await closeBrowser(browser);

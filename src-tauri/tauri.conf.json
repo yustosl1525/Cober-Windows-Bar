@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Cober Windows Bar",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "com.cober.windowsbar",
   "build": {
     "frontendDist": "../dist",
@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Cober Windows Bar",
-        "width": 420,
+        "width": 315,
         "height": 80,
-        "minWidth": 420,
+        "minWidth": 315,
         "minHeight": 80,
         "center": true,
         "resizable": false,

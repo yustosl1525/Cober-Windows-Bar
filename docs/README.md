@@ -88,6 +88,18 @@ Project documentation grouped by purpose.
 
 ## Fast Paths By Task
 
+### I want to understand current v0.8 system status readiness
+
+Start here:
+
+- [System status gate completion decision](decisions/v0.8_SYSTEM_STATUS_GATE_COMPLETION_DECISION.md)
+- [First provider candidate decision](decisions/v0.8_FIRST_PROVIDER_CANDIDATE_DECISION.md)
+- [System status privacy checklist](decisions/v0.8_SYSTEM_STATUS_PRIVACY_CHECKLIST.md)
+- `src/runtime/systemPerformanceRuntime.ts`
+- `src/runtime/systemPerformanceRuntime.test.ts`
+
+Current boundary: v0.8 system status work has moved beyond preflight. The Tauri Rust backend now provides real system performance data (CPU/RAM/network via sysinfo crate) and real media session tracking (via Windows GSMTC). The remaining v0.8 work focuses on wrapping these data sources into the Provider SDK lifecycle and adding the remaining native providers (focus, clipboard, downloads, notifications).
+
 ### I want to work on the desktop status center
 
 Start here:

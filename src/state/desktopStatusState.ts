@@ -6,9 +6,10 @@ import type {
   DesktopStatusState,
   DesktopStatusStateMap,
   SystemPerformanceMetric,
+  SystemPerformanceSourceStatus,
 } from "../types/hub";
 
-export const DESKTOP_STATUS_DEFAULT_KIND: DesktopStatusKind = "resident";
+const DESKTOP_STATUS_DEFAULT_KIND: DesktopStatusKind = "resident";
 
 function cloneMetrics(metrics: SystemPerformanceMetric[]): SystemPerformanceMetric[] {
   return metrics.map((metric) => ({ ...metric }));
@@ -19,6 +20,7 @@ function cloneStateMap(states: DesktopStatusStateMap): DesktopStatusStateMap {
     resident: {
       ...states.resident,
       metrics: cloneMetrics(states.resident.metrics),
+      sourceStatus: cloneSourceStatus(states.resident.sourceStatus),
     },
     media: { ...states.media },
     download: { ...states.download },
@@ -41,6 +43,7 @@ export function resolveDesktopStatusState(input: DesktopStatusResolverInput): De
       ...defaults.resident,
       ...input.states?.resident,
       metrics: cloneMetrics(input.states?.resident?.metrics ?? input.metrics),
+      sourceStatus: cloneSourceStatus(input.systemPerformanceSourceStatus ?? input.states?.resident?.sourceStatus),
     },
   });
   const availableKinds =
@@ -65,4 +68,10 @@ export function resolveDesktopStatusState(input: DesktopStatusResolverInput): De
 export function listDesktopStatusStates(metrics: SystemPerformanceMetric[]): DesktopStatusState[] {
   const states = createDesktopStatusStateMap(metrics);
   return DESKTOP_STATUS_TEMPLATE_ORDER.map((kind) => states[kind]);
+}
+
+function cloneSourceStatus(
+  sourceStatus: SystemPerformanceSourceStatus | undefined,
+): SystemPerformanceSourceStatus | undefined {
+  return sourceStatus ? { quality: sourceStatus.quality } : undefined;
 }

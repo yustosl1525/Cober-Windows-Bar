@@ -1,52 +1,36 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { MonitorCog, X } from "lucide-react";
 import {
-  DESKTOP_STATUS_TEMPLATE_DESCRIPTORS,
+  Clipboard,
+  Cpu,
+  Download,
+  MoonStar,
+  Music4,
+  RefreshCw,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import {
+  DESKTOP_STATUS_PRIORITY_ORDER,
   getDesktopStatusShellCopy,
-  getDesktopStatusSettingsCopy,
 } from "../../data/desktopStatusConfig";
-import { systemPerformanceMetrics } from "../../data/mockHubData";
-import {
-  listenStatusCenterMenuActions,
-  listenStatusCenterOpenSettings,
-  listenStatusCenterSettings,
-  type StatusCenterMenuAction,
-} from "../../runtime/desktopProductRuntime";
-import {
-  getDesktopStatusRuntime,
-  type DesktopStatusRuntimeSnapshot,
-} from "../../runtime/desktopStatusInputRuntime";
 import {
   correctStatusWindowPosition,
-  correctStatusWindowPositionForDisplayChange,
-  createDebouncedWindowCorrection,
-  createStatusWindowOverlayState,
-  enforceStatusWindowOverlay,
   scheduleOverlayStartupReassert,
   STATUS_WINDOW_CORRECT_POSITION_COMMAND,
-  STATUS_WINDOW_DISPLAY_CHANGE_DEBOUNCE_MS,
-  STATUS_WINDOW_FLOATING_COMMAND,
-  STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS,
 } from "../../runtime/statusWindowRuntime";
-import { loadSystemPerformance } from "../../runtime/systemPerformanceRuntime";
 import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
-import { aggregateDesktopStatusInput } from "../../state/desktopStatusAggregation";
-import { resolveDesktopStatusState } from "../../state/desktopStatusState";
-import { DESKTOP_STATUS_PREFERRED_WINDOW_MS } from "../../state/desktopStatusScheduler";
-import type {
-  DesktopStatusKind,
-  DesktopStatusPreferences,
-  DesktopStatusPreferencesPayload,
-  HubStoreState,
-  SystemPerformanceMetric,
-} from "../../types/hub";
+import { getAutostartEnabled, setAutostartEnabled as applyAutostart } from "../../runtime/autostartRuntime";
+import type { DesktopStatusKind, DesktopStatusState, DesktopStatusStateMap } from "../../types/hub";
+import { SettingsPanel } from "./components/SettingsPanel";
+import {
+  useContextMenu,
+  useDesktopStatusRuntime,
+  useDragController,
+  useOverlayPolicy,
+  usePreferences,
+  useSystemMonitors,
+  useSystemPerformance,
+} from "./hooks";
 import { ClipboardStatusTemplate } from "./templates/ClipboardStatusTemplate";
 import { DownloadStatusTemplate } from "./templates/DownloadStatusTemplate";
 import { FocusStatusTemplate } from "./templates/FocusStatusTemplate";
@@ -54,103 +38,158 @@ import { MediaStatusTemplate } from "./templates/MediaStatusTemplate";
 import { ResidentStatusTemplate } from "./templates/ResidentStatusTemplate";
 import { UpdateStatusTemplate } from "./templates/UpdateStatusTemplate";
 
-const STATUS_REFRESH_MS = 1800;
-const OVERLAY_POLICY_MS = 700;
 const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
-const STATUS_CENTER_SETTINGS_COMMAND = "get_status_center_settings";
 const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
-const SET_STATUS_CENTER_PREFERENCES_COMMAND = "set_status_center_preferences";
 const SHOW_STATUS_CENTER_WINDOW_COMMAND = "show_status_center_window";
-const STATUS_WINDOW_DRAG_COMMAND = "start_window_drag";
 
-const DEFAULT_PREFERENCES: DesktopStatusPreferences = {
-  alwaysFloat: true,
-  avoidFullscreen: true,
-  lockPosition: false,
-};
+/** Base pill width when only the resident template is shown. */
+const PILL_BASE_WIDTH = 303;
+/** Extra width added per active guest indicator. */
+const PILL_INDICATOR_WIDTH = 36;
+/** Maximum pill width (resident + up to 5 guest indicators). */
+const PILL_MAX_WIDTH = 500;
+
+type TauriAppWindow = ReturnType<typeof getCurrentWindow>;
+
+function getSafeCurrentWindow(): TauriAppWindow | undefined {
+  try {
+    return getCurrentWindow();
+  } catch {
+    return undefined;
+  }
+}
+
+function renderTemplate(state: DesktopStatusState) {
+  switch (state.kind) {
+    case "resident":
+      return <ResidentStatusTemplate state={state} />;
+    case "media":
+      return <MediaStatusTemplate state={state} />;
+    case "download":
+      return <DownloadStatusTemplate state={state} />;
+    case "update":
+      return <UpdateStatusTemplate state={state} />;
+    case "clipboard":
+      return <ClipboardStatusTemplate state={state} />;
+    case "focus":
+      return <FocusStatusTemplate state={state} />;
+  }
+}
+
+function indicatorIcon(kind: DesktopStatusKind, size = 14) {
+  const props = { size, strokeWidth: 2 };
+  switch (kind) {
+    case "resident":
+      return <Cpu {...props} />;
+    case "media":
+      return <Music4 {...props} />;
+    case "download":
+      return <Download {...props} />;
+    case "update":
+      return <RefreshCw {...props} />;
+    case "clipboard":
+      return <Clipboard {...props} />;
+    case "focus":
+      return <MoonStar {...props} />;
+  }
+}
 
 export function DesktopPage() {
-  const desktopStatusRuntime = getDesktopStatusRuntime();
-  const initialDesktopStatusSnapshot = desktopStatusRuntime.getSnapshot();
-  const [metrics, setMetrics] = useState<SystemPerformanceMetric[]>(systemPerformanceMetrics);
-  const [preferences, setPreferences] = useState<DesktopStatusPreferences>(DEFAULT_PREFERENCES);
-  const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
-  const [preferredUntil, setPreferredUntil] = useState<number | undefined>(undefined);
-  const [desktopHubState, setDesktopHubState] = useState<HubStoreState>(initialDesktopStatusSnapshot.state);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { t } = useTranslation();
+  const appWindowRef = useRef<TauriAppWindow | undefined>(getSafeCurrentWindow());
   const shellCopy = getDesktopStatusShellCopy();
-  const settingsCopy = getDesktopStatusSettingsCopy();
-  const isDraggingRef = useRef(false);
-  const overlayStateRef = useRef(createStatusWindowOverlayState());
-  const appWindowRef = useRef(getCurrentWindow());
-  const desktopStatusRuntimeRef = useRef(desktopStatusRuntime);
-  const previousResolvedKindRef = useRef<DesktopStatusKind | undefined>(undefined);
-  const previousResolvedChangedAtRef = useRef<number | undefined>(undefined);
-  const activatedAtByKindRef = useRef<Partial<Record<DesktopStatusKind, number>>>({});
-  const now = Date.now();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [autostartEnabled, setAutostartEnabled] = useState(false);
+  const [focusedKind, setFocusedKind] = useState<DesktopStatusKind | null>(null);
 
-  const aggregatedStatus = aggregateDesktopStatusInput({
-    hubState: desktopHubState,
-    availableKinds: DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => descriptor.kind),
-  });
+  // Load initial autostart state
+  useEffect(() => {
+    void getAutostartEnabled().then(setAutostartEnabled);
+  }, []);
 
-  for (const kind of aggregatedStatus.activeKinds) {
-    if (activatedAtByKindRef.current[kind] === undefined) {
-      activatedAtByKindRef.current[kind] = now;
-    }
-  }
+  // Drag controller
+  const { isDraggingRef, lockPositionRef, handlePointerDown } = useDragController();
 
-  for (const kind of Object.keys(activatedAtByKindRef.current) as DesktopStatusKind[]) {
-    if (!aggregatedStatus.activeKinds.includes(kind)) {
-      delete activatedAtByKindRef.current[kind];
-    }
-  }
+  // System performance polling
+  const { metrics, diagnostic, metricsRef, diagnosticRef, refreshMetrics } = useSystemPerformance();
 
-  const resolvedState = resolveDesktopStatusState({
-    metrics,
-    activeKinds: aggregatedStatus.activeKinds,
-    availableKinds: aggregatedStatus.availableKinds,
-    states: aggregatedStatus.states,
-    preferredKind: activeStatusKind ?? undefined,
+  // System monitors (Focus Assist, notifications)
+  const systemMonitors = useSystemMonitors();
+
+  // Desktop status runtime + aggregation + state resolution
+  const {
+    resolvedState,
+    resolvedStates,
+    activeKinds,
+    activeStatusKind,
     preferredUntil,
-    previousKind: previousResolvedKindRef.current,
-    previousChangedAt: previousResolvedChangedAtRef.current,
-    activatedAtByKind: activatedAtByKindRef.current,
-    now,
+    setActiveStatusKind,
+    setPreferredUntil,
+    refreshRuntime,
+    preferredWindowMs,
+  } = useDesktopStatusRuntime(metrics, diagnostic.quality, {
+    externalActiveKinds: systemMonitors.externalActiveKinds,
+    externalStates: systemMonitors.externalStates,
   });
 
-  if (previousResolvedKindRef.current !== resolvedState.kind) {
-    previousResolvedKindRef.current = resolvedState.kind;
-    previousResolvedChangedAtRef.current = now;
-  }
+  // Guest indicators: active kinds excluding "resident", sorted by priority
+  const guestIndicators = useMemo(() => {
+    return DESKTOP_STATUS_PRIORITY_ORDER.filter(
+      (kind) => kind !== "resident" && activeKinds.includes(kind),
+    );
+  }, [activeKinds]);
 
-  async function handlePointerDown(event: ReactPointerEvent<HTMLElement>) {
-    if (preferences.lockPosition || event.button !== 0) {
+  // Clear focused kind if it's no longer active
+  useEffect(() => {
+    if (focusedKind && !guestIndicators.includes(focusedKind)) {
+      setFocusedKind(null);
+    }
+  }, [focusedKind, guestIndicators]);
+
+  // The state to render in the detail area
+  const focusedState = focusedKind
+    ? resolvedStates[focusedKind] ?? resolvedState
+    : resolvedStates.resident ?? resolvedState;
+
+  // Dynamic pill width
+  const pillWidth = Math.min(
+    PILL_BASE_WIDTH + guestIndicators.length * PILL_INDICATOR_WIDTH,
+    PILL_MAX_WIDTH,
+  );
+
+  // Preferences
+  const { preferences, updatePreferences } = usePreferences();
+
+  // Sync lockPosition to drag controller ref
+  lockPositionRef.current = preferences.lockPosition;
+
+  // Overlay policy (fullscreen avoidance + floating)
+  const { overlayStateRef } = useOverlayPolicy({
+    avoidFullscreen: preferences.avoidFullscreen,
+    isDraggingRef,
+  });
+
+  // Preferred kind timer expiry
+  useEffect(() => {
+    if (preferredUntil === undefined) {
       return;
     }
 
-    event.preventDefault();
-    isDraggingRef.current = true;
-
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      isDraggingRef.current = false;
+    if (preferredUntil <= Date.now()) {
+      setPreferredUntil(undefined);
+      setActiveStatusKind(null);
       return;
     }
 
-    const started = await (async () => {
-      try {
-        await invoke(STATUS_WINDOW_DRAG_COMMAND);
-        return true;
-      } catch {
-        return false;
-      }
-    })();
+    const timer = window.setTimeout(() => {
+      setPreferredUntil(undefined);
+      setActiveStatusKind(null);
+    }, Math.max(0, preferredUntil - Date.now()));
 
-    if (!started) {
-      isDraggingRef.current = false;
-    }
-  }
+    return () => window.clearTimeout(timer);
+  }, [preferredUntil, setPreferredUntil, setActiveStatusKind]);
+
+  // -- Action handlers --
 
   async function refresh() {
     if (isDraggingRef.current) {
@@ -162,12 +201,7 @@ export function DesktopPage() {
       await emitTauriFixtureEvents({ invoke });
     }
 
-    const [nextMetrics, nextDesktopStatusSnapshot] = await Promise.all([
-      loadSystemPerformance({ invoke }),
-      desktopStatusRuntimeRef.current.refresh(),
-    ]);
-    setMetrics(nextMetrics);
-    applyDesktopStatusSnapshot(nextDesktopStatusSnapshot, setDesktopHubState);
+    await Promise.all([refreshMetrics(), refreshRuntime()]);
   }
 
   async function showNativeContextMenu(x: number, y: number) {
@@ -188,58 +222,6 @@ export function DesktopPage() {
     await invoke(STATUS_WINDOW_CORRECT_POSITION_COMMAND);
   }
 
-  async function updatePreferences(nextPreferences: Partial<DesktopStatusPreferences>) {
-    const nextValue = { ...preferences, ...nextPreferences };
-    const invoke = getTauriInvoke();
-
-    setPreferences(nextValue);
-
-    if (!invoke) {
-      return;
-    }
-
-    await invoke(SET_STATUS_CENTER_PREFERENCES_COMMAND, {
-      preferences: nextValue,
-    });
-
-    if (typeof nextPreferences.alwaysFloat === "boolean") {
-      await invoke(STATUS_WINDOW_FLOATING_COMMAND, {
-        floating: nextValue.alwaysFloat,
-      });
-    }
-  }
-
-  async function setAlwaysFloat(nextValue: boolean) {
-    await updatePreferences({ alwaysFloat: nextValue });
-  }
-
-  function setAvoidFullscreen(nextValue: boolean) {
-    void updatePreferences({ avoidFullscreen: nextValue });
-    scheduleOverlayStartupReassert(overlayStateRef.current);
-  }
-
-  function setLockPosition(nextValue: boolean) {
-    void updatePreferences({ lockPosition: nextValue });
-
-    if (nextValue) {
-      isDraggingRef.current = false;
-    }
-  }
-
-  async function quitStatusCenter() {
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      await appWindowRef.current.hide();
-      return;
-    }
-
-    try {
-      await invoke("quit_status_center");
-    } catch {
-      await appWindowRef.current.hide();
-    }
-  }
-
   function openSettings() {
     setSettingsOpen(true);
   }
@@ -248,24 +230,85 @@ export function DesktopPage() {
     setSettingsOpen(false);
   }
 
-  async function handleMenuAction(action: StatusCenterMenuAction, checked?: boolean) {
+  function handleKindSelect(kind: DesktopStatusKind) {
+    setActiveStatusKind(kind);
+    setPreferredUntil(Date.now() + preferredWindowMs);
+  }
+
+  function handleIndicatorClick(kind: DesktopStatusKind) {
+    // Toggle: clicking the focused indicator unfocuses it (returns to resident)
+    if (focusedKind === kind) {
+      setFocusedKind(null);
+    } else {
+      setFocusedKind(kind);
+    }
+    // Also update the runtime preferred kind
+    setActiveStatusKind(kind);
+    setPreferredUntil(Date.now() + preferredWindowMs);
+  }
+
+  async function toggleAlwaysFloat() {
+    await updatePreferences({ alwaysFloat: !preferences.alwaysFloat });
+  }
+
+  function toggleAvoidFullscreen() {
+    void updatePreferences({ avoidFullscreen: !preferences.avoidFullscreen });
+    scheduleOverlayStartupReassert(overlayStateRef.current);
+  }
+
+  function toggleLockPosition() {
+    const nextValue = !preferences.lockPosition;
+    void updatePreferences({ lockPosition: nextValue });
+
+    if (nextValue) {
+      isDraggingRef.current = false;
+    }
+  }
+
+  async function toggleAutostart() {
+    const nextValue = !autostartEnabled;
+    const success = await applyAutostart(nextValue);
+    if (success) {
+      setAutostartEnabled(nextValue);
+    }
+  }
+
+  async function quitStatusCenter() {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      await appWindowRef.current?.hide();
+      return;
+    }
+
+    try {
+      await invoke("quit_status_center");
+    } catch {
+      await appWindowRef.current?.hide();
+    }
+  }
+
+  async function handleMenuAction(action: string, checked?: boolean) {
     switch (action) {
       case "refresh-data":
         await refresh();
         return;
       case "toggle-always-float":
         if (typeof checked === "boolean") {
-          await setAlwaysFloat(checked);
+          await updatePreferences({ alwaysFloat: checked });
         }
         return;
       case "toggle-avoid-fullscreen":
         if (typeof checked === "boolean") {
-          setAvoidFullscreen(checked);
+          void updatePreferences({ avoidFullscreen: checked });
+          scheduleOverlayStartupReassert(overlayStateRef.current);
         }
         return;
       case "toggle-lock-position":
         if (typeof checked === "boolean") {
-          setLockPosition(checked);
+          void updatePreferences({ lockPosition: checked });
+          if (checked) {
+            isDraggingRef.current = false;
+          }
         }
         return;
       case "reset-position":
@@ -278,241 +321,6 @@ export function DesktopPage() {
         await quitStatusCenter();
         return;
     }
-  }
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function refreshMetrics() {
-      if (isDraggingRef.current) {
-        return;
-      }
-
-      const nextMetrics = await loadSystemPerformance();
-      if (mounted) {
-        setMetrics(nextMetrics);
-      }
-    }
-
-    void refreshMetrics();
-    const timer = window.setInterval(() => {
-      void refreshMetrics();
-    }, STATUS_REFRESH_MS);
-
-    return () => {
-      mounted = false;
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleGlobalContextMenu(event: MouseEvent) {
-      event.preventDefault();
-      void showNativeContextMenu(event.clientX, event.clientY);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && settingsOpen) {
-        closeSettings();
-      }
-    }
-
-    document.addEventListener("contextmenu", handleGlobalContextMenu);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("contextmenu", handleGlobalContextMenu);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [settingsOpen]);
-
-  useEffect(() => {
-    if (preferredUntil === undefined) {
-      return;
-    }
-
-    if (preferredUntil <= Date.now()) {
-      setPreferredUntil(undefined);
-      setActiveStatusKind(null);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setPreferredUntil(undefined);
-      setActiveStatusKind(null);
-    }, Math.max(0, preferredUntil - Date.now()));
-
-    return () => window.clearTimeout(timer);
-  }, [preferredUntil]);
-
-  useEffect(() => {
-    const runtime = desktopStatusRuntimeRef.current;
-    const unsubscribe = runtime.subscribe((snapshot) => {
-      applyDesktopStatusSnapshot(snapshot, setDesktopHubState);
-    });
-
-    void runtime.refresh().then((snapshot) => {
-      applyDesktopStatusSnapshot(snapshot, setDesktopHubState);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      return;
-    }
-
-    scheduleOverlayStartupReassert(overlayStateRef.current);
-
-    async function updateOverlayPolicy() {
-      if (isDraggingRef.current) {
-        return;
-      }
-
-      try {
-        await enforceStatusWindowOverlay(overlayStateRef.current, { invoke });
-      } catch {
-        // Keep the last known floating state if foreground-window detection is unavailable.
-      }
-    }
-
-    void updateOverlayPolicy();
-    const timer = window.setInterval(() => {
-      void updateOverlayPolicy();
-    }, OVERLAY_POLICY_MS);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      return;
-    }
-
-    const appWindow = appWindowRef.current;
-    const scaleCorrection = createDebouncedWindowCorrection(async () => {
-      if (isDraggingRef.current) {
-        return;
-      }
-
-      scheduleOverlayStartupReassert(overlayStateRef.current);
-      await correctStatusWindowPosition(invoke);
-    }, STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS);
-    const displayCorrection = createDebouncedWindowCorrection(async () => {
-      if (isDraggingRef.current) {
-        return;
-      }
-
-      scheduleOverlayStartupReassert(overlayStateRef.current);
-      await correctStatusWindowPositionForDisplayChange(invoke);
-    }, STATUS_WINDOW_DISPLAY_CHANGE_DEBOUNCE_MS);
-
-    let disposed = false;
-    const cleanups: Array<() => void> = [];
-
-    void (async () => {
-      const [offMoved, offResized, offScaleChanged] = await Promise.all([
-        appWindow.onMoved(() => {
-          displayCorrection.trigger();
-        }),
-        appWindow.onResized(() => {
-          displayCorrection.trigger();
-        }),
-        appWindow.onScaleChanged(() => {
-          scaleCorrection.trigger();
-        }),
-      ]);
-
-      if (disposed) {
-        await Promise.all([offMoved(), offResized(), offScaleChanged()]);
-        return;
-      }
-
-      cleanups.push(offMoved, offResized, offScaleChanged);
-    })();
-
-    return () => {
-      disposed = true;
-      scaleCorrection.cancel();
-      displayCorrection.cancel();
-      for (const cleanup of cleanups) {
-        cleanup();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      return;
-    }
-
-    let disposed = false;
-    let offMenuActions: (() => void) | undefined;
-    let offSettings: (() => void) | undefined;
-    let offOpenSettings: (() => void) | undefined;
-
-    function applySettings(payload: DesktopStatusPreferencesPayload) {
-      if (disposed) {
-        return;
-      }
-
-      setPreferences({ ...payload.preferences });
-    }
-
-    void (async () => {
-      const settingsResult = await invoke(STATUS_CENTER_SETTINGS_COMMAND);
-      if (!disposed && isPreferencesPayload(settingsResult)) {
-        setPreferences({ ...settingsResult.preferences });
-      }
-
-      offMenuActions = await listenStatusCenterMenuActions(async ({ action, checked }) => {
-        await handleMenuAction(action, checked);
-      });
-
-      offSettings = await listenStatusCenterSettings((payload) => {
-        applySettings(payload);
-      });
-
-      offOpenSettings = await listenStatusCenterOpenSettings(() => {
-        openSettings();
-      });
-    })();
-
-    return () => {
-      disposed = true;
-      offMenuActions?.();
-      offSettings?.();
-      offOpenSettings?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    function handlePointerUp() {
-      if (!isDraggingRef.current) {
-        return;
-      }
-
-      isDraggingRef.current = false;
-      void correctStatusWindowPosition();
-    }
-
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerUp);
-    window.addEventListener("blur", handlePointerUp);
-
-    return () => {
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerUp);
-      window.removeEventListener("blur", handlePointerUp);
-    };
-  }, []);
-
-  async function handleContextMenu(event: ReactMouseEvent<HTMLElement>) {
-    event.preventDefault();
-    await showNativeContextMenu(event.clientX, event.clientY);
   }
 
   async function handleOpenSettingsClick() {
@@ -528,13 +336,23 @@ export function DesktopPage() {
   async function recallStatusCenter() {
     const invoke = getTauriInvoke();
     if (!invoke) {
-      await appWindowRef.current.show();
-      await appWindowRef.current.setFocus();
+      await appWindowRef.current?.show();
+      await appWindowRef.current?.setFocus();
       return;
     }
 
     await invoke(SHOW_STATUS_CENTER_WINDOW_COMMAND);
   }
+
+  async function handleContextMenu(event: ReactMouseEvent<HTMLElement>) {
+    event.preventDefault();
+    await showNativeContextMenu(event.clientX, event.clientY);
+  }
+
+  // Global context menu + Escape key
+  useContextMenu({ settingsOpen, closeSettings, showNativeContextMenu });
+
+  const hasGuestIndicators = guestIndicators.length > 0;
 
   return (
     <main
@@ -542,175 +360,68 @@ export function DesktopPage() {
       data-testid="desktop-preview"
       onPointerDownCapture={handlePointerDown}
     >
-      <section className="product-status-center" aria-label={shellCopy.ariaLabel}>
-        {renderDesktopStatusTemplate(resolvedState)}
+      <section
+        className={`product-status-center${hasGuestIndicators ? " has-indicators" : ""}`}
+        aria-label={shellCopy.ariaLabel}
+        style={{ width: `min(${pillWidth}px, calc(100vw - 12px))` }}
+      >
+        {/* Resident icon — always visible */}
+        <div
+          className={`product-status-icon product-status-icon-resident${
+            !focusedKind ? " is-focused" : ""
+          }`}
+          aria-hidden="true"
+          role={hasGuestIndicators ? "button" : undefined}
+          tabIndex={hasGuestIndicators ? 0 : undefined}
+          title={t("template.resident.label")}
+          onClick={hasGuestIndicators ? () => setFocusedKind(null) : undefined}
+        >
+          <Cpu size={20} strokeWidth={2.2} />
+        </div>
+
+        {/* Guest indicator rail */}
+        {hasGuestIndicators ? (
+          <div className="product-status-indicator-rail" role="tablist" aria-label={t("common.statusIndicators")}>
+            {guestIndicators.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                className={`product-status-indicator product-status-indicator-${kind}${
+                  focusedKind === kind ? " is-focused" : ""
+                }`}
+                aria-label={t(`template.${kind}.label`)}
+                aria-selected={focusedKind === kind}
+                role="tab"
+                title={t(`template.${kind}.label`)}
+                onClick={() => handleIndicatorClick(kind)}
+              >
+                {indicatorIcon(kind)}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Detail template area */}
+        {renderTemplate(focusedState)}
       </section>
 
       {settingsOpen ? (
-        <section className="product-status-settings" aria-label={settingsCopy.panel.ariaLabel}>
-          <header className="product-status-settings-header">
-            <div className="product-status-settings-title">
-              <div className="product-status-settings-icon" aria-hidden="true">
-                <MonitorCog size={18} strokeWidth={2.1} />
-              </div>
-              <div>
-                <strong>{settingsCopy.panel.title}</strong>
-                <span>{settingsCopy.panel.description}</span>
-              </div>
-            </div>
-            <button
-              className="product-status-settings-close"
-              type="button"
-              aria-label={settingsCopy.panel.closeLabel}
-              title={settingsCopy.panel.closeLabel}
-              onClick={closeSettings}
-            >
-              <X size={16} strokeWidth={2.2} />
-            </button>
-          </header>
-
-          <div className="product-status-settings-body">
-            <div className="product-status-settings-section">
-              <span className="product-status-settings-label">{settingsCopy.sections.windowBehavior}</span>
-              <div className="product-status-settings-grid">
-                <button
-                  type="button"
-                  className={settingsToggleClassName(preferences.alwaysFloat)}
-                  onClick={() => void setAlwaysFloat(!preferences.alwaysFloat)}
-                >
-                  <strong>{settingsCopy.toggles.alwaysFloat.title}</strong>
-                  <span>{settingsCopy.toggles.alwaysFloat.description}</span>
-                  <small>
-                    {preferences.alwaysFloat
-                      ? settingsCopy.toggles.alwaysFloat.activeLabel
-                      : settingsCopy.toggles.alwaysFloat.inactiveLabel}
-                  </small>
-                </button>
-                <button
-                  type="button"
-                  className={settingsToggleClassName(preferences.avoidFullscreen)}
-                  onClick={() => setAvoidFullscreen(!preferences.avoidFullscreen)}
-                >
-                  <strong>{settingsCopy.toggles.avoidFullscreen.title}</strong>
-                  <span>{settingsCopy.toggles.avoidFullscreen.description}</span>
-                  <small>
-                    {preferences.avoidFullscreen
-                      ? settingsCopy.toggles.avoidFullscreen.activeLabel
-                      : settingsCopy.toggles.avoidFullscreen.inactiveLabel}
-                  </small>
-                </button>
-                <button
-                  type="button"
-                  className={settingsToggleClassName(preferences.lockPosition)}
-                  onClick={() => setLockPosition(!preferences.lockPosition)}
-                >
-                  <strong>{settingsCopy.toggles.lockPosition.title}</strong>
-                  <span>{settingsCopy.toggles.lockPosition.description}</span>
-                  <small>
-                    {preferences.lockPosition
-                      ? settingsCopy.toggles.lockPosition.activeLabel
-                      : settingsCopy.toggles.lockPosition.inactiveLabel}
-                  </small>
-                </button>
-              </div>
-            </div>
-
-            <div className="product-status-settings-section">
-              <span className="product-status-settings-label">{settingsCopy.sections.statusTemplates}</span>
-              <div className="product-status-settings-kinds">
-                {DESKTOP_STATUS_TEMPLATE_DESCRIPTORS.map((descriptor) => {
-                  const active = descriptor.kind === activeStatusKind;
-
-                  return (
-                    <button
-                      key={descriptor.kind}
-                      type="button"
-                      className={active ? "product-status-kind is-active" : "product-status-kind"}
-                      onClick={() => {
-                        setActiveStatusKind(descriptor.kind);
-                        setPreferredUntil(Date.now() + DESKTOP_STATUS_PREFERRED_WINDOW_MS);
-                      }}
-                    >
-                      <strong>{descriptor.label}</strong>
-                      <span>{descriptor.description}</span>
-                      <small>{descriptor.providerHint}</small>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="product-status-settings-actions">
-              <div className="product-status-settings-actions-copy">
-                <strong>{settingsCopy.actions.quickPanelTitle}</strong>
-                <span>{settingsCopy.actions.quickPanelDescription}</span>
-              </div>
-              <button type="button" className="product-status-settings-action" onClick={() => void refresh()}>
-                {settingsCopy.actions.refresh}
-              </button>
-              <button type="button" className="product-status-settings-action" onClick={() => void resetPosition()}>
-                {settingsCopy.actions.resetPosition}
-              </button>
-              <button
-                type="button"
-                className="product-status-settings-action is-primary"
-                onClick={() => void handleOpenSettingsClick()}
-              >
-                {settingsCopy.actions.openNativeSettings}
-              </button>
-              <button
-                type="button"
-                className="product-status-settings-action"
-                onClick={() => void recallStatusCenter()}
-              >
-                {settingsCopy.actions.recallStatusCenter}
-              </button>
-            </div>
-          </div>
-        </section>
+        <SettingsPanel
+          preferences={preferences}
+          activeStatusKind={activeStatusKind}
+          autostartEnabled={autostartEnabled}
+          onToggleAlwaysFloat={() => void toggleAlwaysFloat()}
+          onToggleAvoidFullscreen={toggleAvoidFullscreen}
+          onToggleLockPosition={toggleLockPosition}
+          onToggleAutostart={() => void toggleAutostart()}
+          onKindSelect={handleKindSelect}
+          onRefresh={() => void refresh()}
+          onResetPosition={() => void resetPosition()}
+          onOpenNativeSettings={() => void handleOpenSettingsClick()}
+          onRecallStatusCenter={() => void recallStatusCenter()}
+          onClose={closeSettings}
+        />
       ) : null}
     </main>
   );
-}
-
-function isPreferencesPayload(value: unknown): value is DesktopStatusPreferencesPayload {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const preferences = (value as DesktopStatusPreferencesPayload).preferences;
-
-  return (
-    typeof preferences?.alwaysFloat === "boolean" &&
-    typeof preferences.avoidFullscreen === "boolean" &&
-    typeof preferences.lockPosition === "boolean"
-  );
-}
-
-function applyDesktopStatusSnapshot(
-  snapshot: DesktopStatusRuntimeSnapshot,
-  setDesktopHubState: (state: HubStoreState) => void,
-) {
-  setDesktopHubState(snapshot.state);
-}
-
-function renderDesktopStatusTemplate(state: ReturnType<typeof resolveDesktopStatusState>) {
-  switch (state.kind) {
-    case "resident":
-      return <ResidentStatusTemplate state={state} />;
-    case "media":
-      return <MediaStatusTemplate state={state} />;
-    case "download":
-      return <DownloadStatusTemplate state={state} />;
-    case "update":
-      return <UpdateStatusTemplate state={state} />;
-    case "clipboard":
-      return <ClipboardStatusTemplate state={state} />;
-    case "focus":
-      return <FocusStatusTemplate state={state} />;
-  }
-}
-
-function settingsToggleClassName(active: boolean) {
-  return active ? "product-status-toggle is-active" : "product-status-toggle";
 }

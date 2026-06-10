@@ -1,6 +1,6 @@
 {
   "name": "cober-windows-bar",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,9 +10,11 @@
     "qa": "npm run test:state && npm run test:providers && npm run test:runtime && npm run qa:showcase:interactions && npm run build",
     "qa:showcase:screenshots": "npx playwright screenshot --viewport-size=1366,768 http://127.0.0.1:5173/showcase output/playwright/showcase-1366.png && npx playwright screenshot --viewport-size=1440,900 http://127.0.0.1:5173/showcase output/playwright/showcase-1440.png && npx playwright screenshot --viewport-size=1920,1080 http://127.0.0.1:5173/showcase output/playwright/showcase-1920.png",
     "qa:showcase:interactions": "node scripts/qa-showcase-interactions.mjs",
-    "test:state": "tsx src/state/hubState.test.ts && tsx src/state/desktopStatusScheduler.test.ts && tsx src/state/desktopStatusState.test.ts && tsx src/state/desktopStatusAggregation.test.ts",
+    "test:state": "tsx src/state/hubState.test.ts && tsx src/state/desktopStatusScheduler.test.ts && tsx src/state/desktopStatusState.test.ts && tsx src/state/desktopStatusAggregation.test.ts && tsx src/features/desktop/templates/ResidentStatusTemplate.test.ts",
     "test:providers": "tsx src/providers/provider.test.ts",
     "test:runtime": "tsx src/runtime/tauriRuntime.test.ts && tsx src/runtime/statusWindowRuntime.test.ts && tsx src/runtime/systemPerformanceRuntime.test.ts && tsx src/runtime/desktopProductRuntime.test.ts && tsx src/runtime/desktopStatusInputRuntime.test.ts && tsx src/data/mockHubData.test.ts",
+    "test:vitest": "vitest run --reporter=verbose",
+    "test:all": "npm run test:state && npm run test:providers && npm run test:runtime && npm run test:vitest",
     "preview": "vite preview",
     "desktop:mock": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop-mock.ps1",
     "tauri": "tauri"
@@ -21,20 +23,27 @@
     "@tauri-apps/api": "^2.11.0",
     "@vitejs/plugin-react": "^5.0.0",
     "framer-motion": "^12.23.12",
+    "i18next": "^26.3.1",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.468.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-i18next": "^17.0.8",
     "typescript": "^5.9.2",
     "vite": "^7.1.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.22.4"
+    "tsx": "^4.22.4",
+    "vitest": "^4.1.8"
   }
 }

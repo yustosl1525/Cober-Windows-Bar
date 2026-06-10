@@ -1,0 +1,188 @@
+{
+  "common": {
+    "enabled": "当前已开启",
+    "disabled": "当前已关闭",
+    "copy": "复制",
+    "copied": "已复制",
+    "statusIndicators": "状态指示器"
+  },
+  "shell": {
+    "ariaLabel": "Cober Windows 状态中心"
+  },
+  "template": {
+    "resident": {
+      "label": "常驻态",
+      "description": "默认展示 CPU、内存和网络三项核心指标。",
+      "eyebrow": "常驻态"
+    },
+    "media": {
+      "label": "媒体态",
+      "description": "展示正在播放的媒体信息与进度。",
+      "eyebrow": "媒体态",
+      "progress": "媒体进度"
+    },
+    "download": {
+      "label": "下载态",
+      "description": "展示下载任务和传输进度。",
+      "eyebrow": "下载态",
+      "progress": "下载进度"
+    },
+    "update": {
+      "label": "更新态",
+      "description": "展示系统或应用更新进度。",
+      "eyebrow": "更新态",
+      "progress": "更新进度"
+    },
+    "clipboard": {
+      "label": "剪贴板态",
+      "description": "展示最近复制内容与来源。",
+      "eyebrow": "剪贴板态"
+    },
+    "focus": {
+      "label": "专注态",
+      "description": "展示专注模式或计时状态。",
+      "eyebrow": "专注态"
+    }
+  },
+  "metrics": {
+    "cpu": "CPU",
+    "memory": "内存",
+    "network": "网络",
+    "currentUsage": "当前使用率",
+    "usageRate": "{{label}} 使用率 {{value}}%"
+  },
+  "menu": {
+    "refreshData": "刷新数据",
+    "alwaysFloat": "总是悬浮",
+    "avoidFullscreen": "全屏时避让",
+    "lockPosition": "锁定位置",
+    "resetPosition": "重置位置",
+    "openSettings": "打开设置",
+    "quit": "退出"
+  },
+  "states": {
+    "resident": {
+      "title": "系统性能",
+      "subtitle": "常驻状态中心"
+    },
+    "media": {
+      "title": "Neon Focus",
+      "subtitle": "正在播放",
+      "artist": "Cober Player",
+      "timeLabel": "01:42 / 03:28"
+    },
+    "download": {
+      "title": "Windows ISO",
+      "subtitle": "下载任务",
+      "detail": "3.1 GB / 5.4 GB"
+    },
+    "update": {
+      "title": "系统更新",
+      "subtitle": "准备重启",
+      "detail": "KB5039302"
+    },
+    "clipboard": {
+      "title": "已复制内容",
+      "subtitle": "剪贴板更新",
+      "detail": "来自浏览器",
+      "copiedText": "https://github.com/jay77721/Cober-Windows-Bar"
+    },
+    "focus": {
+      "title": "专注模式",
+      "subtitle": "已开启",
+      "sessionLabel": "深度工作 25 分钟",
+      "detail": "剩余 12 分钟"
+    }
+  },
+  "settings": {
+    "panel": {
+      "ariaLabel": "状态中心设置",
+      "title": "状态中心设置",
+      "description": "整理桌面悬浮状态的显示方式与模板入口。",
+      "closeLabel": "关闭设置"
+    },
+    "sections": {
+      "windowBehavior": "窗口行为",
+      "statusTemplates": "状态模板",
+      "quickActions": "快捷控制"
+    },
+    "toggles": {
+      "alwaysFloat": {
+        "title": "始终悬浮",
+        "description": "让状态中心保持在桌面前景。",
+        "activeLabel": "当前已开启",
+        "inactiveLabel": "当前已关闭"
+      },
+      "avoidFullscreen": {
+        "title": "全屏时避让",
+        "description": "检测到全屏应用时自动避开覆盖。",
+        "activeLabel": "当前已开启",
+        "inactiveLabel": "当前已关闭"
+      },
+      "lockPosition": {
+        "title": "锁定位置",
+        "description": "固定当前停靠位置，避免误拖动。",
+        "activeLabel": "当前位置已锁定",
+        "inactiveLabel": "可自由拖动"
+      },
+      "autostart": {
+        "title": "开机自启",
+        "description": "系统启动时自动运行状态中心。",
+        "activeLabel": "已启用",
+        "inactiveLabel": "未启用"
+      }
+    },
+    "actions": {
+      "refresh": "刷新数据",
+      "resetPosition": "重置位置",
+      "openNativeSettings": "打开原生设置入口",
+      "recallStatusCenter": "召回状态中心",
+      "quickPanelTitle": "快捷控制",
+      "quickPanelDescription": "像 Windows 11 状态中心一样快速调整当前窗口行为。"
+    },
+    "language": {
+      "title": "语言",
+      "zh-CN": "简体中文",
+      "en": "English"
+    }
+  },
+  "aggregation": {
+    "nowPlaying": "正在播放",
+    "downloadTask": "下载任务",
+    "transferring": "传输中",
+    "inProgress": "进行中",
+    "systemTaskProcessing": "系统任务处理中",
+    "desktopNotification": "桌面通知",
+    "recentMessage": "最近消息",
+    "newNotificationReceived": "收到新的通知",
+    "notificationCenter": "通知中心",
+    "focusMode": "专注模式",
+    "systemStatus": "系统状态",
+    "focusModeEnabled": "已启用专注模式",
+    "doNotDisturb": "暂不打扰",
+    "profileModeEnabled": "{{profile}} 模式已启用",
+    "focusAssistEnabled": "专注助手已启用"
+  },
+  "diagnostics": {
+    "live": "实时",
+    "stale": "过时",
+    "unavailable": "不可用",
+    "fallback": "回退",
+    "native": "原生",
+    "app": "应用",
+    "fixture": "固定数据",
+    "mock": "模拟"
+  },
+  "media": {
+    "previous": "上一首",
+    "playPause": "播放/暂停",
+    "next": "下一首"
+  },
+  "clipboard": {
+    "copyToClipboard": "复制到剪贴板"
+  },
+  "notFound": {
+    "title": "Cober 页面未找到",
+    "openDesktop": "打开 /desktop"
+  }
+}

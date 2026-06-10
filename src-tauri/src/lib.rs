@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::{Networks, System};
@@ -11,6 +11,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Emitter, Manager, PhysicalPosition, Position, WebviewWindow, WindowEvent};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use tauri_plugin_global_shortcut::ShortcutState;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use tauri_plugin_autostart::MacosLauncher;
 
 #[cfg(windows)]
 use windows_sys::Win32::{
@@ -24,12 +26,22 @@ use windows_sys::Win32::{
   },
 };
 
+#[cfg(windows)]
+use windows::Media::Control::{
+  GlobalSystemMediaTransportControlsSessionManager,
+  GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+};
+
 const STATUS_WINDOW_EDGE_MARGIN: i32 = 8;
 const STATUS_WINDOW_LABEL: &str = "main";
 const STATUS_CENTER_HUB_EVENTS_EVENT: &str = "status-center://hub-events";
 const STATUS_CENTER_MENU_ACTION_EVENT: &str = "status-center://menu-action";
 const STATUS_CENTER_SETTINGS_EVENT: &str = "status-center://settings";
 const STATUS_CENTER_OPEN_SETTINGS_EVENT: &str = "status-center://open-settings";
+const STATUS_CENTER_CLIPBOARD_EVENT: &str = "status-center://clipboard-changed";
+const STATUS_CENTER_FOCUS_ASSIST_EVENT: &str = "status-center://focus-assist-changed";
+const STATUS_CENTER_NOTIFICATION_EVENT: &str = "status-center://notifications-changed";
+const FOCUS_ASSIST_MONITOR_INTERVAL: Duration = Duration::from_secs(2);
 const TRAY_ID: &str = "status-center-tray";
 const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
@@ -43,6 +55,8 @@ const TRAY_MENU_SHOW_STATUS_CENTER: &str = "tray-show-status-center";
 const TRAY_MENU_OPEN_SETTINGS: &str = "tray-open-settings";
 const GLOBAL_SHORTCUT_RECALL: &str = "Alt+Shift+Space";
 const HUB_EVENT_FIXTURE_INTERVAL: Duration = Duration::from_secs(5);
+const STATUS_WINDOW_CONFIGURED_WIDTH: u16 = 315;
+const STATUS_WINDOW_CONFIGURED_HEIGHT: u16 = 80;
 
 static HUB_EVENT_FIXTURE_TICK: AtomicU64 = AtomicU64::new(0);
 
@@ -90,9 +104,27 @@ struct StatusCenterMenuItems<R: tauri::Runtime> {
   lock_position: tauri::menu::CheckMenuItem<R>,
 }
 
+struct NetworkSample {
+  total_bytes: u64,
+  sampled_at: std::time::Instant,
+}
+
+struct SystemPerformanceCache {
+  network_sample: Option<NetworkSample>,
+}
+
+impl Default for SystemPerformanceCache {
+  fn default() -> Self {
+    Self {
+      network_sample: None,
+    }
+  }
+}
+
 struct DesktopProductState<R: tauri::Runtime> {
   preferences: DesktopStatusPreferences,
   menu_items: Option<StatusCenterMenuItems<R>>,
+  perf_cache: SystemPerformanceCache,
 }
 
 impl<R: tauri::Runtime> Default for DesktopProductState<R> {
@@ -100,6 +132,7 @@ impl<R: tauri::Runtime> Default for DesktopProductState<R> {
     Self {
       preferences: DesktopStatusPreferences::default(),
       menu_items: None,
+      perf_cache: SystemPerformanceCache::default(),
     }
   }
 }
@@ -138,6 +171,34 @@ struct RuntimeCapabilities {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+struct GuestProviderCapability {
+  kind: &'static str,
+  quality: &'static str,
+  code: &'static str,
+  safe_to_display: bool,
+  last_checked_at: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GuestProviderCapabilitiesPayload {
+  providers: Vec<GuestProviderCapability>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MediaSessionStatus {
+  available: bool,
+  playback_status: &'static str,
+  progress: u8,
+  position_ms: Option<u64>,
+  duration_ms: Option<u64>,
+  code: &'static str,
+  checked_at: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ConfiguredShellWindow {
   configured: bool,
   title: String,
@@ -157,6 +218,20 @@ struct SystemPerformanceSnapshot {
   network: u8,
 }
 
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ClipboardContent {
+  text: String,
+  source_app: String,
+  copied_at: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MediaControlResult {
+  success: bool,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OverlayPolicy {
@@ -170,6 +245,21 @@ struct WindowPositionCorrection {
   corrected: bool,
   x: i32,
   y: i32,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FocusAssistStatePayload {
+  active: bool,
+  profile: String,
+  checked_at: u64,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NotificationSummaryPayload {
+  focus_assist_active: bool,
+  checked_at: u64,
 }
 
 #[tauri::command]
@@ -196,10 +286,10 @@ fn get_runtime_capabilities() -> RuntimeCapabilities {
     configured_shell_window: ConfiguredShellWindow {
      configured: true,
      title: "Cober Windows Bar".into(),
-      width: 420,
-      height: 80,
-      min_width: 420,
-      min_height: 80,
+      width: STATUS_WINDOW_CONFIGURED_WIDTH,
+      height: STATUS_WINDOW_CONFIGURED_HEIGHT,
+      min_width: STATUS_WINDOW_CONFIGURED_WIDTH,
+      min_height: STATUS_WINDOW_CONFIGURED_HEIGHT,
      resizable: false,
      centered: true,
     },
@@ -207,23 +297,286 @@ fn get_runtime_capabilities() -> RuntimeCapabilities {
 }
 
 #[tauri::command]
-fn get_system_performance() -> SystemPerformanceSnapshot {
-  let mut system = System::new_all();
+async fn get_guest_provider_capabilities() -> GuestProviderCapabilitiesPayload {
+  tauri::async_runtime::spawn_blocking(|| {
+    let last_checked_at = unix_time_ms();
+    let media_capability = get_media_provider_capability(last_checked_at);
+    let focus_capability = get_focus_provider_capability(last_checked_at);
 
-  system.refresh_cpu();
-  std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-  system.refresh_cpu();
-  system.refresh_memory();
+    GuestProviderCapabilitiesPayload {
+      providers: vec![
+        GuestProviderCapability {
+          kind: "update",
+          quality: "unavailable",
+          code: "not-implemented",
+          safe_to_display: false,
+          last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: focus_capability.kind,
+          quality: focus_capability.quality,
+          code: focus_capability.code,
+          safe_to_display: focus_capability.safe_to_display,
+          last_checked_at: focus_capability.last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: media_capability.kind,
+          quality: media_capability.quality,
+          code: media_capability.code,
+          safe_to_display: media_capability.safe_to_display,
+          last_checked_at: media_capability.last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: "download",
+          quality: "unavailable",
+          code: "not-implemented",
+          safe_to_display: false,
+          last_checked_at,
+        },
+        GuestProviderCapability {
+          kind: "clipboard",
+          quality: "native",
+          code: "available",
+          safe_to_display: true,
+          last_checked_at,
+        },
+      ],
+    }
+  })
+  .await
+  .unwrap_or_else(|_| GuestProviderCapabilitiesPayload { providers: vec![] })
+}
 
-  let cpu = clamp_percent(system.global_cpu_info().cpu_usage() as f64);
-  let memory = if system.total_memory() == 0 {
-    0
+fn get_focus_provider_capability(last_checked_at: u64) -> GuestProviderCapability {
+  let state = read_focus_assist_state();
+  let (quality, code) = if cfg!(windows) {
+    ("native", "available")
   } else {
-    clamp_percent((system.used_memory() as f64 / system.total_memory() as f64) * 100.0)
+    ("unavailable", "unsupported")
   };
-  let network = sample_network_percent();
 
-  SystemPerformanceSnapshot { cpu, memory, network }
+  GuestProviderCapability {
+    kind: "focus",
+    quality,
+    code,
+    safe_to_display: cfg!(windows),
+    last_checked_at: state.checked_at.max(last_checked_at),
+  }
+}
+
+#[tauri::command]
+async fn get_media_session_status() -> MediaSessionStatus {
+  tauri::async_runtime::spawn_blocking(read_media_session_status)
+    .await
+    .unwrap_or_else(|_| MediaSessionStatus {
+      available: false,
+      playback_status: "unavailable",
+      progress: 0,
+      position_ms: None,
+      duration_ms: None,
+      code: "task-failed",
+      checked_at: unix_time_ms(),
+    })
+}
+
+#[tauri::command]
+fn get_clipboard_content() -> Result<ClipboardContent, String> {
+  let mut clipboard = arboard::Clipboard::new().map_err(|e| format!("clipboard init failed: {e}"))?;
+  let text = clipboard.get_text().map_err(|e| format!("clipboard read failed: {e}"))?;
+  let source_app = String::new(); // arboard does not expose source app
+
+  Ok(ClipboardContent {
+    text,
+    source_app,
+    copied_at: unix_time_ms(),
+  })
+}
+
+#[tauri::command]
+fn set_clipboard_content(text: String) -> Result<(), String> {
+  let mut clipboard = arboard::Clipboard::new().map_err(|e| format!("clipboard init failed: {e}"))?;
+  clipboard.set_text(&text).map_err(|e| format!("clipboard write failed: {e}"))?;
+  Ok(())
+}
+
+#[cfg(windows)]
+fn try_media_session_action(action: &str) -> Result<MediaControlResult, String> {
+  use windows::Media::Control::{
+    GlobalSystemMediaTransportControlsSessionManager,
+    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+  };
+
+  let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+    .map_err(|e| format!("media manager request failed: {e}"))?
+    .get()
+    .map_err(|e| format!("media manager get failed: {e}"))?;
+  let session = manager
+    .GetCurrentSession()
+    .map_err(|e| format!("no active media session: {e}"))?;
+
+  let success = match action {
+    "play-pause" => {
+      let playback_info = session.GetPlaybackInfo()
+        .map_err(|e| format!("playback info failed: {e}"))?;
+      let is_playing = playback_info.PlaybackStatus()
+        .map(|s| s == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
+        .unwrap_or(false);
+
+      if is_playing {
+        session.TryPauseAsync()
+          .map_err(|e| format!("pause dispatch failed: {e}"))?
+          .get()
+          .map_err(|e| format!("pause failed: {e}"))?
+      } else {
+        session.TryPlayAsync()
+          .map_err(|e| format!("play dispatch failed: {e}"))?
+          .get()
+          .map_err(|e| format!("play failed: {e}"))?
+      }
+    }
+    "next" => {
+      session.TrySkipNextAsync()
+        .map_err(|e| format!("skip next dispatch failed: {e}"))?
+        .get()
+        .map_err(|e| format!("skip next failed: {e}"))?
+    }
+    "previous" => {
+      session.TrySkipPreviousAsync()
+        .map_err(|e| format!("skip previous dispatch failed: {e}"))?
+        .get()
+        .map_err(|e| format!("skip previous failed: {e}"))?
+    }
+    _ => return Err(format!("unknown media action: {action}")),
+  };
+
+  Ok(MediaControlResult { success })
+}
+
+#[cfg(not(windows))]
+fn try_media_session_action(_action: &str) -> Result<MediaControlResult, String> {
+  Err("media control is only supported on Windows".into())
+}
+
+#[tauri::command]
+async fn media_control(action: String) -> Result<MediaControlResult, String> {
+  tauri::async_runtime::spawn_blocking(move || try_media_session_action(&action))
+    .await
+    .map_err(|e| format!("media control task failed: {e}"))?
+}
+
+// ---------- Focus Assist Detection (Windows Registry) ----------
+
+#[cfg(windows)]
+fn read_focus_assist_state() -> FocusAssistStatePayload {
+  use winreg::enums::{HKEY_CURRENT_USER, KEY_READ};
+  use winreg::RegKey;
+
+  let active = RegKey::predef(HKEY_CURRENT_USER)
+    .open_subkey_with_flags(r"Software\Microsoft\Windows\CurrentVersion\QuietHours", KEY_READ)
+    .and_then(|key| key.get_value::<u32, _>("NFPEnabled"))
+    .map(|v| v == 1)
+    .unwrap_or(false);
+
+  let profile = RegKey::predef(HKEY_CURRENT_USER)
+    .open_subkey_with_flags(r"Software\Microsoft\Windows\CurrentVersion\QuietHours", KEY_READ)
+    .and_then(|key| key.get_value::<String, _>("Profile"))
+    .unwrap_or_default();
+
+  FocusAssistStatePayload {
+    active,
+    profile,
+    checked_at: unix_time_ms(),
+  }
+}
+
+#[cfg(not(windows))]
+fn read_focus_assist_state() -> FocusAssistStatePayload {
+  FocusAssistStatePayload {
+    active: false,
+    profile: String::new(),
+    checked_at: unix_time_ms(),
+  }
+}
+
+#[tauri::command]
+fn get_focus_assist_state() -> FocusAssistStatePayload {
+  read_focus_assist_state()
+}
+
+// ---------- Notification Summary (Windows Registry) ----------
+
+#[cfg(windows)]
+fn read_notification_summary() -> NotificationSummaryPayload {
+  let focus = read_focus_assist_state();
+
+  NotificationSummaryPayload {
+    focus_assist_active: focus.active,
+    checked_at: unix_time_ms(),
+  }
+}
+
+#[cfg(not(windows))]
+fn read_notification_summary() -> NotificationSummaryPayload {
+  NotificationSummaryPayload {
+    focus_assist_active: false,
+    checked_at: unix_time_ms(),
+  }
+}
+
+#[tauri::command]
+fn get_notification_summary() -> NotificationSummaryPayload {
+  read_notification_summary()
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[tauri::command]
+fn get_autostart_enabled(
+  autostart: tauri::State<'_, tauri_plugin_autostart::AutoLaunchManager>,
+) -> bool {
+  autostart.is_enabled().unwrap_or(false)
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+#[tauri::command]
+fn set_autostart_enabled(
+  autostart: tauri::State<'_, tauri_plugin_autostart::AutoLaunchManager>,
+  enabled: bool,
+) -> Result<(), String> {
+  if enabled {
+    autostart.enable().map_err(|e| format!("enable autostart failed: {e}"))?;
+  } else {
+    autostart.disable().map_err(|e| format!("disable autostart failed: {e}"))?;
+  }
+  Ok(())
+}
+
+#[tauri::command]
+async fn get_system_performance(
+  state: tauri::State<'_, SharedDesktopProductState<tauri::Wry>>,
+) -> Result<SystemPerformanceSnapshot, String> {
+  let (cpu, memory) = tauri::async_runtime::spawn_blocking(|| {
+    let mut system = System::new_all();
+
+    system.refresh_cpu();
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    system.refresh_cpu();
+    system.refresh_memory();
+
+    let cpu = clamp_percent(system.global_cpu_info().cpu_usage() as f64);
+    let memory = if system.total_memory() == 0 {
+      0
+    } else {
+      clamp_percent((system.used_memory() as f64 / system.total_memory() as f64) * 100.0)
+    };
+
+    (cpu, memory)
+  })
+  .await
+  .map_err(|e| format!("spawn_blocking failed: {e}"))?;
+
+  let network = sample_network_percent(&state);
+
+  Ok(SystemPerformanceSnapshot { cpu, memory, network })
 }
 
 #[tauri::command]
@@ -379,26 +732,145 @@ fn open_status_center_settings(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn quit_status_center(app: tauri::AppHandle) -> Result<(), String> {
+fn quit_status_center(
+  app: tauri::AppHandle,
+  shutdown: tauri::State<'_, Arc<AtomicBool>>,
+) -> Result<(), String> {
+  shutdown.store(true, Ordering::SeqCst);
   app.exit(0);
   Ok(())
 }
 
-fn sample_network_percent() -> u8 {
+/// Normalizes network throughput against a 1 Gbps reference bandwidth (~125 MB/s).
+/// Uses delta-based rate calculation between invocations for accurate throughput measurement.
+fn sample_network_percent(state: &SharedDesktopProductState<tauri::Wry>) -> u8 {
   let mut networks = Networks::new_with_refreshed_list();
   networks.refresh();
 
-  let total_bytes_received: u64 = networks
+  let total_bytes: u64 = networks
     .values()
-    .map(|data| data.received())
+    .map(|data| data.received() + data.transmitted())
     .sum();
-  let total_bytes_transmitted: u64 = networks
-    .values()
-    .map(|data| data.transmitted())
-    .sum();
-  let total_bytes = total_bytes_received + total_bytes_transmitted;
+  let now = std::time::Instant::now();
 
-  clamp_percent((total_bytes as f64 / 1_250_000.0) * 100.0)
+  let mut percent: u8 = 0;
+
+  if let Ok(mut guard) = state.lock() {
+    let cache = &mut guard.perf_cache;
+
+    if let Some(prev) = &cache.network_sample {
+      let elapsed = now.duration_since(prev.sampled_at).as_secs_f64();
+
+      if elapsed > 0.05 {
+        let delta_bytes = total_bytes.saturating_sub(prev.total_bytes);
+        let bytes_per_second = delta_bytes as f64 / elapsed;
+        // Normalize against 1 Gbps (125 MB/s) reference bandwidth
+        percent = clamp_percent((bytes_per_second / 125_000_000.0) * 100.0);
+      }
+      // else: too short interval, keep percent at 0 to avoid spikes
+    }
+    // else: first sample, no previous data — keep percent at 0
+
+    cache.network_sample = Some(NetworkSample {
+      total_bytes,
+      sampled_at: now,
+    });
+  }
+  // else: lock poisoned, fall back to 0
+
+  percent
+}
+
+fn get_media_provider_capability(last_checked_at: u64) -> GuestProviderCapability {
+  let status = read_media_session_status_at(last_checked_at);
+  let (quality, code, safe_to_display) = match status.code {
+    "available" | "not-playing" => ("native", "available", true),
+    "unsupported" => ("unavailable", "unsupported", false),
+    _ => ("unavailable", status.code, false),
+  };
+
+  GuestProviderCapability {
+    kind: "media",
+    quality,
+    code,
+    safe_to_display,
+    last_checked_at,
+  }
+}
+
+fn read_media_session_status() -> MediaSessionStatus {
+  read_media_session_status_at(unix_time_ms())
+}
+
+#[cfg(windows)]
+fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
+  match read_windows_media_session_status(checked_at) {
+    Ok(status) => status,
+    Err(_) => MediaSessionStatus {
+      available: false,
+      playback_status: "unavailable",
+      progress: 0,
+      position_ms: None,
+      duration_ms: None,
+      code: "provider-failed",
+      checked_at,
+    },
+  }
+}
+
+#[cfg(not(windows))]
+fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
+  MediaSessionStatus {
+    available: false,
+    playback_status: "unsupported",
+    progress: 0,
+    position_ms: None,
+    duration_ms: None,
+    code: "unsupported",
+    checked_at,
+  }
+}
+
+#[cfg(windows)]
+fn read_windows_media_session_status(checked_at: u64) -> windows::core::Result<MediaSessionStatus> {
+  let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.get()?;
+  let session = manager.GetCurrentSession()?;
+  let playback_info = session.GetPlaybackInfo()?;
+  let playback_status = playback_info.PlaybackStatus()?;
+  let timeline = session.GetTimelineProperties()?;
+  let position_ms = duration_100ns_to_ms(timeline.Position()?.Duration);
+  let duration_ms = duration_100ns_to_ms(timeline.EndTime()?.Duration);
+  let progress = match (position_ms, duration_ms) {
+    (Some(position), Some(duration)) if duration > 0 => {
+      clamp_percent((position as f64 / duration as f64) * 100.0)
+    }
+    _ => 0,
+  };
+  let playback_status_label =
+    if playback_status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+      "playing"
+    } else {
+      "paused"
+    };
+
+  Ok(MediaSessionStatus {
+    available: true,
+    playback_status: playback_status_label,
+    progress,
+    position_ms,
+    duration_ms,
+    code: "available",
+    checked_at,
+  })
+}
+
+#[cfg(windows)]
+fn duration_100ns_to_ms(value: i64) -> Option<u64> {
+  if value <= 0 {
+    return None;
+  }
+
+  Some((value as u64) / 10_000)
 }
 
 fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
@@ -479,21 +951,6 @@ fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
       }),
     },
   ]
-}
-
-fn emit_next_hub_event_fixture_batch<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> usize {
-  let tick = HUB_EVENT_FIXTURE_TICK.fetch_add(1, Ordering::Relaxed);
-  let fixtures = build_hub_event_fixtures(tick);
-  let emitted = fixtures.len();
-  emit_hub_events(app, fixtures);
-  emitted
-}
-
-fn start_hub_event_fixture_stream<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
-  std::thread::spawn(move || loop {
-    std::thread::sleep(HUB_EVENT_FIXTURE_INTERVAL);
-    emit_next_hub_event_fixture_batch(&app);
-  });
 }
 
 fn unix_time_ms() -> u64 {
@@ -913,6 +1370,9 @@ fn handle_status_center_menu_event<R: tauri::Runtime>(
     MENU_OPEN_SETTINGS => request_open_settings(app, "menu"),
     MENU_QUIT => {
       emit_status_center_action(app, "quit", None);
+      if let Some(shutdown) = app.try_state::<Arc<AtomicBool>>() {
+        shutdown.store(true, Ordering::SeqCst);
+      }
       app.exit(0);
     }
     _ => {}
@@ -957,9 +1417,11 @@ pub fn run() {
   let desktop_product_state: SharedDesktopProductState<tauri::Wry> =
     Arc::new(Mutex::new(DesktopProductState::default()));
   let setup_state = Arc::clone(&desktop_product_state);
+  let app_shutdown: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
   tauri::Builder::default()
     .manage(desktop_product_state.clone())
+    .manage(app_shutdown.clone())
     .setup(move |app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -983,6 +1445,11 @@ pub fn run() {
             }
           })
           .build(),
+      )?;
+
+      #[cfg(not(any(target_os = "android", target_os = "ios")))]
+      app.handle().plugin(
+        tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"])),
       )?;
 
       let preferences = load_status_center_preferences(app.handle());
@@ -1028,8 +1495,71 @@ pub fn run() {
       }
 
       emit_status_center_settings(app.handle(), &preferences);
-      emit_next_hub_event_fixture_batch(app.handle());
-      start_hub_event_fixture_stream(app.handle().clone());
+
+      // Shared shutdown flag for background monitor threads (from managed state)
+      let app_shutdown = app.handle().state::<Arc<AtomicBool>>().inner().clone();
+
+      // Start clipboard change monitor (reuses Clipboard instance, checks shutdown flag)
+      {
+        let clipboard_app_handle = app.handle().clone();
+        let clipboard_shutdown = Arc::clone(&app_shutdown);
+        std::thread::spawn(move || {
+          let mut last_text = String::new();
+          let mut clipboard = match arboard::Clipboard::new() {
+            Ok(c) => c,
+            Err(_) => return,
+          };
+          loop {
+            std::thread::sleep(Duration::from_millis(800));
+            if clipboard_shutdown.load(Ordering::Relaxed) {
+              break;
+            }
+            if let Ok(text) = clipboard.get_text() {
+              if text != last_text && !text.is_empty() {
+                last_text = text.clone();
+                let payload = ClipboardContent {
+                  text,
+                  source_app: String::new(),
+                  copied_at: unix_time_ms(),
+                };
+                let _ = clipboard_app_handle.emit(STATUS_CENTER_CLIPBOARD_EVENT, &payload);
+              }
+            }
+          }
+        });
+      }
+
+      // Start Focus Assist + Notification unified monitor (eliminates redundant registry polling)
+      {
+        let monitor_app_handle = app.handle().clone();
+        let monitor_shutdown = Arc::clone(&app_shutdown);
+        std::thread::spawn(move || {
+          let mut last_focus_active = false;
+          let mut last_profile = String::new();
+          let mut last_notif_active = false;
+          loop {
+            std::thread::sleep(FOCUS_ASSIST_MONITOR_INTERVAL);
+            if monitor_shutdown.load(Ordering::Relaxed) {
+              break;
+            }
+            let focus_state = read_focus_assist_state();
+            if focus_state.active != last_focus_active || focus_state.profile != last_profile {
+              last_focus_active = focus_state.active;
+              last_profile = focus_state.profile.clone();
+              let _ = monitor_app_handle.emit(STATUS_CENTER_FOCUS_ASSIST_EVENT, &focus_state);
+            }
+            // Derive notification summary from the same focus state (no redundant registry read)
+            if focus_state.active != last_notif_active {
+              last_notif_active = focus_state.active;
+              let summary = NotificationSummaryPayload {
+                focus_assist_active: focus_state.active,
+                checked_at: unix_time_ms(),
+              };
+              let _ = monitor_app_handle.emit(STATUS_CENTER_NOTIFICATION_EVENT, &summary);
+            }
+          }
+        });
+      }
 
       Ok(())
     })
@@ -1043,6 +1573,8 @@ pub fn run() {
       get_hub_event_fixtures,
       emit_hub_event_fixtures,
       get_runtime_capabilities,
+      get_guest_provider_capabilities,
+      get_media_session_status,
       get_system_performance,
       get_overlay_policy,
       set_status_window_floating,
@@ -1052,9 +1584,15 @@ pub fn run() {
       get_status_center_settings,
       set_status_center_preferences,
       show_status_center_window,
-      open_status_center_settings
-      ,
-      quit_status_center
+      open_status_center_settings,
+      quit_status_center,
+      get_clipboard_content,
+      set_clipboard_content,
+      media_control,
+      get_focus_assist_state,
+      get_notification_summary,
+      get_autostart_enabled,
+      set_autostart_enabled
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

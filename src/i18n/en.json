@@ -1,0 +1,188 @@
+{
+  "common": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "copy": "Copy",
+    "copied": "Copied",
+    "statusIndicators": "Status indicators"
+  },
+  "shell": {
+    "ariaLabel": "Cober Windows Status Center"
+  },
+  "template": {
+    "resident": {
+      "label": "Resident",
+      "description": "Default view showing CPU, memory, and network metrics.",
+      "eyebrow": "Resident"
+    },
+    "media": {
+      "label": "Media",
+      "description": "Shows currently playing media info and progress.",
+      "eyebrow": "Media",
+      "progress": "Media progress"
+    },
+    "download": {
+      "label": "Download",
+      "description": "Shows download tasks and transfer progress.",
+      "eyebrow": "Download",
+      "progress": "Download progress"
+    },
+    "update": {
+      "label": "Update",
+      "description": "Shows system or app update progress.",
+      "eyebrow": "Update",
+      "progress": "Update progress"
+    },
+    "clipboard": {
+      "label": "Clipboard",
+      "description": "Shows recently copied content and source.",
+      "eyebrow": "Clipboard"
+    },
+    "focus": {
+      "label": "Focus",
+      "description": "Shows focus mode or timer status.",
+      "eyebrow": "Focus"
+    }
+  },
+  "metrics": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "network": "Network",
+    "currentUsage": "Current usage",
+    "usageRate": "{{label}} usage {{value}}%"
+  },
+  "menu": {
+    "refreshData": "Refresh data",
+    "alwaysFloat": "Always float",
+    "avoidFullscreen": "Avoid fullscreen",
+    "lockPosition": "Lock position",
+    "resetPosition": "Reset position",
+    "openSettings": "Open settings",
+    "quit": "Quit"
+  },
+  "states": {
+    "resident": {
+      "title": "System Performance",
+      "subtitle": "Status Center"
+    },
+    "media": {
+      "title": "Neon Focus",
+      "subtitle": "Now Playing",
+      "artist": "Cober Player",
+      "timeLabel": "01:42 / 03:28"
+    },
+    "download": {
+      "title": "Windows ISO",
+      "subtitle": "Download Task",
+      "detail": "3.1 GB / 5.4 GB"
+    },
+    "update": {
+      "title": "System Update",
+      "subtitle": "Ready to Restart",
+      "detail": "KB5039302"
+    },
+    "clipboard": {
+      "title": "Copied Content",
+      "subtitle": "Clipboard Update",
+      "detail": "From browser",
+      "copiedText": "https://github.com/jay77721/Cober-Windows-Bar"
+    },
+    "focus": {
+      "title": "Focus Mode",
+      "subtitle": "Active",
+      "sessionLabel": "Deep work 25 min",
+      "detail": "12 min remaining"
+    }
+  },
+  "settings": {
+    "panel": {
+      "ariaLabel": "Status Center Settings",
+      "title": "Status Center Settings",
+      "description": "Customize how the desktop overlay displays and which templates to show.",
+      "closeLabel": "Close settings"
+    },
+    "sections": {
+      "windowBehavior": "Window Behavior",
+      "statusTemplates": "Status Templates",
+      "quickActions": "Quick Controls"
+    },
+    "toggles": {
+      "alwaysFloat": {
+        "title": "Always Float",
+        "description": "Keep the status center on top of the desktop.",
+        "activeLabel": "Enabled",
+        "inactiveLabel": "Disabled"
+      },
+      "avoidFullscreen": {
+        "title": "Avoid Fullscreen",
+        "description": "Automatically hide when a fullscreen app is detected.",
+        "activeLabel": "Enabled",
+        "inactiveLabel": "Disabled"
+      },
+      "lockPosition": {
+        "title": "Lock Position",
+        "description": "Pin the current dock position to prevent accidental dragging.",
+        "activeLabel": "Position locked",
+        "inactiveLabel": "Free to drag"
+      },
+      "autostart": {
+        "title": "Start with Windows",
+        "description": "Automatically launch the status center on system startup.",
+        "activeLabel": "Enabled",
+        "inactiveLabel": "Disabled"
+      }
+    },
+    "actions": {
+      "refresh": "Refresh Data",
+      "resetPosition": "Reset Position",
+      "openNativeSettings": "Open Native Settings",
+      "recallStatusCenter": "Recall Status Center",
+      "quickPanelTitle": "Quick Controls",
+      "quickPanelDescription": "Quickly adjust current window behavior like the Windows 11 status center."
+    },
+    "language": {
+      "title": "Language",
+      "zh-CN": "简体中文",
+      "en": "English"
+    }
+  },
+  "aggregation": {
+    "nowPlaying": "Now Playing",
+    "downloadTask": "Download Task",
+    "transferring": "Transferring",
+    "inProgress": "In Progress",
+    "systemTaskProcessing": "System task processing",
+    "desktopNotification": "Desktop Notification",
+    "recentMessage": "Recent Message",
+    "newNotificationReceived": "New notification received",
+    "notificationCenter": "Notification Center",
+    "focusMode": "Focus Mode",
+    "systemStatus": "System Status",
+    "focusModeEnabled": "Focus mode enabled",
+    "doNotDisturb": "Do not disturb",
+    "profileModeEnabled": "{{profile}} mode enabled",
+    "focusAssistEnabled": "Focus Assist enabled"
+  },
+  "diagnostics": {
+    "live": "Live",
+    "stale": "Stale",
+    "unavailable": "Unavailable",
+    "fallback": "Fallback",
+    "native": "Native",
+    "app": "App",
+    "fixture": "Fixture",
+    "mock": "Mock"
+  },
+  "media": {
+    "previous": "Previous",
+    "playPause": "Play/Pause",
+    "next": "Next"
+  },
+  "clipboard": {
+    "copyToClipboard": "Copy to clipboard"
+  },
+  "notFound": {
+    "title": "Cober page not found",
+    "openDesktop": "Open /desktop"
+  }
+}

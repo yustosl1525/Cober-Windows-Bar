@@ -1,31 +1,38 @@
 import { Cpu } from "lucide-react";
-import type { DesktopResidentState, SystemPerformanceMetric } from "../../../types/hub";
+import i18n from "../../../i18n";
+import { useTranslation } from "react-i18next";
+import type {
+  DesktopResidentState,
+  SystemPerformanceMetric,
+  SystemPerformanceSourceQuality,
+} from "../../../types/hub";
 
 type ResidentStatusTemplateProps = {
   state: DesktopResidentState;
 };
 
 export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
+  const { t } = useTranslation();
+  const sourceLabel = sourceQualityLabel(state.sourceStatus?.quality, t);
+
   return (
     <>
       <div className="product-status-icon product-status-icon-resident" aria-hidden="true">
         <Cpu size={20} strokeWidth={2.2} />
-      </div>
-
-      <div className="product-status-resident-copy">
-        <span className="product-status-resident-eyebrow">System</span>
-        <strong>{state.title}</strong>
-        <span>{state.subtitle}</span>
-        <span className="product-status-resident-live">
+        <span
+          className={`product-status-source-health ${sourceQualityClassName(state.sourceStatus?.quality)}`}
+          aria-label={`${sourceLabel}`}
+          title={sourceLabel}
+        >
           <span />
-          Live
+          <span className="product-status-source-health-label">{sourceLabel}</span>
         </span>
       </div>
 
       <div className="product-status-metrics">
         {state.metrics.map((metric) => {
           const accent = metricAccent(metric);
-          const label = `${metric.label} 使用率 ${metric.value}%`;
+          const label = t("metrics.usageRate", { label: metric.label, value: metric.value });
 
           return (
             <div
@@ -63,6 +70,37 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
 
 function visibleMetricValue(value: number) {
   return value <= 0 ? 10 : Math.max(value, 10);
+}
+
+type TranslationFn = (key: string) => string;
+
+export function sourceQualityLabel(quality: SystemPerformanceSourceQuality | undefined, t?: TranslationFn) {
+  const translate = t ?? i18n.t.bind(i18n);
+  switch (quality) {
+    case "live":
+      return translate("diagnostics.live");
+    case "stale":
+      return translate("diagnostics.stale");
+    case "unavailable":
+      return translate("diagnostics.unavailable");
+    case "fallback":
+    default:
+      return translate("diagnostics.fallback");
+  }
+}
+
+export function sourceQualityClassName(quality: SystemPerformanceSourceQuality | undefined) {
+  switch (quality) {
+    case "live":
+      return "is-live";
+    case "stale":
+      return "is-stale";
+    case "unavailable":
+      return "is-unavailable";
+    case "fallback":
+    default:
+      return "is-fallback";
+  }
 }
 
 function metricAccent(metric: SystemPerformanceMetric) {
