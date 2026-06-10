@@ -79,6 +79,26 @@ test("desktop status resolver snapshots system performance source status", () =>
   assert.deepEqual(state.sourceStatus, { quality: "stale" });
 });
 
+test("desktop status resolver keeps source status high-level and drops diagnostic details", () => {
+  const sourceStatus = {
+    quality: "stale",
+    code: "permission-denied",
+    source: "preflight",
+    path: "C:\\Users\\private",
+    rawPayload: { commandOutput: "secret output" },
+  } as unknown as SystemPerformanceSourceStatus;
+  const state = resolveDesktopStatusState({
+    metrics,
+    systemPerformanceSourceStatus: sourceStatus,
+  });
+
+  assert.deepEqual(state.sourceStatus, { quality: "stale" });
+  assert.equal("code" in state.sourceStatus!, false);
+  assert.equal("source" in state.sourceStatus!, false);
+  assert.equal("path" in state.sourceStatus!, false);
+  assert.equal("rawPayload" in state.sourceStatus!, false);
+});
+
 test("desktop status state listing exposes all six status templates in product order", () => {
   assert.deepEqual(
     listDesktopStatusStates(metrics).map((state) => state.kind),
