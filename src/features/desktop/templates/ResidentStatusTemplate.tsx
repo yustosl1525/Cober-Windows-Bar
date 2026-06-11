@@ -11,9 +11,20 @@ type ResidentStatusTemplateProps = {
   state: DesktopResidentState;
 };
 
+function formatSpeed(bytesPerSecond: number): string {
+  if (bytesPerSecond >= 1_073_741_824) return `${(bytesPerSecond / 1_073_741_824).toFixed(1)} GB/s`;
+  if (bytesPerSecond >= 1_048_576) return `${(bytesPerSecond / 1_048_576).toFixed(1)} MB/s`;
+  if (bytesPerSecond >= 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+  return `${Math.round(bytesPerSecond)} B/s`;
+}
+
 export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
   const { t } = useTranslation();
   const sourceLabel = sourceQualityLabel(state.sourceStatus?.quality, t);
+
+  const percentMetrics = state.metrics.filter((m) => m.id === "cpu" || m.id === "memory");
+  const downloadMetric = state.metrics.find((m) => m.id === "download");
+  const uploadMetric = state.metrics.find((m) => m.id === "upload");
 
   return (
     <>
@@ -30,7 +41,7 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
       </div>
 
       <div className="product-status-metrics">
-        {state.metrics.map((metric) => {
+        {percentMetrics.map((metric) => {
           const accent = metricAccent(metric);
           const label = t("metrics.usageRate", { label: metric.label, value: metric.value });
 
@@ -63,6 +74,25 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
             </div>
           );
         })}
+
+        {(downloadMetric || uploadMetric) && (
+          <div className="product-status-metric product-status-metric-network" aria-label="Network speed">
+            {downloadMetric && (
+              <div className="product-status-net-row">
+                <span className="product-status-net-arrow product-status-net-arrow-down">↓</span>
+                <span className="product-status-label-name">{downloadMetric.label}</span>
+                <strong className="product-status-net-value">{formatSpeed(downloadMetric.value)}</strong>
+              </div>
+            )}
+            {uploadMetric && (
+              <div className="product-status-net-row">
+                <span className="product-status-net-arrow product-status-net-arrow-up">↑</span>
+                <span className="product-status-label-name">{uploadMetric.label}</span>
+                <strong className="product-status-net-value">{formatSpeed(uploadMetric.value)}</strong>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
@@ -116,6 +146,8 @@ function metricAccent(metric: SystemPerformanceMetric) {
         return "linear-gradient(90deg, #7c6cff 0%, #c084fc 100%)";
       case "cyan":
         return "linear-gradient(90deg, #0891b2 0%, #2dd4bf 100%)";
+      case "emerald":
+        return "linear-gradient(90deg, #16a34a 0%, #4ade80 100%)";
     }
   }
 
@@ -126,5 +158,7 @@ function metricAccent(metric: SystemPerformanceMetric) {
       return "linear-gradient(90deg, #6d5dfc 0%, #a78bfa 100%)";
     case "cyan":
       return "linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)";
+    case "emerald":
+      return "linear-gradient(90deg, #16a34a 0%, #86efac 100%)";
   }
 }

@@ -2,6 +2,7 @@ import i18n from "../i18n";
 import { clampProgress, dedupeKinds } from "../shared/runtimeGuards";
 import { createHubStoreState, getActiveHubEvents } from "./hubState";
 import type {
+  ClipboardPayload,
   DesktopClipboardState,
   DesktopDownloadState,
   DesktopFocusState,
@@ -12,10 +13,13 @@ import type {
   DesktopStatusState,
   DesktopStatusStateMap,
   DesktopUpdateState,
+  FocusAssistPayload,
   HubEvent,
   HubStoreState,
   HubTask,
+  MediaSessionPayload,
   MusicState,
+  SystemPerformanceMetric,
 } from "../types/hub";
 
 const DESKTOP_STATUS_AVAILABLE_KINDS: DesktopStatusKind[] = [
@@ -46,6 +50,87 @@ function snapshotMusicState(music: MusicState): DesktopMediaState {
     timeLabel: music.time,
     progress: clampProgress(music.progress),
     accent: "violet",
+    playbackStatus: "playing",
+  };
+}
+
+function snapshotRealMediaState(payload: MediaSessionPayload, metadata?: Record<string, unknown>): DesktopMediaState {
+  const fmt = (ms: number) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  };
+
+  const timeLabel = payload.positionMs !== undefined && payload.durationMs !== undefined && payload.durationMs > 0
+    ? `${fmt(payload.positionMs)} / ${fmt(payload.durationMs)}`
+    : typeof metadata?.["timeLabel"] === "string"
+      ? metadata["timeLabel"]
+      : "";
+
+  return {
+    kind: "media",
+    title: payload.playbackStatus === "playing"
+      ? (payload.title || i18n.t("aggregation.nowPlaying"))
+      : "Media",
+    subtitle: payload.playbackStatus === "playing" ? "Playing" : "Paused",
+    source: "system",
+    artist: payload.artist ?? "",
+    timeLabel,
+    progress: clampProgress(payload.progress),
+    accent: "violet",
+    playbackStatus: payload.playbackStatus,
+    sourceHealth: {
+      kind: "media",
+      quality: "native",
+      code: typeof metadata?.["code"] === "string" ? metadata["code"] as "available" | "unsupported" : "available",
+      safeToDisplay: true,
+      lastCheckedAt: Date.now(),
+    },
+  };
+}
+
+function snapshotRealClipboardState(payload: ClipboardPayload): DesktopClipboardState {
+  const preview = payload.text.length > 80 ? payload.text.slice(0, 80) + "\u2026" : payload.text;
+
+  return {
+    kind: "clipboard",
+    title: i18n.t("aggregation.clipboardUpdated"),
+    subtitle: i18n.t("aggregation.recentMessage"),
+    source: "system",
+    copiedText: preview,
+    detail: payload.sourceApp || i18n.t("aggregation.notificationCenter"),
+    accent: "blue",
+    sourceHealth: {
+      kind: "clipboard",
+      quality: "native",
+      code: "available",
+      safeToDisplay: true,
+      lastCheckedAt: payload.copiedAt,
+    },
+  };
+}
+
+function snapshotRealFocusState(payload: FocusAssistPayload): DesktopFocusState {
+  const profileLabel = payload.profile
+    ? payload.profile.replace("Microsoft.Windows.Focus_", "")
+    : "";
+
+  return {
+    kind: "focus",
+    title: i18n.t("aggregation.focusMode"),
+    subtitle: i18n.t("aggregation.systemStatus"),
+    source: "system",
+    sessionLabel: profileLabel
+      ? i18n.t("aggregation.profileModeEnabled", { profile: profileLabel })
+      : i18n.t("aggregation.focusAssistEnabled"),
+    detail: i18n.t("aggregation.doNotDisturb"),
+    accent: "pink",
+    sourceHealth: {
+      kind: "focus",
+      quality: "native",
+      code: "available",
+      safeToDisplay: true,
+      lastCheckedAt: payload.checkedAt,
+    },
   };
 }
 
@@ -106,29 +191,62 @@ function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | Des
 function deriveStateOverrides(hubState: HubStoreState): Partial<DesktopStatusStateMap> {
   const overrides: Partial<DesktopStatusStateMap> = {};
 
+  // --- Music (mock provider) ---
   if (hubState.music) {
     overrides.media = snapshotMusicState(hubState.music);
   }
 
+  // --- Media (real provider) takes priority over mock music ---
+  const mediaEvent = hubState.events.find((event) => event.type === "media");
+  if (mediaEvent && mediaEvent.payload && "playbackStatus" in mediaEvent.payload) {
+    const payload = mediaEvent.payload as MediaSessionPayload;
+    if (payload.available && payload.playbackStatus === "playing") {
+      overrides.media = snapshotRealMediaState(payload, mediaEvent.metadata);
+    }
+  }
+
+  // --- Download (mock/fixture) ---
   const downloadTask = hubState.tasks.find((task) => task.type === "download");
   if (downloadTask) {
     overrides.download = snapshotDownloadTask(downloadTask);
   }
 
+  // --- AI task (mock/fixture) ---
   const aiTask = hubState.tasks.find((task) => task.type === "ai");
   if (aiTask) {
     overrides.update = snapshotAiTask(aiTask);
   }
 
-  const latestNotification = hubState.events.find((event) => event.type === "notification");
-  const notificationState = latestNotification ? snapshotNotificationEvent(latestNotification) : undefined;
-
-  if (notificationState?.kind === "clipboard") {
-    overrides.clipboard = notificationState;
+  // --- Clipboard (real provider) ---
+  if (hubState.clipboard) {
+    overrides.clipboard = snapshotRealClipboardState(hubState.clipboard);
   }
 
-  if (notificationState?.kind === "focus") {
-    overrides.focus = notificationState;
+  // --- Focus (real provider) ---
+  if (hubState.focus && hubState.focus.active) {
+    overrides.focus = snapshotRealFocusState(hubState.focus);
+  }
+
+  // --- Notification (mock provider fallback) ---
+  // Only use mock notification events if no real clipboard/focus data is present
+  if (!overrides.clipboard) {
+    const latestNotification = hubState.events.find(
+      (event) => event.type === "notification" && event.source === "notification",
+    );
+    const notificationState = latestNotification ? snapshotNotificationEvent(latestNotification) : undefined;
+    if (notificationState?.kind === "clipboard") {
+      overrides.clipboard = notificationState;
+    }
+  }
+
+  if (!overrides.focus) {
+    const focusNotification = hubState.events.find(
+      (event) => event.source === "system" && event.metadata?.["focus"] === true,
+    );
+    const focusState = focusNotification ? snapshotNotificationEvent(focusNotification) : undefined;
+    if (focusState?.kind === "focus") {
+      overrides.focus = focusState;
+    }
   }
 
   return overrides;
@@ -137,23 +255,41 @@ function deriveStateOverrides(hubState: HubStoreState): Partial<DesktopStatusSta
 function deriveActiveKinds(hubState: HubStoreState, events: HubEvent[]): DesktopStatusKind[] {
   const activeKinds: DesktopStatusKind[] = [];
 
+  // Music (mock provider)
   if (hubState.music) {
     activeKinds.push("media");
   }
 
+  // Media (real provider)
+  if (events.some((event) => {
+    if (event.type !== "media") return false;
+    const payload = event.payload;
+    return payload && "playbackStatus" in payload && (payload as MediaSessionPayload).playbackStatus === "playing";
+  })) {
+    activeKinds.push("media");
+  }
+
+  // Download
   if (hubState.tasks.some((task) => task.type === "download")) {
     activeKinds.push("download");
   }
 
+  // AI task
   if (hubState.tasks.some((task) => task.type === "ai")) {
     activeKinds.push("update");
   }
 
-  if (events.some((event) => event.type === "notification" && event.source === "notification")) {
+  // Clipboard (real provider or mock notification)
+  if (hubState.clipboard) {
+    activeKinds.push("clipboard");
+  } else if (events.some((event) => event.type === "notification" && event.source === "notification")) {
     activeKinds.push("clipboard");
   }
 
-  if (events.some((event) => event.source === "system" && event.metadata?.["focus"] === true)) {
+  // Focus (real provider or mock)
+  if (hubState.focus && hubState.focus.active) {
+    activeKinds.push("focus");
+  } else if (events.some((event) => event.source === "system" && event.metadata?.["focus"] === true)) {
     activeKinds.push("focus");
   }
 
@@ -185,16 +321,18 @@ export function aggregateDesktopStatusInput(
   const activeKinds = deriveActiveKinds(hubState, events);
   const availableKinds = normalizeAvailableKinds(input.availableKinds);
 
-  // Merge external states (from system monitors: Focus Assist, notifications, etc.)
+  // Merge external states (legacy path: direct system monitor data)
+  // This remains as a fallback for any data that hasn't been migrated
+  // to the unified provider pipeline yet.
   if (input.externalStates) {
     for (const [kind, state] of Object.entries(input.externalStates) as [DesktopStatusKind, DesktopStatusState][]) {
-      if (state) {
+      if (state && !states[kind]) {
         (states as Record<string, unknown>)[kind] = state;
       }
     }
   }
 
-  // Merge external active kinds (deduplicated)
+  // Merge external active kinds (legacy fallback, deduplicated)
   const mergedActiveKinds = input.externalActiveKinds?.length
     ? dedupeKinds([...activeKinds, ...input.externalActiveKinds])
     : activeKinds;

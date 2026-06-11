@@ -6,13 +6,13 @@ export type HubMode =
   | "notification"
   | "multiTask";
 
-export type HubTaskType = "music" | "ai" | "download" | "notification";
+export type HubTaskType = "music" | "ai" | "download" | "notification" | "media" | "clipboard" | "focus" | "system";
 
-export type HubEventSource = "mock" | "system" | "music" | "download" | "ai" | "notification";
+export type HubEventSource = "mock" | "system" | "music" | "download" | "ai" | "notification" | "media" | "clipboard" | "focus";
 
-export type SystemPerformanceMetricId = "cpu" | "memory" | "network";
+export type SystemPerformanceMetricId = "cpu" | "memory" | "download" | "upload";
 
-type SystemPerformanceMetricTone = "blue" | "violet" | "cyan";
+type SystemPerformanceMetricTone = "blue" | "violet" | "cyan" | "emerald";
 
 export type SystemPerformanceMetric = {
   id: SystemPerformanceMetricId;
@@ -30,7 +30,8 @@ export type SystemPerformanceSourceStatus = {
 export type SystemPerformanceSnapshot = {
   cpu: number;
   memory: number;
-  network: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
 };
 
 export type DesktopStatusKind =
@@ -97,6 +98,7 @@ export type DesktopMediaState = DesktopStatusBaseState & {
   artist: string;
   timeLabel: string;
   accent: DesktopStatusAccentTone;
+  playbackStatus?: "playing" | "paused" | "unavailable" | "unsupported";
 };
 
 export type DesktopDownloadState = DesktopStatusBaseState & {
@@ -207,35 +209,8 @@ export type DesktopStatusMenuActionId =
   | "open-settings"
   | "quit";
 
-type DesktopStatusLabels = {
-  metrics: Record<SystemPerformanceMetricId, string>;
-  currentUsage: string;
-  menu: {
-    refreshData: string;
-    alwaysFloat: string;
-    avoidFullscreen: string;
-    lockPosition: string;
-    resetPosition: string;
-    openSettings: string;
-    quit: string;
-  };
-};
-
-export type DesktopStatusMenuAction = {
-  id: DesktopStatusMenuActionId;
-  label: string;
-  kind: "action" | "toggle";
-  preferenceKey?: DesktopStatusPreferenceKey;
-};
-
 export type DesktopStatusPreferencesPayload = {
   preferences: DesktopStatusPreferences;
-};
-
-export type DesktopStatusConfig = {
-  preferences: DesktopStatusPreferences;
-  labels: DesktopStatusLabels;
-  menuActions: DesktopStatusMenuAction[];
 };
 
 export type HubTask = {
@@ -247,6 +222,36 @@ export type HubTask = {
   accent: "pink" | "blue" | "green" | "cyan";
 };
 
+export type MediaSessionPayload = {
+  available: boolean;
+  playbackStatus: "playing" | "paused" | "unavailable" | "unsupported";
+  progress: number;
+  positionMs?: number;
+  durationMs?: number;
+  title?: string;
+  artist?: string;
+};
+
+export type ClipboardPayload = {
+  text: string;
+  sourceApp: string;
+  copiedAt: number;
+};
+
+export type FocusAssistPayload = {
+  active: boolean;
+  profile: string;
+  checkedAt: number;
+};
+
+export type SystemPerformancePayload = {
+  cpu: number;
+  memory: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+  quality: "live" | "fallback" | "stale" | "unavailable";
+};
+
 export type HubEvent = {
   id: string;
   type: HubTaskType;
@@ -254,7 +259,7 @@ export type HubEvent = {
   createdAt: number;
   expiresAt?: number;
   progress?: number;
-  payload?: MusicState | NotificationState | HubTask;
+  payload?: MusicState | NotificationState | HubTask | MediaSessionPayload | ClipboardPayload | FocusAssistPayload | SystemPerformancePayload;
   metadata?: Record<string, unknown>;
 };
 
@@ -264,6 +269,9 @@ export type HubStoreState = {
   tasks: HubTask[];
   notification?: NotificationState;
   music?: MusicState;
+  clipboard?: ClipboardPayload;
+  focus?: FocusAssistPayload;
+  systemPerformance?: SystemPerformancePayload;
 };
 
 export type MusicState = {

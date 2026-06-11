@@ -114,6 +114,8 @@ async function testDesktopStatusRuntimeCanStartFromResidentProductInput() {
 async function testDesktopStatusRuntimeSeedsBusAndRefreshesFromFixtureSource() {
   const runtime = createDesktopStatusRuntime({
     invoke: async () => fixtureEvents,
+    fallbackEvents: mockHubEvents,
+    loadFixtureEvents: true,
   });
 
   const initialSnapshot = runtime.getSnapshot();
@@ -222,6 +224,7 @@ async function testDesktopStatusRuntimeAcceptsPushListenerUpdates() {
 async function testDesktopStatusRuntimeMarksFallbackAsStaleAfterSuccessfulNativeRefresh() {
   let invokeCalls = 0;
   const runtime = createDesktopStatusRuntime({
+    loadFixtureEvents: true,
     invoke: async () => {
       invokeCalls += 1;
       if (invokeCalls === 1) {

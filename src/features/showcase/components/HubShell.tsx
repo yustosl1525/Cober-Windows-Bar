@@ -24,7 +24,7 @@ export function HubShell({ mode, tasks = [], music, notification }: HubShellProp
   const multiTaskDisplay = tasks.length > 0 ? tasks : multiTasks;
 
   return (
-    <GlassPanel className="inline-flex rounded-[32px] border border-white/18 bg-transparent p-0 shadow-none">
+    <GlassPanel className="inline-flex rounded-[32px] bg-transparent p-0 shadow-none">
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}

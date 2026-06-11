@@ -2,9 +2,7 @@ import { listen, type Event, type UnlistenFn } from "@tauri-apps/api/event";
 import { isRecord } from "../shared/runtimeGuards";
 import type { DesktopStatusMenuActionId, DesktopStatusPreferencesPayload } from "../types/hub";
 
-export const STATUS_CENTER_MENU_ACTION_EVENT = "status-center://menu-action";
 export const STATUS_CENTER_SETTINGS_EVENT = "status-center://settings";
-export const STATUS_CENTER_OPEN_SETTINGS_EVENT = "status-center://open-settings";
 
 export type StatusCenterMenuAction =
   | "refresh-data"
@@ -21,9 +19,6 @@ export type StatusCenterMenuActionPayload = {
 };
 
 export type StatusCenterSettingsPayload = DesktopStatusPreferencesPayload;
-export type StatusCenterOpenSettingsPayload = {
-  source: "menu" | "tray" | "invoke";
-};
 
 export function parseStatusCenterMenuActionPayload(
   value: unknown,
@@ -43,17 +38,16 @@ export function parseStatusCenterMenuActionPayload(
   };
 }
 
-export async function listenStatusCenterMenuActions(
-  handler: (payload: StatusCenterMenuActionPayload, event: Event<unknown>) => void | Promise<void>,
-): Promise<UnlistenFn> {
-  return listen(STATUS_CENTER_MENU_ACTION_EVENT, async (event) => {
-    const payload = parseStatusCenterMenuActionPayload(event.payload);
-    if (!payload) {
-      return;
-    }
+export function parseStatusCenterSettingsPayload(
+  value: unknown,
+): StatusCenterSettingsPayload | undefined {
+  if (!isRecord(value) || !isDesktopStatusPreferences(value.preferences)) {
+    return undefined;
+  }
 
-    await handler(payload, event);
-  });
+  return {
+    preferences: { ...value.preferences },
+  };
 }
 
 export async function listenStatusCenterSettings(
@@ -67,45 +61,6 @@ export async function listenStatusCenterSettings(
 
     await handler(payload, event);
   });
-}
-
-export async function listenStatusCenterOpenSettings(
-  handler: (payload: StatusCenterOpenSettingsPayload, event: Event<unknown>) => void | Promise<void>,
-): Promise<UnlistenFn> {
-  return listen(STATUS_CENTER_OPEN_SETTINGS_EVENT, async (event) => {
-    const payload = parseStatusCenterOpenSettingsPayload(event.payload);
-    if (!payload) {
-      return;
-    }
-
-    await handler(payload, event);
-  });
-}
-
-export function parseStatusCenterSettingsPayload(
-  value: unknown,
-): StatusCenterSettingsPayload | undefined {
-  if (!isRecord(value) || !isDesktopStatusPreferences(value.preferences)) {
-    return undefined;
-  }
-
-  return {
-    preferences: { ...value.preferences },
-  };
-}
-
-export function parseStatusCenterOpenSettingsPayload(
-  value: unknown,
-): StatusCenterOpenSettingsPayload | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  if (value.source !== "menu" && value.source !== "tray" && value.source !== "invoke") {
-    return undefined;
-  }
-
-  return { source: value.source };
 }
 
 function isStatusCenterMenuAction(value: unknown): value is StatusCenterMenuAction {

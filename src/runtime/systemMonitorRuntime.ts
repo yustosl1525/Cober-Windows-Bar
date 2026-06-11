@@ -6,6 +6,8 @@ const NOTIFICATION_SUMMARY_COMMAND = "get_notification_summary";
 
 export const FOCUS_ASSIST_CHANGED_EVENT = "status-center://focus-assist-changed";
 export const NOTIFICATIONS_CHANGED_EVENT = "status-center://notifications-changed";
+export const CLIPBOARD_CHANGED_EVENT = "status-center://clipboard-changed";
+export const MEDIA_SESSION_CHANGED_EVENT = "status-center://media-session-changed";
 
 export type FocusAssistState = {
   active: boolean;
@@ -15,6 +17,22 @@ export type FocusAssistState = {
 
 export type NotificationSummary = {
   focusAssistActive: boolean;
+  checkedAt: number;
+};
+
+export type ClipboardChangedPayload = {
+  text: string;
+  sourceApp: string;
+  copiedAt: number;
+};
+
+export type MediaSessionChangedPayload = {
+  available: boolean;
+  playbackStatus: "playing" | "paused" | "unavailable" | "unsupported";
+  progress: number;
+  positionMs?: number;
+  durationMs?: number;
+  code: string;
   checkedAt: number;
 };
 
@@ -75,6 +93,22 @@ export function onNotificationsChanged(
   handler: (summary: NotificationSummary) => void,
 ): Promise<() => void> {
   return listen<NotificationSummary>(NOTIFICATIONS_CHANGED_EVENT, (event) => {
+    handler(event.payload);
+  });
+}
+
+export function onClipboardChanged(
+  handler: (content: ClipboardChangedPayload) => void,
+): Promise<() => void> {
+  return listen<ClipboardChangedPayload>(CLIPBOARD_CHANGED_EVENT, (event) => {
+    handler(event.payload);
+  });
+}
+
+export function onMediaSessionChanged(
+  handler: (status: MediaSessionChangedPayload) => void,
+): Promise<() => void> {
+  return listen<MediaSessionChangedPayload>(MEDIA_SESSION_CHANGED_EVENT, (event) => {
     handler(event.payload);
   });
 }

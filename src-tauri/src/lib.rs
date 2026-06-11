@@ -17,14 +17,31 @@ use tauri_plugin_autostart::MacosLauncher;
 #[cfg(windows)]
 use windows_sys::Win32::{
   Foundation::{HWND, RECT},
-  Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST},
-  UI::WindowsAndMessaging::{
-    GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindowLongW,
-    GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, SetWindowLongW, SetWindowPos,
-    GWL_EXSTYLE, HWND_BOTTOM, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-    SWP_SHOWWINDOW, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+  Graphics::{
+    Dwm::{
+      DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE,
+      DWMWCP_DONOTROUND,
+    },
+    Gdi::{
+      GetMonitorInfoW, MonitorFromWindow, MONITORINFO,
+      MONITOR_DEFAULTTONEAREST,
+    },
+  },
+  UI::{
+    WindowsAndMessaging::{
+      GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindowLongW,
+      GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, SetWindowLongW, SetWindowPos,
+      GWL_EXSTYLE, HWND_BOTTOM, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+      SWP_SHOWWINDOW, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+    },
   },
 };
+
+// DWMWA_SYSTEMBACKDROP_TYPE — disables Mica/Acrylic backdrop (Win11 22H2+)
+#[cfg(windows)]
+const DWMWA_SYSTEMBACKDROP_TYPE: u32 = 38;
+#[cfg(windows)]
+const DWMSBT_NONE: u32 = 1;
 
 #[cfg(windows)]
 use windows::Media::Control::{
@@ -41,7 +58,9 @@ const STATUS_CENTER_OPEN_SETTINGS_EVENT: &str = "status-center://open-settings";
 const STATUS_CENTER_CLIPBOARD_EVENT: &str = "status-center://clipboard-changed";
 const STATUS_CENTER_FOCUS_ASSIST_EVENT: &str = "status-center://focus-assist-changed";
 const STATUS_CENTER_NOTIFICATION_EVENT: &str = "status-center://notifications-changed";
+const STATUS_CENTER_MEDIA_SESSION_EVENT: &str = "status-center://media-session-changed";
 const FOCUS_ASSIST_MONITOR_INTERVAL: Duration = Duration::from_secs(2);
+const MEDIA_SESSION_MONITOR_INTERVAL: Duration = Duration::from_millis(1_500);
 const TRAY_ID: &str = "status-center-tray";
 const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
@@ -55,8 +74,8 @@ const TRAY_MENU_SHOW_STATUS_CENTER: &str = "tray-show-status-center";
 const TRAY_MENU_OPEN_SETTINGS: &str = "tray-open-settings";
 const GLOBAL_SHORTCUT_RECALL: &str = "Alt+Shift+Space";
 const HUB_EVENT_FIXTURE_INTERVAL: Duration = Duration::from_secs(5);
-const STATUS_WINDOW_CONFIGURED_WIDTH: u16 = 315;
-const STATUS_WINDOW_CONFIGURED_HEIGHT: u16 = 80;
+const STATUS_WINDOW_CONFIGURED_WIDTH: u16 = 303;
+const STATUS_WINDOW_CONFIGURED_HEIGHT: u16 = 64;
 
 static HUB_EVENT_FIXTURE_TICK: AtomicU64 = AtomicU64::new(0);
 
@@ -105,17 +124,20 @@ struct StatusCenterMenuItems<R: tauri::Runtime> {
 }
 
 struct NetworkSample {
-  total_bytes: u64,
+  received_bytes: u64,
+  transmitted_bytes: u64,
   sampled_at: std::time::Instant,
 }
 
 struct SystemPerformanceCache {
+  networks: Option<Networks>,
   network_sample: Option<NetworkSample>,
 }
 
 impl Default for SystemPerformanceCache {
   fn default() -> Self {
     Self {
+      networks: None,
       network_sample: None,
     }
   }
@@ -147,6 +169,8 @@ struct HubEventFixture {
   event_type: String,
   source: String,
   created_at: u64,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  expires_at: Option<u64>,
   progress: Option<u8>,
   payload: Value,
   metadata: Value,
@@ -215,7 +239,8 @@ struct ConfiguredShellWindow {
 struct SystemPerformanceSnapshot {
   cpu: u8,
   memory: u8,
-  network: u8,
+  download_speed: u64,
+  upload_speed: u64,
 }
 
 #[derive(Clone, Serialize)]
@@ -574,9 +599,9 @@ async fn get_system_performance(
   .await
   .map_err(|e| format!("spawn_blocking failed: {e}"))?;
 
-  let network = sample_network_percent(&state);
+  let (download_speed, upload_speed) = sample_network_speeds(&state);
 
-  Ok(SystemPerformanceSnapshot { cpu, memory, network })
+  Ok(SystemPerformanceSnapshot { cpu, memory, download_speed, upload_speed })
 }
 
 #[tauri::command]
@@ -741,44 +766,43 @@ fn quit_status_center(
   Ok(())
 }
 
-/// Normalizes network throughput against a 1 Gbps reference bandwidth (~125 MB/s).
-/// Uses delta-based rate calculation between invocations for accurate throughput measurement.
-fn sample_network_percent(state: &SharedDesktopProductState<tauri::Wry>) -> u8 {
-  let mut networks = Networks::new_with_refreshed_list();
-  networks.refresh();
-
-  let total_bytes: u64 = networks
-    .values()
-    .map(|data| data.received() + data.transmitted())
-    .sum();
+/// Calculates download and upload speeds in bytes per second using delta-based
+/// rate measurement between invocations. Reuses the same Networks instance
+/// across calls so that cumulative counter deltas are meaningful.
+fn sample_network_speeds(state: &SharedDesktopProductState<tauri::Wry>) -> (u64, u64) {
   let now = std::time::Instant::now();
-
-  let mut percent: u8 = 0;
+  let mut download_bps: u64 = 0;
+  let mut upload_bps: u64 = 0;
 
   if let Ok(mut guard) = state.lock() {
     let cache = &mut guard.perf_cache;
+
+    // Lazily initialize the Networks instance on first call
+    let networks = cache.networks.get_or_insert_with(Networks::new_with_refreshed_list);
+    networks.refresh();
+
+    let received_bytes: u64 = networks.values().map(|data| data.received()).sum();
+    let transmitted_bytes: u64 = networks.values().map(|data| data.transmitted()).sum();
 
     if let Some(prev) = &cache.network_sample {
       let elapsed = now.duration_since(prev.sampled_at).as_secs_f64();
 
       if elapsed > 0.05 {
-        let delta_bytes = total_bytes.saturating_sub(prev.total_bytes);
-        let bytes_per_second = delta_bytes as f64 / elapsed;
-        // Normalize against 1 Gbps (125 MB/s) reference bandwidth
-        percent = clamp_percent((bytes_per_second / 125_000_000.0) * 100.0);
+        let delta_rx = received_bytes.saturating_sub(prev.received_bytes);
+        let delta_tx = transmitted_bytes.saturating_sub(prev.transmitted_bytes);
+        download_bps = (delta_rx as f64 / elapsed) as u64;
+        upload_bps = (delta_tx as f64 / elapsed) as u64;
       }
-      // else: too short interval, keep percent at 0 to avoid spikes
     }
-    // else: first sample, no previous data — keep percent at 0
 
     cache.network_sample = Some(NetworkSample {
-      total_bytes,
+      received_bytes,
+      transmitted_bytes,
       sampled_at: now,
     });
   }
-  // else: lock poisoned, fall back to 0
 
-  percent
+  (download_bps, upload_bps)
 }
 
 fn get_media_provider_capability(last_checked_at: u64) -> GuestProviderCapability {
@@ -890,6 +914,7 @@ fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
       event_type: "ai".into(),
       source: "mock".into(),
       created_at: now_ms.saturating_sub(1_500),
+      expires_at: Some(now_ms + 15_000),
       progress: Some(ai_progress),
       payload: json!({
         "id": "tauri-fixture-ai-task",
@@ -912,6 +937,7 @@ fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
       event_type: "download".into(),
       source: "mock".into(),
       created_at: now_ms.saturating_sub(800),
+      expires_at: Some(now_ms + 15_000),
       progress: Some(download_progress),
       payload: json!({
         "id": "tauri-fixture-download-task",
@@ -934,6 +960,7 @@ fn build_hub_event_fixtures(tick: u64) -> Vec<HubEventFixture> {
       event_type: "notification".into(),
       source: "system".into(),
       created_at: now_ms,
+      expires_at: Some(now_ms + 5_000),
       progress: None,
       payload: json!({
         "id": "tauri-fixture-notification-task",
@@ -1147,6 +1174,76 @@ fn status_window_hwnd(window: &WebviewWindow) -> Result<HWND, String> {
     .map(|hwnd| hwnd.0 as HWND)
     .map_err(|error| error.to_string())
 }
+
+/// Core logic to strip all DWM shadow artifacts from the transparent borderless window.
+/// Called both immediately at startup and again after a delay to catch late resets
+/// by WebView2/DWM during window initialization.
+#[cfg(windows)]
+fn apply_shadow_suppression(hwnd: HWND) {
+  unsafe {
+    // NOTE: We deliberately do NOT set DWMWA_NCRENDERING_POLICY = DWMNCRP_DISABLED.
+    // That attribute FORCIBLY DISABLES DWM non-client rendering for the window,
+    // which makes Windows fall back to the *classic* (non-DWM) window frame —
+    // producing the black border lines and the Win7-style classic title-bar
+    // close button. The window is already borderless/transparent via Tauri
+    // (decorations:false, transparent:true, shadow:false); no NC suppression is
+    // needed or wanted.
+
+    // 1. Disable Win11 rounded corners so DWM does not add its own corner shadow.
+    let corner_pref = DWMWCP_DONOTROUND as i32;
+    let _ = DwmSetWindowAttribute(
+      hwnd,
+      DWMWA_WINDOW_CORNER_PREFERENCE as u32,
+      &corner_pref as *const i32 as *const _,
+      std::mem::size_of::<i32>() as u32,
+    );
+
+    // 2. Disable system backdrop type (Mica/Acrylic) that can cause shadow
+    let backdrop = DWMSBT_NONE as i32;
+    let _ = DwmSetWindowAttribute(
+      hwnd,
+      DWMWA_SYSTEMBACKDROP_TYPE as u32,
+      &backdrop as *const i32 as *const _,
+      std::mem::size_of::<i32>() as u32,
+    );
+
+    // NOTE: We deliberately do NOT call SetWindowCompositionAttribute with an
+    // ACCENT_* policy here. The accent policy applies over the full *rectangular*
+    // window, including the four corners that sit OUTSIDE the pill's CSS
+    // border-radius. With a transparent gradient color (alpha = 0), many Windows
+    // builds render those corner areas as opaque WHITE instead of transparent —
+    // which is exactly the residual white blocks seen at the four corners.
+    // Letting WebView2's transparent surface + anti-aliased CSS border-radius
+    // composite the corners via DirectComposition yields true transparency.
+  }
+}
+
+#[cfg(windows)]
+fn disable_dwm_window_shadow(window: &WebviewWindow, shutdown: Arc<AtomicBool>) {
+  if let Ok(hwnd) = status_window_hwnd(window) {
+    // The window is sized 303x64 to exactly match the pill. The rounded pill
+    // shape is drawn by the WebView2 transparent surface with anti-aliased CSS
+    // border-radius — DirectComposition composites the corners to true
+    // transparency. We must NOT use SetWindowRgn here: a GDI region clip has
+    // hard (aliased) corners that do not coincide with the smooth CSS corners,
+    // leaving 1-2px residual artifacts at the four corners.
+    apply_shadow_suppression(hwnd);
+
+    // Reapply after delays to catch WebView2/DWM late initialization resets.
+    let hwnd_raw = hwnd as isize;
+    std::thread::spawn(move || {
+      std::thread::sleep(std::time::Duration::from_millis(500));
+      if shutdown.load(Ordering::Relaxed) { return; }
+      apply_shadow_suppression(hwnd_raw as HWND);
+      std::thread::sleep(std::time::Duration::from_millis(1500));
+      if shutdown.load(Ordering::Relaxed) { return; }
+      apply_shadow_suppression(hwnd_raw as HWND);
+    });
+  }
+}
+
+#[cfg(not(windows))]
+fn disable_dwm_window_shadow(_window: &WebviewWindow, _shutdown: Arc<AtomicBool>) {}
 
 #[cfg(not(windows))]
 fn foreground_window_is_fullscreen() -> bool {
@@ -1418,6 +1515,7 @@ pub fn run() {
     Arc::new(Mutex::new(DesktopProductState::default()));
   let setup_state = Arc::clone(&desktop_product_state);
   let app_shutdown: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+  let shadow_shutdown = Arc::clone(&app_shutdown);
 
   tauri::Builder::default()
     .manage(desktop_product_state.clone())
@@ -1485,6 +1583,23 @@ pub fn run() {
       }
 
       if let Some(window) = app.get_webview_window(STATUS_WINDOW_LABEL) {
+        // Suppress Windows DWM shadow on the transparent borderless window
+        disable_dwm_window_shadow(&window, shadow_shutdown);
+
+        // Position window at bottom-right of primary monitor work area
+        if let Ok(monitors) = window.available_monitors() {
+          if let Some(monitor) = monitors.first() {
+            let work_area = monitor.work_area();
+            let scale = monitor.scale_factor();
+            let window_width = ((303.0 * scale) as i32).min(i32::MAX);
+            let window_height = ((64.0 * scale) as i32).min(i32::MAX);
+            let margin = (STATUS_WINDOW_EDGE_MARGIN as f64 * scale) as i32;
+            let x = work_area.position.x + work_area.size.width as i32 - window_width - margin;
+            let y = work_area.position.y + work_area.size.height as i32 - window_height - margin;
+            let _ = window.set_position(PhysicalPosition::new(x, y));
+          }
+        }
+
         let app_handle = app.handle().clone();
         window.on_window_event(move |event| {
           if let WindowEvent::CloseRequested { api, .. } = event {
@@ -1556,6 +1671,33 @@ pub fn run() {
                 checked_at: unix_time_ms(),
               };
               let _ = monitor_app_handle.emit(STATUS_CENTER_NOTIFICATION_EVENT, &summary);
+            }
+          }
+        });
+      }
+
+      // Start media session monitor (polls Windows GSMTC, emits on playback state changes)
+      {
+        let media_app_handle = app.handle().clone();
+        let media_shutdown = Arc::clone(&app_shutdown);
+        std::thread::spawn(move || {
+          let mut last_available = false;
+          let mut last_playback_status: &str = "";
+          let mut last_progress: u8 = 255; // sentinel: no previous value
+          loop {
+            std::thread::sleep(MEDIA_SESSION_MONITOR_INTERVAL);
+            if media_shutdown.load(Ordering::Relaxed) {
+              break;
+            }
+            let status = read_media_session_status();
+            let changed = status.available != last_available
+              || status.playback_status != last_playback_status
+              || status.progress.abs_diff(last_progress) > 0;
+            if changed {
+              last_available = status.available;
+              last_playback_status = status.playback_status;
+              last_progress = status.progress;
+              let _ = media_app_handle.emit(STATUS_CENTER_MEDIA_SESSION_EVENT, &status);
             }
           }
         });

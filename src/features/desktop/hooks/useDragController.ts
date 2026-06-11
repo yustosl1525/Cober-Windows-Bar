@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { correctStatusWindowPosition } from "../../../runtime/statusWindowRuntime";
 import { getTauriInvoke } from "../../../runtime/tauriRuntime";
 
@@ -14,7 +14,7 @@ export function useDragController(): UseDragControllerResult {
   const isDraggingRef = useRef(false);
   const lockPositionRef = useRef(false);
 
-  async function handlePointerDown(event: ReactPointerEvent<HTMLElement>) {
+  const handlePointerDown = useCallback(async (event: ReactPointerEvent<HTMLElement>) => {
     if (lockPositionRef.current || event.button !== 0) {
       return;
     }
@@ -40,7 +40,7 @@ export function useDragController(): UseDragControllerResult {
     if (!started) {
       isDraggingRef.current = false;
     }
-  }
+  }, []);
 
   useEffect(() => {
     function handlePointerUp() {

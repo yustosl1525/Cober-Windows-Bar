@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   correctStatusWindowPosition,
   correctStatusWindowPositionForDisplayChange,
@@ -12,10 +11,9 @@ import {
   type StatusWindowOverlayState,
 } from "../../../runtime/statusWindowRuntime";
 import { getTauriInvoke } from "../../../runtime/tauriRuntime";
+import { getSafeCurrentWindow, type TauriAppWindow } from "../../../shared/tauriWindow";
 
 const OVERLAY_POLICY_MS = 700;
-
-type TauriAppWindow = ReturnType<typeof getCurrentWindow>;
 
 export type UseOverlayPolicyOptions = {
   avoidFullscreen: boolean;
@@ -25,14 +23,6 @@ export type UseOverlayPolicyOptions = {
 export type UseOverlayPolicyResult = {
   overlayStateRef: React.RefObject<StatusWindowOverlayState>;
 };
-
-function getSafeCurrentWindow(): TauriAppWindow | undefined {
-  try {
-    return getCurrentWindow();
-  } catch {
-    return undefined;
-  }
-}
 
 export function useOverlayPolicy({
   avoidFullscreen,

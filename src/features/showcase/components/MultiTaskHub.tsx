@@ -10,13 +10,15 @@ const modeMap: Record<HubTask["type"], ShowcaseFluentMode> = {
   ai: "ai",
   download: "download",
   notification: "notification",
+  media: "music",
+  clipboard: "notification",
+  focus: "notification",
+  system: "notification",
 } as const;
 
 export function MultiTaskHub({ tasks }: MultiTaskHubProps) {
   return (
-    <section className="hub-card-lg relative min-w-[372px] overflow-hidden rounded-[30px] border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(245,243,255,0.44)_100%)]">
-      <div className="pointer-events-none absolute inset-[1px] rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_38%,rgba(255,255,255,0.16)_100%)] opacity-90" />
-
+    <section className="hub-card-lg relative min-w-[372px] overflow-hidden rounded-[30px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(245,243,255,0.44)_100%)]">
       <div className="relative z-[1] space-y-2.5">
         {tasks.map((task) => (
           <div

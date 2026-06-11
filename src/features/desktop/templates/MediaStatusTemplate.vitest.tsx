@@ -23,7 +23,8 @@ describe("MediaStatusTemplate", () => {
     render(<MediaStatusTemplate state={state} />);
 
     expect(screen.getByLabelText("Previous")).toBeInTheDocument();
-    expect(screen.getByLabelText("Play/Pause")).toBeInTheDocument();
+    // playbackStatus is "playing" by default → shows Pause button
+    expect(screen.getByLabelText("Pause")).toBeInTheDocument();
     expect(screen.getByLabelText("Next")).toBeInTheDocument();
   });
 
@@ -43,7 +44,7 @@ describe("MediaStatusTemplate", () => {
     const state = mockMediaState();
     render(<MediaStatusTemplate state={state} />);
 
-    fireEvent.click(screen.getByLabelText("Play/Pause"));
+    fireEvent.click(screen.getByLabelText("Pause"));
     expect(mockSend).toHaveBeenCalledWith("play-pause");
 
     fireEvent.click(screen.getByLabelText("Previous"));
@@ -51,6 +52,17 @@ describe("MediaStatusTemplate", () => {
 
     fireEvent.click(screen.getByLabelText("Next"));
     expect(mockSend).toHaveBeenCalledWith("next");
+  });
+
+  it("shows Pause icon when playing and Play icon when paused", () => {
+    const playingState = mockMediaState({ playbackStatus: "playing" });
+    const { unmount } = render(<MediaStatusTemplate state={playingState} />);
+    expect(screen.getByLabelText("Pause")).toBeInTheDocument();
+    unmount();
+
+    const pausedState = mockMediaState({ playbackStatus: "paused" });
+    render(<MediaStatusTemplate state={pausedState} />);
+    expect(screen.getByLabelText("Play")).toBeInTheDocument();
   });
 
   it("shows the source health indicator", () => {

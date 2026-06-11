@@ -4,7 +4,8 @@ import type { HubEvent, HubTask, MusicState, NotificationState, ShowcaseStep, Sy
 export const systemPerformanceMetrics: SystemPerformanceMetric[] = createSystemPerformanceMetricSnapshot({
   cpu: 23,
   memory: 68,
-  network: 56,
+  downloadSpeed: 2_457_600,
+  uploadSpeed: 512_000,
 });
 
 export const musicState: MusicState = {
@@ -60,7 +61,7 @@ export const showcaseSteps: ShowcaseStep[] = [
   { id: "multi", mode: "multiTask", label: "6. Multi-task stack", caption: "Expanded" },
 ];
 
-const demoStart = Date.UTC(2026, 5, 6, 8, 20, 0);
+const demoStart = Date.now();
 
 export const mockHubEvents: HubEvent[] = [
   {
@@ -68,6 +69,7 @@ export const mockHubEvents: HubEvent[] = [
     type: "music",
     source: "mock",
     createdAt: demoStart,
+    expiresAt: demoStart + 120_000,
     progress: musicState.progress,
     payload: musicState,
   },
@@ -76,6 +78,7 @@ export const mockHubEvents: HubEvent[] = [
     type: "ai",
     source: "mock",
     createdAt: demoStart + 1000,
+    expiresAt: demoStart + 120_000,
     progress: aiTask.progress,
     payload: aiTask,
   },
@@ -84,6 +87,7 @@ export const mockHubEvents: HubEvent[] = [
     type: "download",
     source: "mock",
     createdAt: demoStart + 2000,
+    expiresAt: demoStart + 120_000,
     progress: downloadTask.progress,
     payload: downloadTask,
   },
@@ -92,7 +96,7 @@ export const mockHubEvents: HubEvent[] = [
     type: "notification",
     source: "mock",
     createdAt: demoStart + 3000,
-    expiresAt: demoStart + 6000,
+    expiresAt: demoStart + 30_000,
     payload: notificationState,
   },
 ];

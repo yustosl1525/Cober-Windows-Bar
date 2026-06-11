@@ -3,8 +3,7 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "copy": "Copy",
-    "copied": "Copied",
-    "statusIndicators": "Status indicators"
+    "copied": "Copied"
   },
   "shell": {
     "ariaLabel": "Cober Windows Status Center"
@@ -12,7 +11,7 @@
   "template": {
     "resident": {
       "label": "Resident",
-      "description": "Default view showing CPU, memory, and network metrics.",
+      "description": "Default view showing CPU, memory, download and upload speeds.",
       "eyebrow": "Resident"
     },
     "media": {
@@ -47,18 +46,9 @@
   "metrics": {
     "cpu": "CPU",
     "memory": "Memory",
-    "network": "Network",
-    "currentUsage": "Current usage",
+    "download": "Download",
+    "upload": "Upload",
     "usageRate": "{{label}} usage {{value}}%"
-  },
-  "menu": {
-    "refreshData": "Refresh data",
-    "alwaysFloat": "Always float",
-    "avoidFullscreen": "Avoid fullscreen",
-    "lockPosition": "Lock position",
-    "resetPosition": "Reset position",
-    "openSettings": "Open settings",
-    "quit": "Quit"
   },
   "states": {
     "resident": {
@@ -153,6 +143,7 @@
     "inProgress": "In Progress",
     "systemTaskProcessing": "System task processing",
     "desktopNotification": "Desktop Notification",
+    "clipboardUpdated": "Copied",
     "recentMessage": "Recent Message",
     "newNotificationReceived": "New notification received",
     "notificationCenter": "Notification Center",
@@ -175,6 +166,8 @@
   },
   "media": {
     "previous": "Previous",
+    "play": "Play",
+    "pause": "Pause",
     "playPause": "Play/Pause",
     "next": "Next"
   },

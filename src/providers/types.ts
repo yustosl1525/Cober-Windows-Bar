@@ -15,7 +15,7 @@ export type HubProviderStatus = {
   health: HubProviderHealth;
 };
 
-export type HubProviderKind = "music" | "ai" | "download" | "notification";
+export type HubProviderKind = "music" | "ai" | "download" | "notification" | "media" | "clipboard" | "focus" | "system";
 
 export type HubProviderMetadata = {
   id: string;
@@ -28,7 +28,7 @@ export type HubProviderMetadata = {
 export type HubProviderCapability = {
   id: HubProviderKind;
   kind: HubProviderKind;
-  origin: "mock" | "native";
+  origin: "mock" | "native" | "real";
   support: "available" | "unsupported" | "preflight";
 };
 

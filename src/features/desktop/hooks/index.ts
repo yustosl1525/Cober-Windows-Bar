@@ -3,5 +3,4 @@ export { useDesktopStatusRuntime } from "./useDesktopStatusRuntime";
 export { useDragController } from "./useDragController";
 export { useOverlayPolicy } from "./useOverlayPolicy";
 export { usePreferences } from "./usePreferences";
-export { useSystemMonitors } from "./useSystemMonitors";
 export { useSystemPerformance } from "./useSystemPerformance";
