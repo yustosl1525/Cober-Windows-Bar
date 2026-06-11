@@ -100,6 +100,8 @@ export type TauriMediaSessionStatus = {
   progress: number;
   positionMs?: number;
   durationMs?: number;
+  title?: string;
+  artist?: string;
   code: "available" | "not-playing" | "unsupported" | "provider-failed";
   checkedAt: number;
 };
@@ -669,6 +671,8 @@ function parseMediaSessionStatus(value: unknown): TauriMediaSessionStatus | unde
 
   const positionMs = isFiniteNumber(value.positionMs) ? value.positionMs : undefined;
   const durationMs = isFiniteNumber(value.durationMs) ? value.durationMs : undefined;
+  const title = typeof value.title === "string" ? value.title : undefined;
+  const artist = typeof value.artist === "string" ? value.artist : undefined;
 
   return {
     available: value.available,
@@ -676,6 +680,8 @@ function parseMediaSessionStatus(value: unknown): TauriMediaSessionStatus | unde
     progress: Math.max(0, Math.min(100, Math.round(value.progress))),
     positionMs,
     durationMs,
+    title,
+    artist,
     code: value.code,
     checkedAt: value.checkedAt,
   };
