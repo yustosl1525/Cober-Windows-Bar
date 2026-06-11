@@ -1,8 +1,11 @@
 import { strict as assert } from "node:assert";
-import i18n from "../i18n";
+import i18nInstance from "../i18n";
 
-// Set language BEFORE any module that calls i18n.t() at load time
-i18n.changeLanguage("zh-CN");
+// Set language synchronously BEFORE importing modules that call i18n.t()
+// at module scope (desktopStatusConfig.ts calls i18n.t() in its top-level code).
+// changeLanguage() is async and the Promise may not resolve by the time those
+// modules load, so we set the language on the i18n instance directly.
+i18nInstance.language = "zh-CN";
 
 import {
   getDesktopStatusTemplateDescriptors,
