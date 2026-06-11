@@ -3,39 +3,44 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ClipboardStatusTemplate } from "./ClipboardStatusTemplate";
 import { mockClipboardState } from "../../../test/fixtures";
 
-vi.mock("../../../runtime/mediaControlRuntime", () => ({
-  setClipboardContent: vi.fn().mockResolvedValue(true),
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("ClipboardStatusTemplate", () => {
-  it("renders title, subtitle, and copied text", () => {
+  it("renders title and copied text", () => {
     const state = mockClipboardState();
     render(<ClipboardStatusTemplate state={state} />);
 
     expect(screen.getByText("Copied Content")).toBeInTheDocument();
-    expect(screen.getByText("Clipboard Update")).toBeInTheDocument();
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();
-    expect(screen.getByText("From browser")).toBeInTheDocument();
   });
 
-  it("shows a Copy button", () => {
+  it("shows an Open in browser button for URL content", () => {
     const state = mockClipboardState();
     render(<ClipboardStatusTemplate state={state} />);
 
-    const copyButton = screen.getByRole("button", { name: /copy/i });
-    expect(copyButton).toBeInTheDocument();
+    const openButton = screen.getByRole("button", { name: /open in browser/i });
+    expect(openButton).toBeInTheDocument();
   });
 
-  it("calls setClipboardContent when Copy is clicked", async () => {
-    const { setClipboardContent } = await import("../../../runtime/mediaControlRuntime");
-    const mockSet = vi.mocked(setClipboardContent);
-    mockSet.mockClear();
+  it("calls invoke with the URL when Open in browser is clicked", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const mockInvoke = vi.mocked(invoke);
+    mockInvoke.mockClear();
 
+    const state = mockClipboardState();
+    render(<ClipboardStatusTemplate state={state} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open in browser/i }));
+    expect(mockInvoke).toHaveBeenCalledWith("open_url_in_browser", { url: "https://github.com/example" });
+  });
+
+  it("hides the Open in browser button for non-URL content", () => {
     const state = mockClipboardState({ copiedText: "hello world" });
     render(<ClipboardStatusTemplate state={state} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /copy/i }));
-    expect(mockSet).toHaveBeenCalledWith("hello world");
+    expect(screen.queryByRole("button", { name: /open in browser/i })).not.toBeInTheDocument();
   });
 
   it("shows source health indicator with app-owned quality", () => {
