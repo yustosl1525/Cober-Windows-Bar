@@ -80,6 +80,12 @@ export function createProviderManager(
     registry,
 
     start() {
+      // Disconnect any existing connections first to prevent accumulation
+      for (const connection of connections) {
+        connection.disconnect();
+      }
+      connections.length = 0;
+
       for (const record of registry.list()) {
         const provider = providerInstances.get(record.id);
         if (!provider) {

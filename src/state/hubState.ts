@@ -1,4 +1,4 @@
-import { clampProgress, snapshotHubEvent } from "../shared/runtimeGuards";
+import { clampProgress, isFiniteNumber, snapshotHubEvent } from "../shared/runtimeGuards";
 import type { ClipboardPayload, FocusAssistPayload, HubEvent, HubMode, HubStoreState, HubTask, SystemPerformancePayload } from "../types/hub";
 
 const taskAccentMap: Record<string, HubTask["accent"]> = {
@@ -8,8 +8,6 @@ const taskAccentMap: Record<string, HubTask["accent"]> = {
   notification: "cyan",
   media: "pink",
 };
-
-const isFiniteNumber = (value: number | undefined) => typeof value === "number" && Number.isFinite(value);
 
 export function getActiveHubEvents(events: HubEvent[], now = Date.now()) {
   return events

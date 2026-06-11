@@ -31,7 +31,7 @@ function cloneStateMap(states: DesktopStatusStateMap): DesktopStatusStateMap {
 }
 
 export function createDesktopStatusStateMap(metrics: SystemPerformanceMetric[]): DesktopStatusStateMap {
-  return cloneStateMap(createDesktopStatusStateTemplates(cloneMetrics(metrics)));
+  return cloneStateMap(createDesktopStatusStateTemplates(metrics));
 }
 
 export function resolveDesktopStatusState(input: DesktopStatusResolverInput): DesktopStatusState {

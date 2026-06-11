@@ -97,34 +97,16 @@ export function parseHubEvent(value: unknown): HubEvent | undefined {
     return undefined;
   }
 
-  const event: HubEvent = {
+  return {
     id: value.id,
     type: value.type,
     source: value.source,
     createdAt: value.createdAt,
+    ...(value.expiresAt !== undefined && { expiresAt: value.expiresAt as number }),
+    ...(value.progress !== undefined && { progress: value.progress as number }),
+    ...(value.payload !== undefined && { payload: value.payload as HubEvent["payload"] }),
+    ...(value.metadata !== undefined && { metadata: value.metadata as Record<string, unknown> }),
   };
-
-  const expiresAt = value.expiresAt as number | undefined;
-  if (expiresAt !== undefined) {
-    event.expiresAt = expiresAt;
-  }
-
-  const progress = value.progress as number | undefined;
-  if (progress !== undefined) {
-    event.progress = progress;
-  }
-
-  const payload = value.payload as HubEvent["payload"];
-  if (payload !== undefined) {
-    event.payload = payload;
-  }
-
-  const metadata = value.metadata as Record<string, unknown> | undefined;
-  if (metadata !== undefined) {
-    event.metadata = metadata;
-  }
-
-  return event;
 }
 
 export function parseHubEvents(values: unknown[]): HubEvent[] {

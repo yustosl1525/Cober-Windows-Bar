@@ -73,7 +73,7 @@ type CreateDesktopStatusRuntimeOptions = {
   tauriListen?: DesktopStatusTauriListen;
 };
 
-const desktopStatusRuntimeCache = new WeakMap<TauriInvoke | typeof globalThis, DesktopStatusRuntime>();
+let cachedDesktopStatusRuntime: DesktopStatusRuntime | undefined;
 
 export async function loadDesktopStatusEvents({
   invoke = getTauriInvoke(),
@@ -281,15 +281,12 @@ export function getDesktopStatusRuntime(options: CreateDesktopStatusRuntimeOptio
     return createDesktopStatusRuntime(options);
   }
 
-  const key = getTauriInvoke() ?? globalThis;
-  const cached = desktopStatusRuntimeCache.get(key);
-
-  if (cached) {
-    return cached;
+  if (cachedDesktopStatusRuntime) {
+    return cachedDesktopStatusRuntime;
   }
 
   const runtime = createDesktopStatusRuntime();
-  desktopStatusRuntimeCache.set(key, runtime);
+  cachedDesktopStatusRuntime = runtime;
   return runtime;
 }
 

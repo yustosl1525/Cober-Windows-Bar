@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::{Networks, System};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Emitter, Manager, PhysicalPosition, Position, WebviewWindow, WindowEvent};
+use tauri::{Emitter, Manager, PhysicalPosition, Position, State, WebviewWindow, WindowEvent};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use tauri_plugin_global_shortcut::ShortcutState;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -29,10 +29,11 @@ use windows_sys::Win32::{
   },
   UI::{
     WindowsAndMessaging::{
-      GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindowLongW,
-      GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, SetWindowLongW, SetWindowPos,
-      GWL_EXSTYLE, HWND_BOTTOM, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-      SWP_SHOWWINDOW, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+      GetClassNameW, GetDesktopWindow, GetForegroundWindow,
+      GetShellWindow, GetWindowLongW, GetWindowRect, GetWindowThreadProcessId, IsWindowVisible,
+      SetWindowLongW, SetWindowPos, GWL_EXSTYLE, HWND_BOTTOM, HWND_TOPMOST,
+      SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, WS_EX_APPWINDOW,
+      WS_EX_TOOLWINDOW,
     },
   },
 };
@@ -48,6 +49,167 @@ use windows::Media::Control::{
   GlobalSystemMediaTransportControlsSessionManager,
   GlobalSystemMediaTransportControlsSessionPlaybackStatus,
 };
+
+#[cfg(windows)]
+use std::sync::mpsc as std_mpsc;
+
+/// Request types sent to the STA media thread.
+/// All WinRT async calls must run on this thread because they require a COM message pump.
+#[cfg(windows)]
+enum MediaRequest {
+  Read(std_mpsc::Sender<MediaSessionStatus>),
+  Action(String, std_mpsc::Sender<Result<MediaControlResult, String>>),
+}
+
+/// Channel sender for routing requests to the STA media thread.
+#[cfg(windows)]
+type MediaRequestSender = Arc<Mutex<std_mpsc::Sender<MediaRequest>>>;
+
+/// Spawns a dedicated MTA (Multi-Threaded Apartment) thread for WinRT media calls.
+///
+/// **Why MTA?**
+/// C++/WinRT's standard pattern uses `init_apartment(multi_threaded)` which maps to
+/// `RoInitialize(RO_INIT_MULTITHREADED)`. On an MTA thread, WinRT async operations
+/// complete via thread pool callbacks WITHOUT requiring a Win32 message pump.
+/// This is simpler and more reliable than STA approaches that need manual message pumping.
+///
+/// Returns `Some(sender)` on Windows, `None` elsewhere.
+#[cfg(windows)]
+fn start_sta_media_thread(
+  app_handle: tauri::AppHandle,
+  shutdown: Arc<AtomicBool>,
+) -> Option<MediaRequestSender> {
+  use windows::Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED};
+
+  let (request_tx, request_rx) = std_mpsc::channel::<MediaRequest>();
+  let sender: MediaRequestSender = Arc::new(Mutex::new(request_tx));
+  let sender_clone = Arc::clone(&sender);
+
+  std::thread::Builder::new()
+    .name("winrt-mta".into())
+    .spawn(move || {
+      // Initialize WinRT in Multi-Threaded Apartment mode.
+      // This is the key fix: C++/WinRT's init_apartment(multi_threaded) uses
+      // RoInitialize(RO_INIT_MULTITHREADED), which allows async operations to
+      // complete via thread pool callbacks WITHOUT requiring a Win32 message pump.
+      // All previous attempts failed because:
+      // - STA + CoInitializeEx: async op never completed (no message pump)
+      // - STA + RoInitialize(RO_INIT_SINGLETHREADED): same issue
+      // - MTA + CoInitializeEx: COM only, not full WinRT runtime
+      unsafe {
+        let _ = RoInitialize(RO_INIT_MULTITHREADED);
+      }
+
+      // --- Monitor state for change detection ---
+      let mut last_available = false;
+      let mut last_playback_status = String::new();
+      let mut last_progress: u8 = 255;
+      let mut last_title = String::new();
+      let mut last_artist = String::new();
+
+      loop {
+        // 1. Handle pending action requests.
+        if let Ok(MediaRequest::Action(action, reply_tx)) = request_rx.try_recv() {
+          let result = execute_media_action(&action);
+          let _ = reply_tx.send(result);
+        }
+
+        // 2. Periodic status read.
+        let status = read_media_session_status();
+
+        let changed = status.available != last_available
+          || status.playback_status != last_playback_status
+          || status.progress.abs_diff(last_progress) > 0
+          || status.title != last_title
+          || status.artist != last_artist;
+
+        if changed {
+          last_available = status.available;
+          last_playback_status = status.playback_status.to_string();
+          last_progress = status.progress;
+          last_title = status.title.clone();
+          last_artist = status.artist.clone();
+          let _ = app_handle.emit(STATUS_CENTER_MEDIA_SESSION_EVENT, &status);
+        }
+
+        // 3. Handle any read request that arrived while we were reading.
+        if let Ok(MediaRequest::Read(reply_tx)) = request_rx.try_recv() {
+          let _ = reply_tx.send(read_media_session_status());
+        }
+
+        // 4. Shutdown check.
+        if shutdown.load(Ordering::Relaxed) {
+          break;
+        }
+
+        // 5. Sleep until next poll cycle.
+        std::thread::sleep(MEDIA_SESSION_MONITOR_INTERVAL);
+      }
+    })
+    .expect("failed to spawn WinRT media thread");
+
+  Some(sender_clone)
+}
+
+#[cfg(not(windows))]
+fn start_sta_media_thread(
+  _app_handle: tauri::AppHandle,
+  _shutdown: Arc<AtomicBool>,
+) -> Option<Arc<Mutex<std::sync::mpsc::Sender<()>>>> {
+  None
+}
+
+/// Execute a media-control action on the STA thread using SetCompleted+message pump.
+#[cfg(windows)]
+fn execute_media_action(action: &str) -> Result<MediaControlResult, String> {
+  let timeout = std::time::Duration::from_secs(5);
+
+  let async_op = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+    .map_err(|e| format!("media manager request failed: {e}"))?;
+  let manager = sta_wait_async(async_op, timeout)
+    .map_err(|e| format!("media manager get failed: {e}"))?;
+
+  let session = manager
+    .GetCurrentSession()
+    .map_err(|e| format!("no active media session: {e}"))?;
+
+  let success = match action {
+    "play-pause" => {
+      let playback_info = session.GetPlaybackInfo()
+        .map_err(|e| format!("playback info failed: {e}"))?;
+      let is_playing = playback_info.PlaybackStatus()
+        .map(|s| s == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
+        .unwrap_or(false);
+
+      if is_playing {
+        let op = session.TryPauseAsync()
+          .map_err(|e| format!("pause dispatch failed: {e}"))?;
+        sta_wait_async(op, timeout)
+          .map_err(|e| format!("pause failed: {e}"))?
+      } else {
+        let op = session.TryPlayAsync()
+          .map_err(|e| format!("play dispatch failed: {e}"))?;
+        sta_wait_async(op, timeout)
+          .map_err(|e| format!("play failed: {e}"))?
+      }
+    }
+    "next" => {
+      let op = session.TrySkipNextAsync()
+        .map_err(|e| format!("skip next dispatch failed: {e}"))?;
+      sta_wait_async(op, timeout)
+        .map_err(|e| format!("skip next failed: {e}"))?
+    }
+    "previous" => {
+      let op = session.TrySkipPreviousAsync()
+        .map_err(|e| format!("skip previous dispatch failed: {e}"))?;
+      sta_wait_async(op, timeout)
+        .map_err(|e| format!("skip previous failed: {e}"))?
+    }
+    _ => return Err(format!("unknown media action: {action}")),
+  };
+
+  Ok(MediaControlResult { success })
+}
 
 const STATUS_WINDOW_EDGE_MARGIN: i32 = 8;
 const STATUS_WINDOW_LABEL: &str = "main";
@@ -161,6 +323,8 @@ impl<R: tauri::Runtime> Default for DesktopProductState<R> {
 
 type SharedDesktopProductState<R> = Arc<Mutex<DesktopProductState<R>>>;
 
+// MediaRequest and MediaRequestSender are defined above (cfg(windows) gated).
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct HubEventFixture {
@@ -217,6 +381,8 @@ struct MediaSessionStatus {
   progress: u8,
   position_ms: Option<u64>,
   duration_ms: Option<u64>,
+  title: String,
+  artist: String,
   code: &'static str,
   checked_at: u64,
 }
@@ -389,19 +555,51 @@ fn get_focus_provider_capability(last_checked_at: u64) -> GuestProviderCapabilit
   }
 }
 
+#[cfg(windows)]
 #[tauri::command]
-async fn get_media_session_status() -> MediaSessionStatus {
-  tauri::async_runtime::spawn_blocking(read_media_session_status)
-    .await
-    .unwrap_or_else(|_| MediaSessionStatus {
-      available: false,
-      playback_status: "unavailable",
-      progress: 0,
-      position_ms: None,
-      duration_ms: None,
-      code: "task-failed",
-      checked_at: unix_time_ms(),
-    })
+async fn get_media_session_status(
+  sender: State<'_, MediaRequestSender>,
+) -> Result<MediaSessionStatus, String> {
+  // Clone the Arc out of State synchronously so we don't borrow across the async boundary.
+  let sender_clone: MediaRequestSender = sender.inner().clone();
+  let (reply_tx, reply_rx) = std_mpsc::channel();
+  let tx = sender_clone
+    .lock()
+    .map_err(|_| "media sender lock poisoned".to_string())?;
+  tx.send(MediaRequest::Read(reply_tx))
+    .map_err(|_| "STA media thread channel closed".to_string())?;
+  drop(tx); // release lock before blocking
+  Ok(
+    reply_rx
+      .recv_timeout(Duration::from_secs(5))
+      .unwrap_or_else(|_| MediaSessionStatus {
+        available: false,
+        playback_status: "unavailable",
+        progress: 0,
+        position_ms: None,
+        duration_ms: None,
+        title: String::new(),
+        artist: String::new(),
+        code: "sta-timeout",
+        checked_at: unix_time_ms(),
+      }),
+  )
+}
+
+#[cfg(not(windows))]
+#[tauri::command]
+async fn get_media_session_status() -> Result<MediaSessionStatus, String> {
+  Ok(MediaSessionStatus {
+    available: false,
+    playback_status: "unsupported",
+    progress: 0,
+    position_ms: None,
+    duration_ms: None,
+    title: String::new(),
+    artist: String::new(),
+    code: "unsupported",
+    checked_at: unix_time_ms(),
+  })
 }
 
 #[tauri::command]
@@ -440,68 +638,29 @@ fn set_clipboard_content(text: String) -> Result<(), String> {
 }
 
 #[cfg(windows)]
-fn try_media_session_action(action: &str) -> Result<MediaControlResult, String> {
-  use windows::Media::Control::{
-    GlobalSystemMediaTransportControlsSessionManager,
-    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
-  };
-
-  let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-    .map_err(|e| format!("media manager request failed: {e}"))?
-    .get()
-    .map_err(|e| format!("media manager get failed: {e}"))?;
-  let session = manager
-    .GetCurrentSession()
-    .map_err(|e| format!("no active media session: {e}"))?;
-
-  let success = match action {
-    "play-pause" => {
-      let playback_info = session.GetPlaybackInfo()
-        .map_err(|e| format!("playback info failed: {e}"))?;
-      let is_playing = playback_info.PlaybackStatus()
-        .map(|s| s == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
-        .unwrap_or(false);
-
-      if is_playing {
-        session.TryPauseAsync()
-          .map_err(|e| format!("pause dispatch failed: {e}"))?
-          .get()
-          .map_err(|e| format!("pause failed: {e}"))?
-      } else {
-        session.TryPlayAsync()
-          .map_err(|e| format!("play dispatch failed: {e}"))?
-          .get()
-          .map_err(|e| format!("play failed: {e}"))?
-      }
-    }
-    "next" => {
-      session.TrySkipNextAsync()
-        .map_err(|e| format!("skip next dispatch failed: {e}"))?
-        .get()
-        .map_err(|e| format!("skip next failed: {e}"))?
-    }
-    "previous" => {
-      session.TrySkipPreviousAsync()
-        .map_err(|e| format!("skip previous dispatch failed: {e}"))?
-        .get()
-        .map_err(|e| format!("skip previous failed: {e}"))?
-    }
-    _ => return Err(format!("unknown media action: {action}")),
-  };
-
-  Ok(MediaControlResult { success })
+#[tauri::command]
+async fn media_control(
+  action: String,
+  sender: State<'_, MediaRequestSender>,
+) -> Result<MediaControlResult, String> {
+  // Clone the Arc out of State synchronously so we don't borrow across the async boundary.
+  let sender_clone: MediaRequestSender = sender.inner().clone();
+  let (reply_tx, reply_rx) = std_mpsc::channel();
+  let tx = sender_clone
+    .lock()
+    .map_err(|_| "media sender lock poisoned".to_string())?;
+  tx.send(MediaRequest::Action(action, reply_tx))
+    .map_err(|_| "STA media thread channel closed".to_string())?;
+  drop(tx); // release lock before blocking
+  reply_rx
+    .recv_timeout(Duration::from_secs(5))
+    .map_err(|_| "STA media thread timed out".to_string())?
 }
 
 #[cfg(not(windows))]
-fn try_media_session_action(_action: &str) -> Result<MediaControlResult, String> {
-  Err("media control is only supported on Windows".into())
-}
-
 #[tauri::command]
 async fn media_control(action: String) -> Result<MediaControlResult, String> {
-  tauri::async_runtime::spawn_blocking(move || try_media_session_action(&action))
-    .await
-    .map_err(|e| format!("media control task failed: {e}"))?
+  Err("media control is only supported on Windows".into())
 }
 
 // ---------- Focus Assist Detection (Windows Registry) ----------
@@ -820,19 +979,16 @@ fn sample_network_speeds(state: &SharedDesktopProductState<tauri::Wry>) -> (u64,
   (download_bps, upload_bps)
 }
 
+#[cfg(windows)]
 fn get_media_provider_capability(last_checked_at: u64) -> GuestProviderCapability {
-  let status = read_media_session_status_at(last_checked_at);
-  let (quality, code, safe_to_display) = match status.code {
-    "available" | "not-playing" => ("native", "available", true),
-    "unsupported" => ("unavailable", "unsupported", false),
-    _ => ("unavailable", status.code, false),
-  };
-
+  // On Windows the STA media thread handles all WinRT calls.
+  // The capability is always "native" — actual read failures are reported
+  // via the monitor's event stream (code field in MediaSessionStatus).
   GuestProviderCapability {
     kind: "media",
-    quality,
-    code,
-    safe_to_display,
+    quality: "native",
+    code: "available",
+    safe_to_display: true,
     last_checked_at,
   }
 }
@@ -851,6 +1007,8 @@ fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
       progress: 0,
       position_ms: None,
       duration_ms: None,
+      title: String::new(),
+      artist: String::new(),
       code: "provider-failed",
       checked_at,
     },
@@ -865,14 +1023,62 @@ fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
     progress: 0,
     position_ms: None,
     duration_ms: None,
+    title: String::new(),
+    artist: String::new(),
     code: "unsupported",
     checked_at,
   }
 }
 
+/// Wait for a WinRT `IAsyncOperation` to complete on an MTA thread.
+///
+/// On an MTA thread (initialized via `RoInitialize(RO_INIT_MULTITHREADED)`),
+/// async operation completions are delivered via the thread pool — no Win32
+/// message pump is required. We poll `IAsyncInfo::Status` with a short sleep
+/// interval, which lets the thread pool deliver the completion while we wait.
+#[cfg(windows)]
+fn sta_wait_async<T: windows::core::RuntimeType + Clone + Send + 'static>(
+  async_op: windows::Foundation::IAsyncOperation<T>,
+  timeout: std::time::Duration,
+) -> windows::core::Result<T> {
+  use windows::core::Interface;
+  use windows::Foundation::{AsyncStatus, IAsyncInfo};
+
+  let info: IAsyncInfo = async_op.cast().map_err(|e| windows::core::Error::from(e.code()))?;
+  let deadline = std::time::Instant::now() + timeout;
+
+  loop {
+    match info.Status() {
+      Ok(AsyncStatus::Completed) => {
+        return async_op.GetResults();
+      }
+      Ok(AsyncStatus::Error) => {
+        let code = info.ErrorCode().unwrap_or(windows::core::HRESULT(0));
+        return Err(windows::core::Error::from(code));
+      }
+      Ok(AsyncStatus::Canceled) => {
+        return Err(windows::core::Error::from(windows::core::HRESULT(0x800704C7u32 as i32)));
+      }
+      Ok(_s) => {}
+      Err(e) => {
+        return Err(windows::core::Error::from(e.code()));
+      }
+    }
+
+    if std::time::Instant::now() >= deadline {
+      return Err(windows::core::Error::from(windows::core::HRESULT(0x800705B4u32 as i32)));
+    }
+
+    std::thread::sleep(std::time::Duration::from_millis(20));
+  }
+}
+
 #[cfg(windows)]
 fn read_windows_media_session_status(checked_at: u64) -> windows::core::Result<MediaSessionStatus> {
-  let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?.get()?;
+  let timeout = std::time::Duration::from_secs(5);
+
+  let async_op = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?;
+  let manager = sta_wait_async(async_op, timeout)?;
   let session = manager.GetCurrentSession()?;
   let playback_info = session.GetPlaybackInfo()?;
   let playback_status = playback_info.PlaybackStatus()?;
@@ -892,12 +1098,26 @@ fn read_windows_media_session_status(checked_at: u64) -> windows::core::Result<M
       "paused"
     };
 
+  let (title, artist) = match session.TryGetMediaPropertiesAsync() {
+    Ok(async_op) => match sta_wait_async(async_op, timeout) {
+      Ok(props) => {
+        let t = props.Title().unwrap_or_default().to_string();
+        let a = props.Artist().unwrap_or_default().to_string();
+        (t, a)
+      }
+      Err(_) => (String::new(), String::new()),
+    },
+    Err(_) => (String::new(), String::new()),
+  };
+
   Ok(MediaSessionStatus {
     available: true,
     playback_status: playback_status_label,
     progress,
     position_ms,
     duration_ms,
+    title,
+    artist,
     code: "available",
     checked_at,
   })
@@ -1692,31 +1912,11 @@ pub fn run() {
         });
       }
 
-      // Start media session monitor (polls Windows GSMTC, emits on playback state changes)
-      {
-        let media_app_handle = app.handle().clone();
-        let media_shutdown = Arc::clone(&app_shutdown);
-        std::thread::spawn(move || {
-          let mut last_available = false;
-          let mut last_playback_status: &str = "";
-          let mut last_progress: u8 = 255; // sentinel: no previous value
-          loop {
-            std::thread::sleep(MEDIA_SESSION_MONITOR_INTERVAL);
-            if media_shutdown.load(Ordering::Relaxed) {
-              break;
-            }
-            let status = read_media_session_status();
-            let changed = status.available != last_available
-              || status.playback_status != last_playback_status
-              || status.progress.abs_diff(last_progress) > 0;
-            if changed {
-              last_available = status.available;
-              last_playback_status = status.playback_status;
-              last_progress = status.progress;
-              let _ = media_app_handle.emit(STATUS_CENTER_MEDIA_SESSION_EVENT, &status);
-            }
-          }
-        });
+      // Start MTA media thread — handles ALL WinRT media calls (reads + actions)
+      // using RoInitialize(RO_INIT_MULTITHREADED) for proper async operation support.
+      #[cfg(windows)]
+      if let Some(media_sender) = start_sta_media_thread(app.handle().clone(), Arc::clone(&app_shutdown)) {
+        app.manage(media_sender);
       }
 
       Ok(())

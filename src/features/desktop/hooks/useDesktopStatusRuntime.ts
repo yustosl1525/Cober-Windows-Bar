@@ -72,7 +72,7 @@ function mediaPayloadToHubEvent(payload: MediaSessionChangedPayload): HubEvent {
     : createdAt;
 
   return {
-    id: `direct-media-${createdAt}`,
+    id: "native-media-session",
     type: "media",
     source: "media",
     createdAt,
@@ -148,9 +148,7 @@ export function useDesktopStatusRuntime(
     let unlisten: (() => void) | undefined;
 
     const handleMediaPayload = (payload: MediaSessionChangedPayload) => {
-      console.log("[media-debug] handleMediaPayload received:", JSON.stringify(payload));
       const mediaEvent = mediaPayloadToHubEvent(payload);
-      console.log("[media-debug] converted to HubEvent:", JSON.stringify(mediaEvent));
       setHubState((prev) => ({
         ...prev,
         events: [mediaEvent, ...prev.events.filter((e) => e.id !== mediaEvent.id)],
@@ -158,9 +156,7 @@ export function useDesktopStatusRuntime(
     };
 
     // Fetch initial media state on mount so we don't wait for the next change event
-    console.log("[media-debug] Fetching initial media state...");
     loadTauriMediaSessionStatus().then((result) => {
-      console.log("[media-debug] Initial media state result:", JSON.stringify(result));
       if (result.ok && result.status) {
         handleMediaPayload({
           available: result.status.available,
@@ -178,13 +174,10 @@ export function useDesktopStatusRuntime(
       // Initial fetch failed — non-critical, listener will catch future changes
     });
 
-    console.log("[media-debug] Registering media session listener...");
     onMediaSessionChanged(handleMediaPayload).then((fn) => {
-      console.log("[media-debug] Media session listener registered successfully");
       unlisten = fn;
-    }).catch((err) => {
+    }).catch(() => {
       // Media session listener not available — non-critical
-      console.error("[media-debug] Failed to register media listener:", err);
     });
 
     return () => {

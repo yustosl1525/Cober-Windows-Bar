@@ -209,7 +209,7 @@ function createDiagnosticResult({
   const safeLastSuccessfulSource = lastSuccessfulSource === "mock" ? undefined : lastSuccessfulSource;
 
   return {
-    metrics: snapshotSystemPerformanceMetrics(fallbackMetrics),
+    metrics: fallbackMetrics,
     diagnostic: safeLastSuccessfulSource
       ? {
           quality: "stale",
@@ -296,8 +296,4 @@ function toSpeed(value: unknown): number | undefined {
   }
 
   return Math.max(0, Math.round(value));
-}
-
-function snapshotSystemPerformanceMetrics(metrics: SystemPerformanceMetric[]): SystemPerformanceMetric[] {
-  return metrics.map((metric) => ({ ...metric }));
 }

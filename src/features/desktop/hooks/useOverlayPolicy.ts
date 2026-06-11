@@ -31,8 +31,12 @@ export function useOverlayPolicy({
   const overlayStateRef = useRef(createStatusWindowOverlayState());
   const appWindowRef = useRef<TauriAppWindow | undefined>(getSafeCurrentWindow());
 
-  // Overlay policy polling
+  // Overlay policy polling — only active when fullscreen avoidance is enabled
   useEffect(() => {
+    if (!avoidFullscreen) {
+      return;
+    }
+
     const invoke = getTauriInvoke();
     if (!invoke) {
       return;
@@ -58,7 +62,7 @@ export function useOverlayPolicy({
     }, OVERLAY_POLICY_MS);
 
     return () => window.clearInterval(timer);
-  }, [isDraggingRef]);
+  }, [avoidFullscreen, isDraggingRef]);
 
   // Display change handling (move, resize, scale)
   useEffect(() => {
