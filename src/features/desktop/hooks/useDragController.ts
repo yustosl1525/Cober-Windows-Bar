@@ -19,6 +19,13 @@ export function useDragController(): UseDragControllerResult {
       return;
     }
 
+    // Skip drag when the pointer target is an interactive element (button,
+    // link, input, etc.) so that click events propagate normally.
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button, a, input, select, textarea, [role='button']")) {
+      return;
+    }
+
     event.preventDefault();
     isDraggingRef.current = true;
 

@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/** Clipboard auto-expiry: switch back to resident after 5 seconds */
+const CLIPBOARD_DISPLAY_WINDOW_MS = 5_000;
 import {
   getDesktopStatusRuntime,
   type DesktopStatusRuntime,
@@ -115,6 +118,12 @@ export function useDesktopStatusRuntime(
   const previousResolvedChangedAtRef = useRef<number | undefined>(undefined);
   const activatedAtByKindRef = useRef<Partial<Record<DesktopStatusKind, number>>>({});
 
+  // Clipboard auto-expiry: revert to resident after 5 seconds
+  const clipboardTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
+  const clipboardExpiredRef = useRef(false);
+  const prevClipboardCopiedAtRef = useRef<number | undefined>();
+  const [, setClipboardTick] = useState(0);
+
   // Subscribe to runtime changes + initial refresh (legacy pipeline for hub events)
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -226,14 +235,71 @@ export function useDesktopStatusRuntime(
     previousResolvedChangedAtRef.current = now;
   }
 
+  // ── Clipboard auto-expiry (5 seconds) ──
+  // When clipboard becomes the resolved kind, start a 5-second timer.
+  // After it fires, filter clipboard from active kinds so the scheduler
+  // falls back to resident (or whatever is next by priority).
+  // Detect new copy operations via copiedAt timestamp, not text content.
+  const currentCopiedAt = hubState.clipboard?.copiedAt;
+  if (currentCopiedAt !== undefined && currentCopiedAt !== prevClipboardCopiedAtRef.current) {
+    prevClipboardCopiedAtRef.current = currentCopiedAt;
+    clipboardExpiredRef.current = false;
+    if (clipboardTimerRef.current !== undefined) {
+      clearTimeout(clipboardTimerRef.current);
+      clipboardTimerRef.current = undefined;
+    }
+  }
+
+  useEffect(() => {
+    if (resolvedState.kind !== "clipboard" || clipboardExpiredRef.current) {
+      return;
+    }
+
+    clipboardTimerRef.current = setTimeout(() => {
+      clipboardExpiredRef.current = true;
+      clipboardTimerRef.current = undefined;
+      setClipboardTick((t) => t + 1);
+    }, CLIPBOARD_DISPLAY_WINDOW_MS);
+
+    return () => {
+      if (clipboardTimerRef.current !== undefined) {
+        clearTimeout(clipboardTimerRef.current);
+        clipboardTimerRef.current = undefined;
+      }
+    };
+  }, [resolvedState.kind, currentCopiedAt]);
+
+  // If clipboard has expired, remove it from active kinds
+  const effectiveActiveKinds = clipboardExpiredRef.current
+    ? aggregatedStatus.activeKinds.filter((k) => k !== "clipboard")
+    : aggregatedStatus.activeKinds;
+
+  // Recompute resolved state if clipboard expired — let scheduler pick
+  // the next appropriate kind (typically "resident").
+  const finalResolvedState = clipboardExpiredRef.current
+    ? resolveDesktopStatusState({
+        metrics: effectiveMetrics,
+        systemPerformanceSourceStatus: { quality: effectiveQuality as "live" | "fallback" | "stale" | "unavailable" },
+        activeKinds: effectiveActiveKinds,
+        availableKinds: aggregatedStatus.availableKinds,
+        states: aggregatedStatus.states,
+        preferredKind: activeStatusKind ?? undefined,
+        preferredUntil,
+        previousKind: previousResolvedKindRef.current,
+        previousChangedAt: previousResolvedChangedAtRef.current,
+        activatedAtByKind: activatedAtByKindRef.current,
+        now,
+      })
+    : resolvedState;
+
   const refreshRuntime = useCallback(async () => {
     const snapshot = await runtimeRef.current.refresh();
     applyDesktopStatusSnapshot(snapshot, setHubState);
   }, []);
 
   return {
-    resolvedState,
-    activeKinds: aggregatedStatus.activeKinds,
+    resolvedState: finalResolvedState,
+    activeKinds: effectiveActiveKinds,
     activeStatusKind,
     preferredUntil,
     setActiveStatusKind,

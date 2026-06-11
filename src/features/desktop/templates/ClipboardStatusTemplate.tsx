@@ -1,7 +1,6 @@
-import { Clipboard, Copy } from "lucide-react";
-import { useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { setClipboardContent } from "../../../runtime/mediaControlRuntime";
+import { Clipboard, ExternalLink } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { DesktopClipboardState } from "../../../types/hub";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 
@@ -9,17 +8,31 @@ type ClipboardStatusTemplateProps = {
   state: DesktopClipboardState;
 };
 
-export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps) {
-  const { t } = useTranslation();
-  const [justCopied, setJustCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    const success = await setClipboardContent(state.copiedText);
-    if (success) {
-      setJustCopied(true);
-      window.setTimeout(() => setJustCopied(false), 1500);
+function detectUrl(text: string): string | null {
+  // Remove ellipsis that may have been added by preview truncation
+  const cleaned = text.replace(/\u2026$/, "").trim();
+  try {
+    const url = new URL(cleaned);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.href;
     }
-  }, [state.copiedText]);
+  } catch {
+    // not a URL
+  }
+  return null;
+}
+
+export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps) {
+  const url = useMemo(() => detectUrl(state.copiedText), [state.copiedText]);
+
+  const handleOpenUrl = useCallback(async () => {
+    if (!url) return;
+    try {
+      await invoke("open_url_in_browser", { url });
+    } catch (e) {
+      console.error("Failed to open URL:", e);
+    }
+  }, [url]);
 
   return (
     <>
@@ -36,24 +49,19 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
           <span className="product-status-clipboard-text">{state.copiedText}</span>
         </div>
 
-        <div className="product-status-metric" aria-label={state.detail}>
-          <div className="product-status-label">
-            <span className="product-status-label-name">{state.subtitle}</span>
+        {url ? (
+          <div className="product-status-metric product-status-metric-clipboard-action">
+            <button
+              type="button"
+              className="product-status-clipboard-open"
+              aria-label="Open in browser"
+              onClick={() => void handleOpenUrl()}
+            >
+              <ExternalLink size={13} strokeWidth={2.2} />
+              <span>打开</span>
+            </button>
           </div>
-          <strong className="product-status-clipboard-source">{state.detail}</strong>
-        </div>
-
-        <div className="product-status-metric product-status-metric-clipboard-action">
-          <button
-            type="button"
-            className={justCopied ? "product-status-clipboard-copy is-copied" : "product-status-clipboard-copy"}
-            aria-label={justCopied ? t("common.copied") : t("clipboard.copyToClipboard")}
-            onClick={() => void handleCopy()}
-          >
-            <Copy size={13} strokeWidth={2.2} />
-            <span>{justCopied ? t("common.copied") : t("common.copy")}</span>
-          </button>
-        </div>
+        ) : null}
       </div>
     </>
   );

@@ -27,22 +27,11 @@ function clipboardPayloadToEvent(payload: ClipboardChangedPayload): HubEvent {
 }
 
 export function createRealClipboardProvider(): HubProvider {
-  // Track recently seen clipboard texts to avoid showing duplicates.
-  // Bounded to MAX_SEEN_TEXTS entries to prevent unbounded memory growth.
-  const MAX_SEEN_TEXTS = 50;
-  const seenTexts: string[] = [];
+  // Deduplicate consecutive polling emissions of the same clipboard content.
+  // When the same text is copied again (after copying something else in between),
+  // the event IS emitted — each copy operation is a distinct user action.
+  let lastEmittedText: string | undefined;
   let unlisten: (() => void) | undefined;
-
-  function hasSeenText(text: string): boolean {
-    return seenTexts.includes(text);
-  }
-
-  function markTextSeen(text: string) {
-    seenTexts.push(text);
-    if (seenTexts.length > MAX_SEEN_TEXTS) {
-      seenTexts.shift();
-    }
-  }
 
   const metadata: HubProviderMetadata = {
     id: PROVIDER_ID,
@@ -62,12 +51,11 @@ export function createRealClipboardProvider(): HubProvider {
 
     start(handle) {
       onClipboardChanged((payload) => {
-        if (payload.text && hasSeenText(payload.text)) {
+        // Skip consecutive polling duplicates (same text read twice in a row)
+        if (payload.text === lastEmittedText) {
           return;
         }
-        if (payload.text) {
-          markTextSeen(payload.text);
-        }
+        lastEmittedText = payload.text;
         handle.emit([clipboardPayloadToEvent(payload)]);
       }).then((unlistenFn) => {
         unlisten = unlistenFn;

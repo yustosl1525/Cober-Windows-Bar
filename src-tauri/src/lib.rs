@@ -405,6 +405,21 @@ async fn get_media_session_status() -> MediaSessionStatus {
 }
 
 #[tauri::command]
+fn open_url_in_browser(url: String) -> Result<(), String> {
+  // Validate that the URL uses http or https scheme
+  if !url.starts_with("http://") && !url.starts_with("https://") {
+    return Err("only http/https URLs are allowed".into());
+  }
+  // Use explorer.exe — the most reliable way to open URLs on Windows.
+  // It delegates to the registered default browser handler.
+  std::process::Command::new("explorer")
+    .arg(&url)
+    .spawn()
+    .map_err(|e| format!("failed to open URL: {e}"))?;
+  Ok(())
+}
+
+#[tauri::command]
 fn get_clipboard_content() -> Result<ClipboardContent, String> {
   let mut clipboard = arboard::Clipboard::new().map_err(|e| format!("clipboard init failed: {e}"))?;
   let text = clipboard.get_text().map_err(|e| format!("clipboard read failed: {e}"))?;
@@ -1619,7 +1634,6 @@ pub fn run() {
         let clipboard_app_handle = app.handle().clone();
         let clipboard_shutdown = Arc::clone(&app_shutdown);
         std::thread::spawn(move || {
-          let mut last_text = String::new();
           let mut clipboard = match arboard::Clipboard::new() {
             Ok(c) => c,
             Err(_) => return,
@@ -1629,9 +1643,11 @@ pub fn run() {
             if clipboard_shutdown.load(Ordering::Relaxed) {
               break;
             }
+            // Emit on every non-empty clipboard read — each read generates a
+            // fresh copiedAt timestamp so the frontend can detect new copy
+            // operations (even when the same text is copied again).
             if let Ok(text) = clipboard.get_text() {
-              if text != last_text && !text.is_empty() {
-                last_text = text.clone();
+              if !text.is_empty() {
                 let payload = ClipboardContent {
                   text,
                   source_app: String::new(),
@@ -1728,6 +1744,7 @@ pub fn run() {
       show_status_center_window,
       open_status_center_settings,
       quit_status_center,
+      open_url_in_browser,
       get_clipboard_content,
       set_clipboard_content,
       media_control,
