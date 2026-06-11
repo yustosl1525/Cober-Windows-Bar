@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import i18n from "../i18n";
 import {
   loadSystemPerformance,
   loadSystemPerformanceStatus,
@@ -12,7 +13,7 @@ function test(name: string, run: () => void | Promise<void>) {
   tests.push({ name, run });
 }
 
-test("keeps readable Chinese labels when native system data loads", async () => {
+test("keeps readable labels when native system data loads", async () => {
   const metrics = await loadSystemPerformance({
     invoke: async () => ({
       cpu: 17,
@@ -26,9 +27,9 @@ test("keeps readable Chinese labels when native system data loads", async () => 
     metrics.map((metric) => ({ id: metric.id, label: metric.label, value: metric.value })),
     [
       { id: "cpu", label: "CPU", value: 17 },
-      { id: "memory", label: "内存", value: 61 },
-      { id: "download", label: "下载", value: 2_457_600 },
-      { id: "upload", label: "上传", value: 512_000 },
+      { id: "memory", label: i18n.t("metrics.memory"), value: 61 },
+      { id: "download", label: i18n.t("metrics.download"), value: 2_457_600 },
+      { id: "upload", label: i18n.t("metrics.upload"), value: 512_000 },
     ],
   );
 });
