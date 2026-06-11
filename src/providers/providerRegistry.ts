@@ -123,9 +123,7 @@ export function createProviderRegistry() {
   }
 
   function listCapabilitySupport() {
-    return [...entries.values()]
-      .sort((left, right) => left.registrationOrder - right.registrationOrder)
-      .flatMap(snapshotCapabilitySupport);
+    return [...entries.values()].flatMap(snapshotCapabilitySupport);
   }
 
   return {
@@ -159,9 +157,7 @@ export function createProviderRegistry() {
     },
 
     list() {
-      return [...entries.values()]
-        .sort((left, right) => left.registrationOrder - right.registrationOrder)
-        .map(snapshotProvider);
+      return [...entries.values()].map(snapshotProvider);
     },
 
     listCapabilitySupport,

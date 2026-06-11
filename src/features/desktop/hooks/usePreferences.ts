@@ -41,24 +41,23 @@ export function usePreferences(): UsePreferencesResult {
     async (patch: Partial<DesktopStatusPreferences>) => {
       setPreferences((prev) => {
         const nextValue = { ...prev, ...patch };
-        const invoke = getTauriInvoke();
-
-        if (invoke) {
-          void invoke(SET_STATUS_CENTER_PREFERENCES_COMMAND, {
-            preferences: nextValue,
-          }).then(() => {
-            if (typeof patch.alwaysFloat === "boolean") {
-              return invoke(STATUS_WINDOW_FLOATING_COMMAND, {
-                floating: nextValue.alwaysFloat,
-              });
-            }
-          });
-        }
-
         return nextValue;
       });
+
+      const invoke = getTauriInvoke();
+      if (invoke) {
+        const nextValue = { ...preferences, ...patch };
+        await invoke(SET_STATUS_CENTER_PREFERENCES_COMMAND, {
+          preferences: nextValue,
+        });
+        if (typeof patch.alwaysFloat === "boolean") {
+          await invoke(STATUS_WINDOW_FLOATING_COMMAND, {
+            floating: nextValue.alwaysFloat,
+          });
+        }
+      }
     },
-    [],
+    [preferences],
   );
 
   // Load initial settings + subscribe to external settings changes

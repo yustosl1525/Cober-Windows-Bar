@@ -1,5 +1,6 @@
 import i18n from "../i18n";
 import { clampProgress, dedupeKinds } from "../shared/runtimeGuards";
+import { formatMediaTime } from "../shared/mediaTime";
 import { createHubStoreState, getActiveHubEvents } from "./hubState";
 import type {
   ClipboardPayload,
@@ -55,13 +56,8 @@ function snapshotMusicState(music: MusicState): DesktopMediaState {
 }
 
 function snapshotRealMediaState(payload: MediaSessionPayload, metadata?: Record<string, unknown>): DesktopMediaState {
-  const fmt = (ms: number) => {
-    const s = Math.max(0, Math.floor(ms / 1000));
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  };
-
   const timeLabel = payload.positionMs !== undefined && payload.durationMs !== undefined && payload.durationMs > 0
-    ? `${fmt(payload.positionMs)} / ${fmt(payload.durationMs)}`
+    ? formatMediaTime(payload.positionMs, payload.durationMs)
     : typeof metadata?.["timeLabel"] === "string"
       ? metadata["timeLabel"]
       : "";
@@ -264,7 +260,8 @@ function deriveActiveKinds(hubState: HubStoreState, events: HubEvent[]): Desktop
   if (events.some((event) => {
     if (event.type !== "media") return false;
     const payload = event.payload;
-    return payload && "playbackStatus" in payload && (payload as MediaSessionPayload).playbackStatus === "playing";
+    const isPlaying = payload && "playbackStatus" in payload && (payload as MediaSessionPayload).playbackStatus === "playing";
+    return isPlaying;
   })) {
     activeKinds.push("media");
   }
@@ -337,9 +334,10 @@ export function aggregateDesktopStatusInput(
     ? dedupeKinds([...activeKinds, ...input.externalActiveKinds])
     : activeKinds;
 
-  return {
+  const result = {
     activeKinds: mergedActiveKinds,
     availableKinds,
     states: Object.keys(states).length ? states : undefined,
   };
+  return result;
 }

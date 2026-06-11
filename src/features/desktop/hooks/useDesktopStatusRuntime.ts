@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import i18n from "../../../i18n";
 
 /** Clipboard auto-expiry: switch back to resident after 5 seconds */
 const CLIPBOARD_DISPLAY_WINDOW_MS = 5_000;
@@ -59,9 +60,9 @@ function applyDesktopStatusSnapshot(
 function systemPayloadToMetrics(payload: SystemPerformancePayload): SystemPerformanceMetric[] {
   return [
     { id: "cpu", label: "CPU", value: payload.cpu, tone: "blue" },
-    { id: "memory", label: "\u5185\u5B58", value: payload.memory, tone: "violet" },
-    { id: "download", label: "\u4E0B\u8F7D", value: payload.downloadSpeed, tone: "cyan" },
-    { id: "upload", label: "\u4E0A\u4F20", value: payload.uploadSpeed, tone: "emerald" },
+    { id: "memory", label: i18n.t("metrics.memory"), value: payload.memory, tone: "violet" },
+    { id: "download", label: i18n.t("metrics.download"), value: payload.downloadSpeed, tone: "cyan" },
+    { id: "upload", label: i18n.t("metrics.upload"), value: payload.uploadSpeed, tone: "emerald" },
   ];
 }
 

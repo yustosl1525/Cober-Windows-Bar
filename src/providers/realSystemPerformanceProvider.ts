@@ -64,11 +64,12 @@ export function createRealSystemPerformanceProvider(): HubProvider {
         diagnostic = result.diagnostic;
 
         if (result.diagnostic.quality === "live" || result.diagnostic.quality === "fallback") {
+          const byId = new Map(result.metrics.map((m) => [m.id, m.value]));
           const snapshot: SystemPerformanceSnapshot = {
-            cpu: result.metrics.find((m) => m.id === "cpu")?.value ?? 0,
-            memory: result.metrics.find((m) => m.id === "memory")?.value ?? 0,
-            downloadSpeed: result.metrics.find((m) => m.id === "download")?.value ?? 0,
-            uploadSpeed: result.metrics.find((m) => m.id === "upload")?.value ?? 0,
+            cpu: byId.get("cpu") ?? 0,
+            memory: byId.get("memory") ?? 0,
+            downloadSpeed: byId.get("download") ?? 0,
+            uploadSpeed: byId.get("upload") ?? 0,
           };
 
           handle.emit([createSystemPerformanceEvent(snapshot, result.diagnostic.quality)]);

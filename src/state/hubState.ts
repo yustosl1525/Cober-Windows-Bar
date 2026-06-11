@@ -86,11 +86,22 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
   const activeEvents = getActiveHubEvents(events, now).map(snapshotHubEvent);
   const mode = resolveHubMode(activeEvents, now);
   const tasks = activeEvents.filter((event) => event.type !== "notification").map(eventToTask);
-  const notificationEvent = activeEvents.find((event) => event.type === "notification");
-  const musicEvent = activeEvents.find((event) => event.type === "music");
-  const clipboardEvent = activeEvents.find((event) => event.type === "clipboard");
-  const focusEvent = activeEvents.find((event) => event.type === "focus");
-  const systemEvent = activeEvents.find((event) => event.type === "system");
+
+  let notificationEvent: HubEvent | undefined;
+  let musicEvent: HubEvent | undefined;
+  let clipboardEvent: HubEvent | undefined;
+  let focusEvent: HubEvent | undefined;
+  let systemEvent: HubEvent | undefined;
+
+  for (const event of activeEvents) {
+    switch (event.type) {
+      case "notification": notificationEvent ??= event; break;
+      case "music": musicEvent ??= event; break;
+      case "clipboard": clipboardEvent ??= event; break;
+      case "focus": focusEvent ??= event; break;
+      case "system": systemEvent ??= event; break;
+    }
+  }
 
   return {
     events: activeEvents,

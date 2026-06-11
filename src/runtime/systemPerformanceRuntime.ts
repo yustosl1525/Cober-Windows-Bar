@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import { systemPerformanceMetrics } from "../data/mockHubData";
 import { isRecord } from "../shared/runtimeGuards";
 import type { SystemPerformanceMetric, SystemPerformanceSnapshot } from "../types/hub";
@@ -6,12 +7,14 @@ import { getTauriInvoke, type TauriInvoke } from "./tauriRuntime";
 const TAURI_SYSTEM_PERFORMANCE_COMMAND = "get_system_performance";
 const DEFAULT_SYSTEM_STATUS_PREFLIGHT_TIMEOUT_MS = 1500;
 
-const SYSTEM_PERFORMANCE_LABELS = {
-  cpu: "CPU",
-  memory: "\u5185\u5B58",
-  download: "\u4E0B\u8F7D",
-  upload: "\u4E0A\u4F20",
-} as const;
+function getSystemPerformanceLabels() {
+  return {
+    cpu: "CPU",
+    memory: i18n.t("metrics.memory"),
+    download: i18n.t("metrics.download"),
+    upload: i18n.t("metrics.upload"),
+  };
+}
 
 const SYSTEM_STATUS_DIAGNOSTIC_QUALITIES = [
   "live",
@@ -106,11 +109,12 @@ export async function loadSystemPerformanceStatus({
 function createSystemPerformanceMetrics(
   snapshot: SystemPerformanceSnapshot,
 ): SystemPerformanceMetric[] {
+  const labels = getSystemPerformanceLabels();
   return [
-    { id: "cpu", label: SYSTEM_PERFORMANCE_LABELS.cpu, value: snapshot.cpu, tone: "blue" },
-    { id: "memory", label: SYSTEM_PERFORMANCE_LABELS.memory, value: snapshot.memory, tone: "violet" },
-    { id: "download", label: SYSTEM_PERFORMANCE_LABELS.download, value: snapshot.downloadSpeed, tone: "cyan" },
-    { id: "upload", label: SYSTEM_PERFORMANCE_LABELS.upload, value: snapshot.uploadSpeed, tone: "emerald" },
+    { id: "cpu", label: labels.cpu, value: snapshot.cpu, tone: "blue" },
+    { id: "memory", label: labels.memory, value: snapshot.memory, tone: "violet" },
+    { id: "download", label: labels.download, value: snapshot.downloadSpeed, tone: "cyan" },
+    { id: "upload", label: labels.upload, value: snapshot.uploadSpeed, tone: "emerald" },
   ];
 }
 
