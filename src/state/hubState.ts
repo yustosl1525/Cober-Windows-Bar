@@ -1,12 +1,13 @@
 import { clampProgress, snapshotHubEvent } from "../shared/runtimeGuards";
-import type { HubEvent, HubMode, HubStoreState, HubTask } from "../types/hub";
+import type { ClipboardPayload, FocusAssistPayload, HubEvent, HubMode, HubStoreState, HubTask, SystemPerformancePayload } from "../types/hub";
 
-const taskAccentMap = {
+const taskAccentMap: Record<string, HubTask["accent"]> = {
   music: "pink",
   ai: "blue",
   download: "green",
   notification: "cyan",
-} as const;
+  media: "pink",
+};
 
 const isFiniteNumber = (value: number | undefined) => typeof value === "number" && Number.isFinite(value);
 
@@ -31,7 +32,10 @@ export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
     return "notification";
   }
 
-  const taskEvents = activeEvents.filter((event) => event.type !== "notification");
+  // Filter out non-task events (clipboard, focus, system are status events, not tasks)
+  const taskEvents = activeEvents.filter(
+    (event) => event.type !== "notification" && event.type !== "clipboard" && event.type !== "focus" && event.type !== "system",
+  );
 
   if (taskEvents.length > 1) {
     return "multiTask";
@@ -47,18 +51,29 @@ export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
     return "aiProgress";
   }
 
+  // Map "media" provider events to "music" mode (same display surface)
+  if (event.type === "media") {
+    return "music";
+  }
+
+  // clipboard, focus, system are status events — they don't change the hub mode
+  if (event.type === "clipboard" || event.type === "focus" || event.type === "system") {
+    return "idle";
+  }
+
   return event.type;
 }
 
 function eventToTask(event: HubEvent): HubTask {
   const payload = event.payload && "title" in event.payload ? event.payload : undefined;
   const shouldDefaultProgress = event.type === "ai" || event.type === "download";
+  const subtitle = payload && "subtitle" in payload ? (payload as { subtitle: string }).subtitle : "";
 
   return {
     id: event.id,
     type: event.type,
     title: payload?.title ?? event.type,
-    subtitle: payload?.subtitle ?? "",
+    subtitle,
     progress:
       event.progress === undefined
         ? shouldDefaultProgress
@@ -75,6 +90,9 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
   const tasks = activeEvents.filter((event) => event.type !== "notification").map(eventToTask);
   const notificationEvent = activeEvents.find((event) => event.type === "notification");
   const musicEvent = activeEvents.find((event) => event.type === "music");
+  const clipboardEvent = activeEvents.find((event) => event.type === "clipboard");
+  const focusEvent = activeEvents.find((event) => event.type === "focus");
+  const systemEvent = activeEvents.find((event) => event.type === "system");
 
   return {
     events: activeEvents,
@@ -87,6 +105,18 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
     music:
       musicEvent && musicEvent.payload && "time" in musicEvent.payload
         ? { ...musicEvent.payload, progress: clampProgress(musicEvent.payload.progress) }
+        : undefined,
+    clipboard:
+      clipboardEvent && clipboardEvent.payload && "text" in clipboardEvent.payload
+        ? { ...(clipboardEvent.payload as ClipboardPayload) }
+        : undefined,
+    focus:
+      focusEvent && focusEvent.payload && "active" in focusEvent.payload
+        ? { ...(focusEvent.payload as FocusAssistPayload) }
+        : undefined,
+    systemPerformance:
+      systemEvent && systemEvent.payload && "cpu" in systemEvent.payload
+        ? { ...(systemEvent.payload as SystemPerformancePayload) }
         : undefined,
   };
 }

@@ -6,7 +6,8 @@ import type { SystemPerformanceSourceStatus } from "../types/hub";
 const metrics = createSystemPerformanceMetricSnapshot({
   cpu: 23,
   memory: 68,
-  network: 56,
+  downloadSpeed: 2_457_600,
+  uploadSpeed: 512_000,
 });
 
 function test(name: string, run: () => void) {
@@ -18,7 +19,7 @@ test("desktop status resolver defaults to resident state", () => {
   const state = resolveDesktopStatusState({ metrics });
 
   assert.equal(state.kind, "resident");
-  assert.equal(state.metrics.length, 3);
+  assert.equal(state.metrics.length, 4);
 });
 
 test("desktop status resolver can switch to another explicit state kind", () => {

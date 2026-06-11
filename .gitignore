@@ -16,3 +16,13 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 CLAUDE.md
+
+# debug/temp artifacts
+.dev.log
+.dev.err.log
+nul
+screenshot.png
+desktop_screenshot.png
+codegraph.html
+screenshotScript.js
+work/

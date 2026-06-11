@@ -75,6 +75,10 @@ const eventTypeLabel: Record<HubEvent["type"], string> = {
   ai: "AI task",
   download: "Download",
   notification: "Notification",
+  media: "Media",
+  clipboard: "Clipboard",
+  focus: "Focus",
+  system: "System",
 };
 
 const mockProviderSources = new Set<HubEvent["source"]>(["music", "download", "ai", "notification"]);
@@ -385,7 +389,7 @@ function getEventDisplayText(event: HubEvent) {
   if (payload && "title" in payload) {
     return {
       title: payload.title,
-      subtitle: payload.subtitle,
+      subtitle: "subtitle" in payload ? (payload as { subtitle: string }).subtitle : "",
     };
   }
 

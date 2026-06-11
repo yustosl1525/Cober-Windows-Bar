@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDesktopStatusShellCopy } from "../../data/desktopStatusConfig";
 import {
   correctStatusWindowPosition,
@@ -9,6 +8,7 @@ import {
 import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
 import { getAutostartEnabled, setAutostartEnabled as applyAutostart } from "../../runtime/autostartRuntime";
 import { resolveDesktopStatusState } from "../../state/desktopStatusState";
+import { getSafeCurrentWindow, type TauriAppWindow } from "../../shared/tauriWindow";
 import type { DesktopStatusKind } from "../../types/hub";
 import { SettingsPanel } from "./components/SettingsPanel";
 import {
@@ -17,7 +17,6 @@ import {
   useDragController,
   useOverlayPolicy,
   usePreferences,
-  useSystemMonitors,
   useSystemPerformance,
 } from "./hooks";
 import { ClipboardStatusTemplate } from "./templates/ClipboardStatusTemplate";
@@ -30,16 +29,6 @@ import { UpdateStatusTemplate } from "./templates/UpdateStatusTemplate";
 const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
 const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
 const SHOW_STATUS_CENTER_WINDOW_COMMAND = "show_status_center_window";
-
-type TauriAppWindow = ReturnType<typeof getCurrentWindow>;
-
-function getSafeCurrentWindow(): TauriAppWindow | undefined {
-  try {
-    return getCurrentWindow();
-  } catch {
-    return undefined;
-  }
-}
 
 function renderDesktopStatusTemplate(state: ReturnType<typeof resolveDesktopStatusState>) {
   switch (state.kind) {
@@ -69,16 +58,22 @@ export function DesktopPage() {
     void getAutostartEnabled().then(setAutostartEnabled);
   }, []);
 
+  // Explicitly disable window shadow from the frontend (backup for Rust DWM calls)
+  useEffect(() => {
+    const win = appWindowRef.current;
+    if (win) {
+      void win.setShadow(false);
+    }
+  }, []);
+
   // Drag controller
   const { isDraggingRef, lockPositionRef, handlePointerDown } = useDragController();
 
   // System performance polling
   const { metrics, diagnostic, metricsRef, diagnosticRef, refreshMetrics } = useSystemPerformance();
 
-  // System monitors (Focus Assist, notifications)
-  const systemMonitors = useSystemMonitors();
-
   // Desktop status runtime + aggregation + state resolution
+  // Unified Provider pipeline handles media, clipboard, focus, and system perf.
   const {
     resolvedState,
     activeStatusKind,
@@ -87,10 +82,7 @@ export function DesktopPage() {
     setPreferredUntil,
     refreshRuntime,
     preferredWindowMs,
-  } = useDesktopStatusRuntime(metrics, diagnostic.quality, {
-    externalActiveKinds: systemMonitors.externalActiveKinds,
-    externalStates: systemMonitors.externalStates,
-  });
+  } = useDesktopStatusRuntime(metrics, diagnostic.quality);
 
   // Preferences
   const { preferences, updatePreferences } = usePreferences();
@@ -124,9 +116,9 @@ export function DesktopPage() {
     return () => window.clearTimeout(timer);
   }, [preferredUntil, setPreferredUntil, setActiveStatusKind]);
 
-  // -- Action handlers --
+  // -- Action handlers (useCallback to prevent unnecessary child re-renders) --
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     if (isDraggingRef.current) {
       return;
     }
@@ -137,66 +129,66 @@ export function DesktopPage() {
     }
 
     await Promise.all([refreshMetrics(), refreshRuntime()]);
-  }
+  }, [refreshMetrics, refreshRuntime]);
 
-  async function showNativeContextMenu(x: number, y: number) {
+  const showNativeContextMenu = useCallback(async (x: number, y: number) => {
     const invoke = getTauriInvoke();
     if (!invoke || isDraggingRef.current) {
       return;
     }
 
     await invoke(STATUS_CENTER_CONTEXT_MENU_COMMAND, { x, y });
-  }
+  }, []);
 
-  async function resetPosition() {
+  const resetPosition = useCallback(async () => {
     const invoke = getTauriInvoke();
     if (!invoke) {
       return;
     }
 
     await invoke(STATUS_WINDOW_CORRECT_POSITION_COMMAND);
-  }
+  }, []);
 
-  function openSettings() {
+  const openSettings = useCallback(() => {
     setSettingsOpen(true);
-  }
+  }, []);
 
-  function closeSettings() {
+  const closeSettings = useCallback(() => {
     setSettingsOpen(false);
-  }
+  }, []);
 
-  function handleKindSelect(kind: DesktopStatusKind) {
+  const handleKindSelect = useCallback((kind: DesktopStatusKind) => {
     setActiveStatusKind(kind);
     setPreferredUntil(Date.now() + preferredWindowMs);
-  }
+  }, [preferredWindowMs]);
 
-  async function toggleAlwaysFloat() {
+  const toggleAlwaysFloat = useCallback(async () => {
     await updatePreferences({ alwaysFloat: !preferences.alwaysFloat });
-  }
+  }, [preferences.alwaysFloat, updatePreferences]);
 
-  function toggleAvoidFullscreen() {
+  const toggleAvoidFullscreen = useCallback(() => {
     void updatePreferences({ avoidFullscreen: !preferences.avoidFullscreen });
     scheduleOverlayStartupReassert(overlayStateRef.current);
-  }
+  }, [preferences.avoidFullscreen, updatePreferences, overlayStateRef]);
 
-  function toggleLockPosition() {
+  const toggleLockPosition = useCallback(() => {
     const nextValue = !preferences.lockPosition;
     void updatePreferences({ lockPosition: nextValue });
 
     if (nextValue) {
       isDraggingRef.current = false;
     }
-  }
+  }, [preferences.lockPosition, updatePreferences]);
 
-  async function toggleAutostart() {
+  const toggleAutostart = useCallback(async () => {
     const nextValue = !autostartEnabled;
     const success = await applyAutostart(nextValue);
     if (success) {
       setAutostartEnabled(nextValue);
     }
-  }
+  }, [autostartEnabled]);
 
-  async function quitStatusCenter() {
+  const quitStatusCenter = useCallback(async () => {
     const invoke = getTauriInvoke();
     if (!invoke) {
       await appWindowRef.current?.hide();
@@ -208,9 +200,9 @@ export function DesktopPage() {
     } catch {
       await appWindowRef.current?.hide();
     }
-  }
+  }, []);
 
-  async function handleMenuAction(action: string, checked?: boolean) {
+  const handleMenuAction = useCallback(async (action: string, checked?: boolean) => {
     switch (action) {
       case "refresh-data":
         await refresh();
@@ -244,9 +236,9 @@ export function DesktopPage() {
         await quitStatusCenter();
         return;
     }
-  }
+  }, [refresh, updatePreferences, overlayStateRef, resetPosition, openSettings, quitStatusCenter]);
 
-  async function handleOpenSettingsClick() {
+  const handleOpenSettingsClick = useCallback(async () => {
     const invoke = getTauriInvoke();
     if (!invoke) {
       openSettings();
@@ -254,9 +246,9 @@ export function DesktopPage() {
     }
 
     await invoke(OPEN_STATUS_CENTER_SETTINGS_COMMAND);
-  }
+  }, [openSettings]);
 
-  async function recallStatusCenter() {
+  const recallStatusCenter = useCallback(async () => {
     const invoke = getTauriInvoke();
     if (!invoke) {
       await appWindowRef.current?.show();
@@ -265,12 +257,7 @@ export function DesktopPage() {
     }
 
     await invoke(SHOW_STATUS_CENTER_WINDOW_COMMAND);
-  }
-
-  async function handleContextMenu(event: ReactMouseEvent<HTMLElement>) {
-    event.preventDefault();
-    await showNativeContextMenu(event.clientX, event.clientY);
-  }
+  }, []);
 
   // Global context menu + Escape key
   useContextMenu({ settingsOpen, closeSettings, showNativeContextMenu });
@@ -290,15 +277,15 @@ export function DesktopPage() {
           preferences={preferences}
           activeStatusKind={activeStatusKind}
           autostartEnabled={autostartEnabled}
-          onToggleAlwaysFloat={() => void toggleAlwaysFloat()}
+          onToggleAlwaysFloat={toggleAlwaysFloat}
           onToggleAvoidFullscreen={toggleAvoidFullscreen}
           onToggleLockPosition={toggleLockPosition}
-          onToggleAutostart={() => void toggleAutostart()}
+          onToggleAutostart={toggleAutostart}
           onKindSelect={handleKindSelect}
-          onRefresh={() => void refresh()}
-          onResetPosition={() => void resetPosition()}
-          onOpenNativeSettings={() => void handleOpenSettingsClick()}
-          onRecallStatusCenter={() => void recallStatusCenter()}
+          onRefresh={refresh}
+          onResetPosition={resetPosition}
+          onOpenNativeSettings={handleOpenSettingsClick}
+          onRecallStatusCenter={recallStatusCenter}
           onClose={closeSettings}
         />
       ) : null}

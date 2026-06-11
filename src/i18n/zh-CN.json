@@ -3,8 +3,7 @@
     "enabled": "当前已开启",
     "disabled": "当前已关闭",
     "copy": "复制",
-    "copied": "已复制",
-    "statusIndicators": "状态指示器"
+    "copied": "已复制"
   },
   "shell": {
     "ariaLabel": "Cober Windows 状态中心"
@@ -47,18 +46,9 @@
   "metrics": {
     "cpu": "CPU",
     "memory": "内存",
-    "network": "网络",
-    "currentUsage": "当前使用率",
+    "download": "下载",
+    "upload": "上传",
     "usageRate": "{{label}} 使用率 {{value}}%"
-  },
-  "menu": {
-    "refreshData": "刷新数据",
-    "alwaysFloat": "总是悬浮",
-    "avoidFullscreen": "全屏时避让",
-    "lockPosition": "锁定位置",
-    "resetPosition": "重置位置",
-    "openSettings": "打开设置",
-    "quit": "退出"
   },
   "states": {
     "resident": {
@@ -153,6 +143,7 @@
     "inProgress": "进行中",
     "systemTaskProcessing": "系统任务处理中",
     "desktopNotification": "桌面通知",
+    "clipboardUpdated": "已复制内容",
     "recentMessage": "最近消息",
     "newNotificationReceived": "收到新的通知",
     "notificationCenter": "通知中心",
@@ -175,6 +166,8 @@
   },
   "media": {
     "previous": "上一首",
+    "play": "播放",
+    "pause": "暂停",
     "playPause": "播放/暂停",
     "next": "下一首"
   },

@@ -1,19 +1,17 @@
 import i18n from "../i18n";
 import type {
-  DesktopStatusConfig,
   DesktopStatusKind,
-  DesktopStatusMenuAction,
   DesktopStatusStateMap,
   DesktopStatusTemplateDescriptor,
   SystemPerformanceMetric,
   SystemPerformanceMetricId,
-  SystemPerformanceSnapshot,
 } from "../types/hub";
 
 const DESKTOP_STATUS_METRIC_TONES: Record<SystemPerformanceMetricId, SystemPerformanceMetric["tone"]> = {
   cpu: "blue",
   memory: "violet",
-  network: "cyan",
+  download: "cyan",
+  upload: "emerald",
 };
 
 export const DESKTOP_STATUS_TEMPLATE_ORDER: DesktopStatusKind[] = [
@@ -34,18 +32,9 @@ export const DESKTOP_STATUS_PRIORITY_ORDER: DesktopStatusKind[] = [
   "resident",
 ];
 
-const TEMPLATE_KINDS: DesktopStatusKind[] = [
-  "resident",
-  "media",
-  "download",
-  "update",
-  "clipboard",
-  "focus",
-];
-
 export function getDesktopStatusTemplateDescriptors(): DesktopStatusTemplateDescriptor[] {
   const t = i18n.t.bind(i18n);
-  return TEMPLATE_KINDS.map((kind) => ({
+  return DESKTOP_STATUS_TEMPLATE_ORDER.map((kind) => ({
     kind,
     label: t(`template.${kind}.label`),
     description: t(`template.${kind}.description`),
@@ -53,47 +42,27 @@ export function getDesktopStatusTemplateDescriptors(): DesktopStatusTemplateDesc
   }));
 }
 
-/** @deprecated Use getDesktopStatusTemplateDescriptors() instead */
-export const DESKTOP_STATUS_TEMPLATE_DESCRIPTORS: DesktopStatusTemplateDescriptor[] =
-  TEMPLATE_KINDS.map((kind) => ({
-    kind,
-    label: "",
-    description: "",
-    providerHint: kind,
-  }));
-
-export function getDesktopStatusLabels() {
+export function getDesktopStatusLabels(): Record<SystemPerformanceMetricId, string> {
   const t = i18n.t.bind(i18n);
   return {
-    metrics: {
-      cpu: t("metrics.cpu"),
-      memory: t("metrics.memory"),
-      network: t("metrics.network"),
-    } as Record<SystemPerformanceMetricId, string>,
-    currentUsage: t("metrics.currentUsage"),
-    menu: {
-      refreshData: t("menu.refreshData"),
-      alwaysFloat: t("menu.alwaysFloat"),
-      avoidFullscreen: t("menu.avoidFullscreen"),
-      lockPosition: t("menu.lockPosition"),
-      resetPosition: t("menu.resetPosition"),
-      openSettings: t("menu.openSettings"),
-      quit: t("menu.quit"),
-    },
+    cpu: t("metrics.cpu"),
+    memory: t("metrics.memory"),
+    download: t("metrics.download"),
+    upload: t("metrics.upload"),
   };
 }
 
 export function createSystemPerformanceMetricSnapshot(
-  snapshot: Pick<SystemPerformanceSnapshot, SystemPerformanceMetricId>,
+  snapshot: { cpu: number; memory: number; downloadSpeed: number; uploadSpeed: number },
 ): SystemPerformanceMetric[] {
-  const labels = getDesktopStatusLabels().metrics;
+  const labels = getDesktopStatusLabels();
 
-  return (Object.keys(DESKTOP_STATUS_METRIC_TONES) as SystemPerformanceMetricId[]).map((id) => ({
-    id,
-    label: labels[id],
-    value: snapshot[id],
-    tone: DESKTOP_STATUS_METRIC_TONES[id],
-  }));
+  return [
+    { id: "cpu", label: labels.cpu, value: snapshot.cpu, tone: DESKTOP_STATUS_METRIC_TONES.cpu },
+    { id: "memory", label: labels.memory, value: snapshot.memory, tone: DESKTOP_STATUS_METRIC_TONES.memory },
+    { id: "download", label: labels.download, value: snapshot.downloadSpeed, tone: DESKTOP_STATUS_METRIC_TONES.download },
+    { id: "upload", label: labels.upload, value: snapshot.uploadSpeed, tone: DESKTOP_STATUS_METRIC_TONES.upload },
+  ];
 }
 
 export function createDesktopStatusStateTemplates(
@@ -117,6 +86,7 @@ export function createDesktopStatusStateTemplates(
       timeLabel: t("states.media.timeLabel"),
       progress: 48,
       accent: "violet",
+      playbackStatus: "playing",
     },
     download: {
       kind: "download",
@@ -223,36 +193,3 @@ export function getDesktopStatusSettingsCopy() {
     },
   };
 }
-
-const desktopStatusConfig: DesktopStatusConfig = {
-  preferences: {
-    alwaysFloat: true,
-    avoidFullscreen: true,
-    lockPosition: false,
-  },
-  labels: getDesktopStatusLabels(),
-  menuActions: [
-    { id: "refresh-data", label: getDesktopStatusLabels().menu.refreshData, kind: "action" },
-    { id: "always-float", label: getDesktopStatusLabels().menu.alwaysFloat, kind: "toggle", preferenceKey: "alwaysFloat" },
-    { id: "avoid-fullscreen", label: getDesktopStatusLabels().menu.avoidFullscreen, kind: "toggle", preferenceKey: "avoidFullscreen" },
-    { id: "lock-position", label: getDesktopStatusLabels().menu.lockPosition, kind: "toggle", preferenceKey: "lockPosition" },
-    { id: "reset-position", label: getDesktopStatusLabels().menu.resetPosition, kind: "action" },
-    { id: "open-settings", label: getDesktopStatusLabels().menu.openSettings, kind: "action" },
-    { id: "quit", label: getDesktopStatusLabels().menu.quit, kind: "action" },
-  ],
-};
-
-export function getDesktopStatusMenuActions(): DesktopStatusMenuAction[] {
-  const labels = getDesktopStatusLabels();
-  return [
-    { id: "refresh-data", label: labels.menu.refreshData, kind: "action" },
-    { id: "always-float", label: labels.menu.alwaysFloat, kind: "toggle", preferenceKey: "alwaysFloat" },
-    { id: "avoid-fullscreen", label: labels.menu.avoidFullscreen, kind: "toggle", preferenceKey: "avoidFullscreen" },
-    { id: "lock-position", label: labels.menu.lockPosition, kind: "toggle", preferenceKey: "lockPosition" },
-    { id: "reset-position", label: labels.menu.resetPosition, kind: "action" },
-    { id: "open-settings", label: labels.menu.openSettings, kind: "action" },
-    { id: "quit", label: labels.menu.quit, kind: "action" },
-  ];
-}
-
-export default desktopStatusConfig;

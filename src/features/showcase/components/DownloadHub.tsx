@@ -12,7 +12,7 @@ export function DownloadHub({ task }: DownloadHubProps) {
 
   return (
     <motion.section
-      className="hub-card-md relative flex min-w-[340px] items-center gap-3.5 overflow-hidden rounded-[9999px] border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(236,253,245,0.46)_100%)]"
+      className="hub-card-md relative flex min-w-[340px] items-center gap-3.5 overflow-hidden rounded-[9999px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(236,253,245,0.46)_100%)]"
       initial={prefersReducedMotion ? undefined : { opacity: 0, y: 6, scale: 0.985 }}
       animate={prefersReducedMotion ? undefined : { opacity: 1, y: [0, -1, 0], scale: 1 }}
       transition={
@@ -26,8 +26,6 @@ export function DownloadHub({ task }: DownloadHubProps) {
       aria-label={`${task.title}, ${task.subtitle}, ${safeProgress}% downloaded`}
       title={`${task.title} ${safeProgress}%`}
     >
-      <div className="pointer-events-none absolute inset-[1px] rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_38%,rgba(255,255,255,0.16)_100%)] opacity-90" />
-
       <FluentIconChip mode="download" />
 
       <div className="relative z-[1] min-w-0 flex-1">

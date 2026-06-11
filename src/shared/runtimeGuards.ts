@@ -39,7 +39,7 @@ export function snapshotHubEvent(event: HubEvent): HubEvent {
   };
 }
 
-const HUB_EVENT_TYPES = new Set(["music", "ai", "download", "notification"]);
+const HUB_EVENT_TYPES = new Set(["music", "ai", "download", "notification", "media", "clipboard", "focus", "system"]);
 const HUB_EVENT_SOURCES = new Set([
   "mock",
   "system",
@@ -47,6 +47,9 @@ const HUB_EVENT_SOURCES = new Set([
   "download",
   "ai",
   "notification",
+  "media",
+  "clipboard",
+  "focus",
 ]);
 
 export function isHubEventType(value: unknown): value is HubEvent["type"] {

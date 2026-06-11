@@ -109,8 +109,8 @@ export async function loadDesktopStatusEvents({
 
 export function createDesktopStatusRuntime({
   invoke = getTauriInvoke(),
-  fallbackEvents = mockHubEvents,
-  loadFixtureEvents = true,
+  fallbackEvents = [],
+  loadFixtureEvents = false,
   eventBus = createHubEventBus(),
   subscribeToEvents,
   tauriListen,
@@ -163,6 +163,17 @@ export function createDesktopStatusRuntime({
 
     notify();
   });
+
+  // Periodic expiry: clear expired events so the scheduler can fall back to resident.
+  // Without this timer, expired events remain in the bus until the next explicit
+  // push (replaceHubEvents / publishHubEvent), blocking guest→resident transitions.
+  const EXPIRY_CHECK_INTERVAL_MS = 1_000;
+  const expiryTimerId = setInterval(() => {
+    if (disposed) {
+      return;
+    }
+    eventBus.clearExpiredEvents();
+  }, EXPIRY_CHECK_INTERVAL_MS);
 
   if (eventSourceSubscription) {
     const subscription = eventSourceSubscription((events, nextSource = "tauri-fixture", nextDiagnostic) => {
@@ -232,6 +243,7 @@ export function createDesktopStatusRuntime({
       }
 
       disposed = true;
+      clearInterval(expiryTimerId);
       runtimeSubscribers.clear();
       unsubscribeBus?.();
       unsubscribeBus = undefined;

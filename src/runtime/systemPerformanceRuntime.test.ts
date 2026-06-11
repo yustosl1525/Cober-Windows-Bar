@@ -17,7 +17,8 @@ test("keeps readable Chinese labels when native system data loads", async () => 
     invoke: async () => ({
       cpu: 17,
       memory: 61,
-      network: 42,
+      downloadSpeed: 2_457_600,
+      uploadSpeed: 512_000,
     }),
   });
 
@@ -26,7 +27,8 @@ test("keeps readable Chinese labels when native system data loads", async () => 
     [
       { id: "cpu", label: "CPU", value: 17 },
       { id: "memory", label: "内存", value: 61 },
-      { id: "network", label: "网络", value: 42 },
+      { id: "download", label: "下载", value: 2_457_600 },
+      { id: "upload", label: "上传", value: 512_000 },
     ],
   );
 });
@@ -36,7 +38,8 @@ test("falls back without introducing mojibake when native data is malformed", as
     invoke: async () => ({
       cpu: "bad",
       memory: 61,
-      network: 42,
+      downloadSpeed: 1000,
+      uploadSpeed: 500,
     }),
   });
 
@@ -53,7 +56,7 @@ test("Tauri capability unavailable returns unavailable diagnostic", async () => 
     code: "unavailable",
     source: "preflight",
   });
-  assert.equal(result.metrics.length, 3);
+  assert.equal(result.metrics.length, 4);
 });
 
 test("unsupported platform returns unavailable unsupported diagnostic", async () => {
@@ -94,7 +97,8 @@ test("malformed native payload returns unavailable malformed without contaminati
   const fallbackMetrics: SystemPerformanceMetric[] = [
     { id: "cpu", label: "CPU", value: 11, tone: "blue" },
     { id: "memory", label: "Memory", value: 22, tone: "violet" },
-    { id: "network", label: "Network", value: 33, tone: "cyan" },
+    { id: "download", label: "Download", value: 1024, tone: "cyan" },
+    { id: "upload", label: "Upload", value: 512, tone: "emerald" },
   ];
   const result = await loadSystemPerformanceStatus({
     fallbackMetrics,
@@ -102,7 +106,8 @@ test("malformed native payload returns unavailable malformed without contaminati
       snapshot: {
         cpu: 92,
         memory: "bad",
-        network: 41,
+        downloadSpeed: 2048,
+        uploadSpeed: 1024,
       },
       diagnostic: {
         quality: "live",
@@ -119,7 +124,7 @@ test("malformed native payload returns unavailable malformed without contaminati
   });
   assert.deepEqual(
     result.metrics.map((metric) => metric.value),
-    [11, 22, 33],
+    [11, 22, 1024, 512],
   );
 });
 
@@ -172,7 +177,8 @@ test("legacy native metrics are treated as fixture fallback rather than real liv
     invoke: async () => ({
       cpu: 17,
       memory: 61,
-      network: 42,
+      downloadSpeed: 2048,
+      uploadSpeed: 1024,
     }),
   });
 
@@ -189,7 +195,8 @@ test("explicit preflight envelope can carry future live quality without raw payl
       snapshot: {
         cpu: 17,
         memory: 61,
-        network: 42,
+        downloadSpeed: 2048,
+        uploadSpeed: 1024,
       },
       diagnostic: {
         quality: "live",
@@ -268,7 +275,8 @@ test("rejects last successful source unless diagnostic quality explains fallback
   const fallbackMetrics: SystemPerformanceMetric[] = [
     { id: "cpu", label: "CPU", value: 11, tone: "blue" },
     { id: "memory", label: "Memory", value: 22, tone: "violet" },
-    { id: "network", label: "Network", value: 33, tone: "cyan" },
+    { id: "download", label: "Download", value: 1024, tone: "cyan" },
+    { id: "upload", label: "Upload", value: 512, tone: "emerald" },
   ];
 
   const result = await loadSystemPerformanceStatus({
@@ -277,7 +285,8 @@ test("rejects last successful source unless diagnostic quality explains fallback
       snapshot: {
         cpu: 17,
         memory: 61,
-        network: 42,
+        downloadSpeed: 2048,
+        uploadSpeed: 1024,
       },
       diagnostic: {
         quality: "live",
@@ -295,7 +304,7 @@ test("rejects last successful source unless diagnostic quality explains fallback
   });
   assert.deepEqual(
     result.metrics.map((metric) => metric.value),
-    [11, 22, 33],
+    [11, 22, 1024, 512],
   );
 });
 

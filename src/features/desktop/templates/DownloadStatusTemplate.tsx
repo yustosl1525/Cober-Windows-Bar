@@ -3,6 +3,7 @@ import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusC
 import type { DesktopDownloadState } from "../../../types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { StatusRail } from "./StatusRail";
 
 type DownloadStatusTemplateProps = {
   state: DesktopDownloadState;
@@ -31,28 +32,5 @@ export function DownloadStatusTemplate({ state }: DownloadStatusTemplateProps) {
         <StatusRail value={state.progress} label={`${copy.downloadProgress} ${state.progress}%`} accent="green" />
       </DesktopStatusTemplateFrame>
     </>
-  );
-}
-
-function StatusRail({
-  value,
-  label,
-  accent,
-}: {
-  value: number;
-  label: string;
-  accent: "green";
-}) {
-  return (
-    <span
-      className={`product-status-track product-status-track-${accent}`}
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={value}
-    >
-      <span style={{ width: `${Math.max(12, Math.min(100, value))}%` }} />
-    </span>
   );
 }

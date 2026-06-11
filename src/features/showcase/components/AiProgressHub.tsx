@@ -13,7 +13,7 @@ export function AiProgressHub({ task }: AiProgressHubProps) {
 
   return (
     <motion.section
-      className="hub-card-lg group relative flex min-w-[360px] items-center gap-3.5 overflow-hidden rounded-[9999px] border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(245,243,255,0.46)_100%)]"
+      className="hub-card-lg group relative flex min-w-[360px] items-center gap-3.5 overflow-hidden rounded-[9999px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.52)_100%)] px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-[24px] backdrop-saturate-150 supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62)_0%,rgba(245,243,255,0.46)_100%)]"
       initial={prefersReducedMotion ? undefined : { opacity: 0, y: 6, scale: 0.985 }}
       animate={
         prefersReducedMotion
@@ -39,8 +39,6 @@ export function AiProgressHub({ task }: AiProgressHubProps) {
       aria-label={`${task.title}, ${task.subtitle}, ${safeProgress}% complete`}
       title={`${task.title} ${safeProgress}%`}
     >
-      <div className="pointer-events-none absolute inset-[1px] rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_38%,rgba(255,255,255,0.16)_100%)] opacity-90" />
-
       <motion.div
         className="relative z-[1] flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-[radial-gradient(circle_at_30%_28%,rgba(255,255,255,0.82),transparent_42%),linear-gradient(145deg,rgba(196,181,253,0.96)_0%,rgba(147,197,253,0.80)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_6px_16px_rgba(109,40,217,0.16)]"
         animate={

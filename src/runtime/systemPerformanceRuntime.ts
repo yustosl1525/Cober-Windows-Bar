@@ -9,7 +9,8 @@ const DEFAULT_SYSTEM_STATUS_PREFLIGHT_TIMEOUT_MS = 1500;
 const SYSTEM_PERFORMANCE_LABELS = {
   cpu: "CPU",
   memory: "\u5185\u5B58",
-  network: "\u7F51\u7EDC",
+  download: "\u4E0B\u8F7D",
+  upload: "\u4E0A\u4F20",
 } as const;
 
 const SYSTEM_STATUS_DIAGNOSTIC_QUALITIES = [
@@ -108,7 +109,8 @@ function createSystemPerformanceMetrics(
   return [
     { id: "cpu", label: SYSTEM_PERFORMANCE_LABELS.cpu, value: snapshot.cpu, tone: "blue" },
     { id: "memory", label: SYSTEM_PERFORMANCE_LABELS.memory, value: snapshot.memory, tone: "violet" },
-    { id: "network", label: SYSTEM_PERFORMANCE_LABELS.network, value: snapshot.network, tone: "cyan" },
+    { id: "download", label: SYSTEM_PERFORMANCE_LABELS.download, value: snapshot.downloadSpeed, tone: "cyan" },
+    { id: "upload", label: SYSTEM_PERFORMANCE_LABELS.upload, value: snapshot.uploadSpeed, tone: "emerald" },
   ];
 }
 
@@ -185,13 +187,14 @@ function parseSystemPerformanceSnapshot(value: unknown): SystemPerformanceSnapsh
 
   const cpu = toPercent(value.cpu);
   const memory = toPercent(value.memory);
-  const network = toPercent(value.network);
+  const downloadSpeed = toSpeed(value.downloadSpeed);
+  const uploadSpeed = toSpeed(value.uploadSpeed);
 
-  if (cpu === undefined || memory === undefined || network === undefined) {
+  if (cpu === undefined || memory === undefined || downloadSpeed === undefined || uploadSpeed === undefined) {
     return undefined;
   }
 
-  return { cpu, memory, network };
+  return { cpu, memory, downloadSpeed, uploadSpeed };
 }
 
 function createDiagnosticResult({
@@ -285,6 +288,14 @@ function toPercent(value: unknown): number | undefined {
   }
 
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function toSpeed(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  return Math.max(0, Math.round(value));
 }
 
 function snapshotSystemPerformanceMetrics(metrics: SystemPerformanceMetric[]): SystemPerformanceMetric[] {

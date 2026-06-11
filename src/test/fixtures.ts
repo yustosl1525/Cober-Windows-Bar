@@ -21,7 +21,8 @@ export function mockMetrics(overrides?: Partial<SystemPerformanceMetric>[]): Sys
   const base: SystemPerformanceMetric[] = [
     { id: "cpu", label: "CPU", value: 42, tone: "blue" },
     { id: "memory", label: "Memory", value: 61, tone: "violet" },
-    { id: "network", label: "Network", value: 17, tone: "cyan" },
+    { id: "download", label: "Download", value: 2_457_600, tone: "cyan" },
+    { id: "upload", label: "Upload", value: 512_000, tone: "emerald" },
   ];
   if (!overrides) return base;
   return base.map((m, i) => ({ ...m, ...(overrides[i] ?? {}) }));
@@ -66,6 +67,7 @@ export function mockMediaState(overrides?: Partial<DesktopMediaState>): DesktopM
     timeLabel: "01:42 / 03:28",
     progress: 48,
     accent: "violet",
+    playbackStatus: "playing",
     sourceHealth: mockSourceHealth({ kind: "media", quality: "native" }),
     ...overrides,
   };

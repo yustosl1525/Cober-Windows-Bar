@@ -1,0 +1,115 @@
+import type { HubEventBus } from "../state/hubState";
+import { createProviderRegistry } from "./providerRegistry";
+import { connectProviderToEventBus, type ProviderConnection } from "./providerAdapter";
+import type { HubProvider } from "./types";
+import { createRealClipboardProvider } from "./realClipboardProvider";
+import { createRealFocusProvider } from "./realFocusProvider";
+import { createRealSystemPerformanceProvider } from "./realSystemPerformanceProvider";
+import {
+  createMockMusicProvider,
+  createMockDownloadProvider,
+  createMockAIProvider,
+  createMockNotificationProvider,
+} from "./mockProviders";
+
+export type ProviderManagerOptions = {
+  /** When true, register real (Tauri-backed) providers. Default: true. */
+  realProviders?: boolean;
+  /** When true, register mock providers as fallback. Default: true. */
+  mockProviders?: boolean;
+};
+
+export type ProviderManager = {
+  /** Start all registered providers and connect them to the event bus. */
+  start(): void;
+  /** Stop all providers and disconnect from the event bus. */
+  stop(): void;
+  /** Access the underlying registry for introspection. */
+  registry: ReturnType<typeof createProviderRegistry>;
+  /** List all registered provider IDs. */
+  listProviderIds(): string[];
+};
+
+/**
+ * Creates a unified ProviderManager that registers both real (Tauri-backed)
+ * and mock providers, connecting them to a shared HubEventBus.
+ *
+ * This is the single entry point for the unified data pipeline:
+ * all data sources flow through the Provider SDK, producing HubEvents
+ * that the aggregation layer consumes.
+ */
+export function createProviderManager(
+  eventBus: HubEventBus,
+  options: ProviderManagerOptions = {},
+): ProviderManager {
+  const { realProviders = true, mockProviders = true } = options;
+  const registry = createProviderRegistry();
+  const connections: ProviderConnection[] = [];
+
+  // Keep references to the actual provider instances.
+  // The registry stores them internally but only exposes snapshots.
+  const providerInstances = new Map<string, HubProvider>();
+
+  function registerProvider(provider: HubProvider) {
+    const result = registry.register(provider);
+    if (result.ok) {
+      providerInstances.set(provider.id, provider);
+    } else {
+      console.warn(`[ProviderManager] Failed to register ${provider.id}: ${result.error}`);
+    }
+  }
+
+  // Register real providers (Tauri-backed)
+  // Note: Media is handled via a direct listener in useDesktopStatusRuntime,
+  // not through the Provider pipeline, to avoid duplicate event registration.
+  if (realProviders) {
+    registerProvider(createRealClipboardProvider());
+    registerProvider(createRealFocusProvider());
+    registerProvider(createRealSystemPerformanceProvider());
+  }
+
+  // Register mock providers as fallback/demo data sources
+  if (mockProviders) {
+    registerProvider(createMockMusicProvider());
+    registerProvider(createMockDownloadProvider());
+    registerProvider(createMockAIProvider());
+    registerProvider(createMockNotificationProvider());
+  }
+
+  return {
+    registry,
+
+    start() {
+      for (const record of registry.list()) {
+        const provider = providerInstances.get(record.id);
+        if (!provider) {
+          continue;
+        }
+
+        // Connect provider subscriptions to the event bus
+        const connection = connectProviderToEventBus(provider, eventBus);
+        connections.push(connection);
+
+        // Start the provider
+        registry.start(record.id);
+      }
+    },
+
+    stop() {
+      // Stop all providers
+      for (const record of registry.list()) {
+        registry.stop(record.id);
+      }
+
+      // Disconnect all event bus connections
+      for (const connection of connections) {
+        connection.disconnect();
+      }
+      connections.length = 0;
+    },
+
+    listProviderIds() {
+      return registry.list().map((record) => record.id);
+    },
+  };
+}

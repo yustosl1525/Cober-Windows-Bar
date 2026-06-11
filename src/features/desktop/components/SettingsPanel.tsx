@@ -1,8 +1,34 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
-import { getDesktopStatusTemplateDescriptors, getDesktopStatusSettingsCopy } from "../../../data/desktopStatusConfig";
-import type { DesktopStatusKind, DesktopStatusPreferences } from "../../../types/hub";
+import {
+  X,
+  Monitor,
+  Maximize,
+  Lock,
+  Power,
+  Globe,
+  RefreshCw,
+  Crosshair,
+  Settings,
+  Navigation,
+  Cpu,
+  Music,
+  HardDrive,
+  Download,
+  Clipboard,
+  Eye,
+  ArrowRight,
+  Check,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  getDesktopStatusTemplateDescriptors,
+  getDesktopStatusSettingsCopy,
+} from "../../../data/desktopStatusConfig";
+import type {
+  DesktopStatusKind,
+  DesktopStatusPreferences,
+} from "../../../types/hub";
 
 export type SettingsPanelProps = {
   preferences: DesktopStatusPreferences;
@@ -20,15 +46,40 @@ export type SettingsPanelProps = {
   onClose: () => void;
 };
 
-function settingsToggleClassName(active: boolean) {
-  return [
-    "product-settings-toggle",
-    active ? "is-active" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+const TEMPLATE_ICON_MAP: Record<DesktopStatusKind, LucideIcon> = {
+  resident: Cpu,
+  media: Music,
+  download: Download,
+  update: HardDrive,
+  clipboard: Clipboard,
+  focus: Eye,
+};
+
+/* ─── Win11-style pill toggle switch ─── */
+function Win11Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      className={`win11-toggle${checked ? " is-on" : ""}`}
+      onClick={onChange}
+    >
+      <span className="win11-toggle-thumb" />
+    </button>
+  );
 }
 
+/* ─── Main component ─── */
 export function SettingsPanel({
   preferences,
   activeStatusKind,
@@ -46,150 +97,266 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const { t, i18n: i18nInstance } = useTranslation();
   const settingsCopy = getDesktopStatusSettingsCopy();
-  const templateDescriptors = useMemo(() => getDesktopStatusTemplateDescriptors(), [i18nInstance.language]);
+  const templateDescriptors = useMemo(
+    () => getDesktopStatusTemplateDescriptors(),
+    [i18nInstance.language],
+  );
 
   return (
     <aside
-      className="product-settings-panel"
+      className="win11-settings-panel"
       role="dialog"
       aria-label={settingsCopy.panel.ariaLabel}
     >
-      <header className="product-settings-panel__header">
-        <div>
+      {/* ── Header ── */}
+      <header className="win11-settings-header">
+        <div className="win11-settings-header-text">
           <h2>{settingsCopy.panel.title}</h2>
           <p>{settingsCopy.panel.description}</p>
         </div>
         <button
           type="button"
-          className="product-settings-panel__close"
+          className="win11-settings-close"
           onClick={onClose}
           aria-label={settingsCopy.panel.closeLabel}
         >
-          <X size={18} strokeWidth={2.1} />
+          <X size={14} strokeWidth={2} />
         </button>
       </header>
 
-      <div className="product-settings-panel__body">
-        <section className="product-settings-section">
-          <h3>{settingsCopy.sections.windowBehavior}</h3>
-          <div className="product-settings-toggle-grid">
-            <button
-              type="button"
-              className={settingsToggleClassName(preferences.alwaysFloat)}
-              onClick={onToggleAlwaysFloat}
+      {/* ── Scrollable body ── */}
+      <div className="win11-settings-body">
+        {/* ── Window Behavior ── */}
+        <section className="win11-settings-section">
+          <h3 className="win11-settings-section-title">
+            {settingsCopy.sections.windowBehavior}
+          </h3>
+          <div className="win11-settings-card">
+            <SettingRow
+              icon={Monitor}
+              title={settingsCopy.toggles.alwaysFloat.title}
+              description={settingsCopy.toggles.alwaysFloat.description}
             >
-              <strong>{settingsCopy.toggles.alwaysFloat.title}</strong>
-              <span>{settingsCopy.toggles.alwaysFloat.description}</span>
-              <small>
-                {preferences.alwaysFloat
-                  ? settingsCopy.toggles.alwaysFloat.activeLabel
-                  : settingsCopy.toggles.alwaysFloat.inactiveLabel}
-              </small>
-            </button>
-            <button
-              type="button"
-              className={settingsToggleClassName(preferences.avoidFullscreen)}
-              onClick={onToggleAvoidFullscreen}
+              <Win11Toggle
+                checked={preferences.alwaysFloat}
+                onChange={onToggleAlwaysFloat}
+                label={settingsCopy.toggles.alwaysFloat.title}
+              />
+            </SettingRow>
+
+            <SettingRow
+              icon={Maximize}
+              title={settingsCopy.toggles.avoidFullscreen.title}
+              description={settingsCopy.toggles.avoidFullscreen.description}
             >
-              <strong>{settingsCopy.toggles.avoidFullscreen.title}</strong>
-              <span>{settingsCopy.toggles.avoidFullscreen.description}</span>
-              <small>
-                {preferences.avoidFullscreen
-                  ? settingsCopy.toggles.avoidFullscreen.activeLabel
-                  : settingsCopy.toggles.avoidFullscreen.inactiveLabel}
-              </small>
-            </button>
-            <button
-              type="button"
-              className={settingsToggleClassName(preferences.lockPosition)}
-              onClick={onToggleLockPosition}
+              <Win11Toggle
+                checked={preferences.avoidFullscreen}
+                onChange={onToggleAvoidFullscreen}
+                label={settingsCopy.toggles.avoidFullscreen.title}
+              />
+            </SettingRow>
+
+            <SettingRow
+              icon={Lock}
+              title={settingsCopy.toggles.lockPosition.title}
+              description={settingsCopy.toggles.lockPosition.description}
+              isLast
             >
-              <strong>{settingsCopy.toggles.lockPosition.title}</strong>
-              <span>{settingsCopy.toggles.lockPosition.description}</span>
-              <small>
-                {preferences.lockPosition
-                  ? settingsCopy.toggles.lockPosition.activeLabel
-                  : settingsCopy.toggles.lockPosition.inactiveLabel}
-              </small>
-            </button>
-            <button
-              type="button"
-              className={settingsToggleClassName(autostartEnabled)}
-              onClick={onToggleAutostart}
+              <Win11Toggle
+                checked={preferences.lockPosition}
+                onChange={onToggleLockPosition}
+                label={settingsCopy.toggles.lockPosition.title}
+              />
+            </SettingRow>
+
+            <SettingRow
+              icon={Power}
+              title={t("settings.toggles.autostart.title")}
+              description={t("settings.toggles.autostart.description")}
+              isLast
             >
-              <strong>{t("settings.toggles.autostart.title")}</strong>
-              <span>{t("settings.toggles.autostart.description")}</span>
-              <small>
-                {autostartEnabled
-                  ? t("settings.toggles.autostart.activeLabel")
-                  : t("settings.toggles.autostart.inactiveLabel")}
-              </small>
-            </button>
+              <Win11Toggle
+                checked={autostartEnabled}
+                onChange={onToggleAutostart}
+                label={t("settings.toggles.autostart.title")}
+              />
+            </SettingRow>
           </div>
         </section>
 
-        <section className="product-settings-section">
-          <h3>{settingsCopy.sections.statusTemplates}</h3>
-          <div className="product-settings-template-grid">
+        {/* ── Status Templates ── */}
+        <section className="win11-settings-section">
+          <h3 className="win11-settings-section-title">
+            {settingsCopy.sections.statusTemplates}
+          </h3>
+          <div className="win11-template-grid">
             {templateDescriptors.map((descriptor) => {
               const isActive = descriptor.kind === activeStatusKind;
+              const Icon = TEMPLATE_ICON_MAP[descriptor.kind];
               return (
                 <button
                   key={descriptor.kind}
                   type="button"
-                  className={settingsToggleClassName(isActive)}
+                  className={`win11-template-card${isActive ? " is-active" : ""}`}
                   onClick={() => onKindSelect(descriptor.kind)}
                 >
-                  <strong>{descriptor.label}</strong>
-                  <span>{descriptor.description}</span>
-                  <small>{descriptor.providerHint}</small>
+                  <span className="win11-template-icon-tile">
+                    <Icon size={16} strokeWidth={1.8} />
+                  </span>
+                  <span className="win11-template-label">
+                    {descriptor.label}
+                  </span>
+                  {isActive && (
+                    <span className="win11-template-check">
+                      <Check size={10} strokeWidth={2.5} />
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </section>
 
-        <section className="product-settings-section">
-          <h3>{t("settings.language.title")}</h3>
-          <div className="product-settings-toggle-grid">
-            <button
-              type="button"
-              className={settingsToggleClassName(i18nInstance.language === "zh-CN")}
-              onClick={() => void i18nInstance.changeLanguage("zh-CN")}
+        {/* ── Language ── */}
+        <section className="win11-settings-section">
+          <h3 className="win11-settings-section-title">
+            {t("settings.language.title")}
+          </h3>
+          <div className="win11-settings-card">
+            <SettingRow
+              icon={Globe}
+              title={t("settings.language.zh-CN")}
+              description={
+                i18nInstance.language === "zh-CN"
+                  ? t("common.enabled")
+                  : t("common.disabled")
+              }
             >
-              <strong>{t("settings.language.zh-CN")}</strong>
-              <small>{i18nInstance.language === "zh-CN" ? t("common.enabled") : t("common.disabled")}</small>
-            </button>
-            <button
-              type="button"
-              className={settingsToggleClassName(i18nInstance.language === "en")}
-              onClick={() => void i18nInstance.changeLanguage("en")}
+              {i18nInstance.language === "zh-CN" ? (
+                <span className="win11-check-badge">
+                  <Check size={12} strokeWidth={2.5} />
+                </span>
+              ) : (
+                <ArrowRight
+                  size={14}
+                  strokeWidth={2}
+                  className="win11-row-chevron"
+                />
+              )}
+              <button
+                type="button"
+                className="win11-row-overlay"
+                onClick={() => void i18nInstance.changeLanguage("zh-CN")}
+                aria-label={t("settings.language.zh-CN")}
+              />
+            </SettingRow>
+
+            <SettingRow
+              icon={Globe}
+              title={t("settings.language.en")}
+              description={
+                i18nInstance.language === "en"
+                  ? t("common.enabled")
+                  : t("common.disabled")
+              }
+              isLast
             >
-              <strong>{t("settings.language.en")}</strong>
-              <small>{i18nInstance.language === "en" ? t("common.enabled") : t("common.disabled")}</small>
-            </button>
+              {i18nInstance.language === "en" ? (
+                <span className="win11-check-badge">
+                  <Check size={12} strokeWidth={2.5} />
+                </span>
+              ) : (
+                <ArrowRight
+                  size={14}
+                  strokeWidth={2}
+                  className="win11-row-chevron"
+                />
+              )}
+              <button
+                type="button"
+                className="win11-row-overlay"
+                onClick={() => void i18nInstance.changeLanguage("en")}
+                aria-label={t("settings.language.en")}
+              />
+            </SettingRow>
           </div>
         </section>
 
-        <section className="product-settings-section">
-          <h3>{settingsCopy.actions.quickPanelTitle}</h3>
-          <p className="product-settings-section__hint">{settingsCopy.actions.quickPanelDescription}</p>
-          <div className="product-settings-actions">
-            <button type="button" className="product-settings-btn" onClick={onRefresh}>
-              {settingsCopy.actions.refresh}
-            </button>
-            <button type="button" className="product-settings-btn" onClick={onResetPosition}>
-              {settingsCopy.actions.resetPosition}
-            </button>
-            <button type="button" className="product-settings-btn" onClick={onOpenNativeSettings}>
-              {settingsCopy.actions.openNativeSettings}
-            </button>
-            <button type="button" className="product-settings-btn" onClick={onRecallStatusCenter}>
-              {settingsCopy.actions.recallStatusCenter}
-            </button>
+        {/* ── Quick Controls ── */}
+        <section className="win11-settings-section">
+          <h3 className="win11-settings-section-title">
+            {settingsCopy.actions.quickPanelTitle}
+          </h3>
+          <div className="win11-actions-grid">
+            <Win11ActionButton
+              icon={RefreshCw}
+              label={settingsCopy.actions.refresh}
+              onClick={onRefresh}
+            />
+            <Win11ActionButton
+              icon={Crosshair}
+              label={settingsCopy.actions.resetPosition}
+              onClick={onResetPosition}
+            />
+            <Win11ActionButton
+              icon={Settings}
+              label={settingsCopy.actions.openNativeSettings}
+              onClick={onOpenNativeSettings}
+            />
+            <Win11ActionButton
+              icon={Navigation}
+              label={settingsCopy.actions.recallStatusCenter}
+              onClick={onRecallStatusCenter}
+            />
           </div>
         </section>
       </div>
     </aside>
+  );
+}
+
+/* ─── Setting Row (icon | title + desc | right-slot) ─── */
+function SettingRow({
+  icon: Icon,
+  title,
+  description,
+  children,
+  isLast = false,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  isLast?: boolean;
+}) {
+  return (
+    <div className={`win11-setting-row${isLast ? " is-last" : ""}`}>
+      <span className="win11-setting-icon">
+        <Icon size={15} strokeWidth={1.8} />
+      </span>
+      <div className="win11-setting-content">
+        <span className="win11-setting-title">{title}</span>
+        <span className="win11-setting-desc">{description}</span>
+      </div>
+      <div className="win11-setting-action">{children}</div>
+    </div>
+  );
+}
+
+/* ─── Quick Action Button ─── */
+function Win11ActionButton({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="win11-action-btn" onClick={onClick}>
+      <Icon size={13} strokeWidth={1.8} />
+      <span>{label}</span>
+    </button>
   );
 }
