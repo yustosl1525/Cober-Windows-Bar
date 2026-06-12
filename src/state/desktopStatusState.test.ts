@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { createSystemPerformanceMetricSnapshot } from "../data/desktopStatusConfig";
-import { createDesktopStatusStateMap, listDesktopStatusStates, resolveDesktopStatusState } from "./desktopStatusState";
+import { createDesktopStatusStateMap, resolveDesktopStatusState } from "./desktopStatusState";
 import type { SystemPerformanceSourceStatus } from "../types/hub";
 
 const metrics = createSystemPerformanceMetricSnapshot({
@@ -100,11 +100,18 @@ test("desktop status resolver keeps source status high-level and drops diagnosti
   assert.equal("rawPayload" in state.sourceStatus!, false);
 });
 
-test("desktop status state listing exposes all seven status templates in product order", () => {
-  assert.deepEqual(
-    listDesktopStatusStates(metrics).map((state) => state.kind),
-    ["resident", "media", "download", "update", "clipboard", "focus", "notification"],
-  );
+test("desktop status state map covers all seven status templates in product order", () => {
+  const stateMap = createDesktopStatusStateMap(metrics);
+  const kinds = Object.values(stateMap).map((state) => state.kind);
+  assert.deepEqual(kinds, [
+    "resident",
+    "media",
+    "download",
+    "update",
+    "clipboard",
+    "focus",
+    "notification",
+  ]);
 });
 
 test("desktop status resolver keeps the previous state during the stability window", () => {

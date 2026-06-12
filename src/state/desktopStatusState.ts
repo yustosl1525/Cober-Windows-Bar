@@ -66,11 +66,6 @@ export function resolveDesktopStatusState(input: DesktopStatusResolverInput): De
   return states[decision.kind] ?? states[DESKTOP_STATUS_DEFAULT_KIND];
 }
 
-export function listDesktopStatusStates(metrics: SystemPerformanceMetric[]): DesktopStatusState[] {
-  const states = createDesktopStatusStateMap(metrics);
-  return DESKTOP_STATUS_TEMPLATE_ORDER.map((kind) => states[kind]);
-}
-
 function cloneSourceStatus(
   sourceStatus: SystemPerformanceSourceStatus | undefined,
 ): SystemPerformanceSourceStatus | undefined {
