@@ -35,7 +35,9 @@ export function NotificationHub({ notification }: NotificationHubProps) {
       <FluentIconChip mode="notification" />
 
       <div className="relative z-[1] min-w-0 flex-1">
-        <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">{notification.app}</div>
+        <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">
+          {notification.app}
+        </div>
         <div className="mt-0.5 truncate text-[12px] font-medium leading-[1.25] text-slate-600">
           {notification.sender}: {notification.message}
         </div>

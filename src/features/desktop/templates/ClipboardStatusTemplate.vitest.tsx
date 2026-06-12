@@ -33,7 +33,9 @@ describe("ClipboardStatusTemplate", () => {
     render(<ClipboardStatusTemplate state={state} />);
 
     fireEvent.click(screen.getByRole("button", { name: /open in browser/i }));
-    expect(mockInvoke).toHaveBeenCalledWith("open_url_in_browser", { url: "https://github.com/example" });
+    expect(mockInvoke).toHaveBeenCalledWith("open_url_in_browser", {
+      url: "https://github.com/example",
+    });
   });
 
   it("hides the Open in browser button for non-URL content", () => {

@@ -80,22 +80,23 @@ function snapshotCapabilitySupport(
 function summarizeCapabilitySupportRecords(
   records: ProviderRegistryCapabilitySupportRecord[],
 ): ProviderRegistryCapabilitySupportSummary[] {
-  const summaries = new Map<string, ProviderRegistryCapabilitySupportSummary & { providerIdsSet: Set<string> }>();
+  const summaries = new Map<
+    string,
+    ProviderRegistryCapabilitySupportSummary & { providerIdsSet: Set<string> }
+  >();
 
   records.forEach((record) => {
     const { capability } = record;
     const key = `${capability.kind}:${capability.origin}:${capability.support}`;
-    const existing =
-      summaries.get(key) ??
-      {
-        kind: capability.kind,
-        origin: capability.origin,
-        support: capability.support,
-        capabilityCount: 0,
-        providerCount: 0,
-        providerIds: [],
-        providerIdsSet: new Set<string>(),
-      };
+    const existing = summaries.get(key) ?? {
+      kind: capability.kind,
+      origin: capability.origin,
+      support: capability.support,
+      capabilityCount: 0,
+      providerCount: 0,
+      providerIds: [],
+      providerIdsSet: new Set<string>(),
+    };
 
     existing.capabilityCount += 1;
 

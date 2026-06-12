@@ -191,11 +191,7 @@ export function createAutoDemoSequence(now = Date.now()): HubDemoScenario[] {
   ];
 }
 
-export function playHubDemoScenario(
-  bus: HubEventBus,
-  scenario: HubDemoScenario,
-  now = Date.now(),
-) {
+export function playHubDemoScenario(bus: HubEventBus, scenario: HubDemoScenario, now = Date.now()) {
   bus.clearHubEvents();
 
   for (const event of [...scenario.events].reverse()) {

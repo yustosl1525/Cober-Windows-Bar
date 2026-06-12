@@ -8,7 +8,9 @@ type DownloadHubProps = {
 
 export function DownloadHub({ task }: DownloadHubProps) {
   const prefersReducedMotion = useReducedMotion();
-  const safeProgress = Number.isFinite(task.progress) ? Math.max(0, Math.min(task.progress ?? 0, 100)) : 0;
+  const safeProgress = Number.isFinite(task.progress)
+    ? Math.max(0, Math.min(task.progress ?? 0, 100))
+    : 0;
 
   return (
     <motion.section
@@ -30,10 +32,16 @@ export function DownloadHub({ task }: DownloadHubProps) {
 
       <div className="relative z-[1] min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3">
-          <span className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">{task.title}</span>
-          <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500">{safeProgress}%</span>
+          <span className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">
+            {task.title}
+          </span>
+          <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500">
+            {safeProgress}%
+          </span>
         </div>
-        <div className="mt-0.5 truncate text-[12px] font-medium tracking-[0] text-slate-600">{task.subtitle}</div>
+        <div className="mt-0.5 truncate text-[12px] font-medium tracking-[0] text-slate-600">
+          {task.subtitle}
+        </div>
         <div className="mt-3">
           <FluentProgressRail mode="download" value={safeProgress} label="Download progress" />
         </div>

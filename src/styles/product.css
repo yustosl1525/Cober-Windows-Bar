@@ -281,8 +281,7 @@ button {
     height: 5px;
     overflow: hidden;
     border-radius: 999px;
-    background:
-      linear-gradient(180deg, rgba(226, 232, 240, 0.88), rgba(203, 213, 225, 0.52));
+    background: linear-gradient(180deg, rgba(226, 232, 240, 0.88), rgba(203, 213, 225, 0.52));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.72),
       inset 0 -1px 0 rgba(148, 163, 184, 0.12);
@@ -295,7 +294,10 @@ button {
     box-shadow:
       0 0 14px rgba(96, 165, 250, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.26);
-    transition: width 320ms cubic-bezier(0.2, 0.8, 0.2, 1), background 220ms ease, box-shadow 220ms ease;
+    transition:
+      width 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 220ms ease,
+      box-shadow 220ms ease;
   }
 
   /* ── Shimmer overlay for active progress ── */
@@ -320,8 +322,12 @@ button {
   }
 
   @keyframes product-status-shimmer {
-    from { transform: translateX(-360%); }
-    to { transform: translateX(360%); }
+    from {
+      transform: translateX(-360%);
+    }
+    to {
+      transform: translateX(360%);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -484,7 +490,12 @@ button {
     color: #c026d3;
     background:
       radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.92), transparent 42%),
-      linear-gradient(145deg, rgba(252, 231, 243, 0.98) 0%, rgba(233, 213, 255, 0.94) 55%, rgba(216, 196, 255, 0.92) 100%);
+      linear-gradient(
+        145deg,
+        rgba(252, 231, 243, 0.98) 0%,
+        rgba(233, 213, 255, 0.94) 55%,
+        rgba(216, 196, 255, 0.92) 100%
+      );
   }
 
   .product-status-icon-media::after {
@@ -501,8 +512,13 @@ button {
   }
 
   @keyframes product-status-icon-pulse {
-    0%, 100% { opacity: 0.94; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.94;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   /* The Disc3 SVG spins slowly while playing to telegraph the live state. */
@@ -512,8 +528,12 @@ button {
   }
 
   @keyframes product-status-icon-spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -559,18 +579,33 @@ button {
   }
 
   @keyframes product-status-media-bar-1 {
-    0%, 100% { height: 28%; }
-    50%      { height: 88%; }
+    0%,
+    100% {
+      height: 28%;
+    }
+    50% {
+      height: 88%;
+    }
   }
 
   @keyframes product-status-media-bar-2 {
-    0%, 100% { height: 72%; }
-    50%      { height: 32%; }
+    0%,
+    100% {
+      height: 72%;
+    }
+    50% {
+      height: 32%;
+    }
   }
 
   @keyframes product-status-media-bar-3 {
-    0%, 100% { height: 50%; }
-    50%      { height: 100%; }
+    0%,
+    100% {
+      height: 50%;
+    }
+    50% {
+      height: 100%;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -600,7 +635,12 @@ button {
     color: #e11d48;
     background:
       radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.92), transparent 42%),
-      linear-gradient(145deg, rgba(255, 241, 242, 0.98) 0%, rgba(255, 228, 230, 0.94) 55%, rgba(254, 205, 211, 0.92) 100%);
+      linear-gradient(
+        145deg,
+        rgba(255, 241, 242, 0.98) 0%,
+        rgba(255, 228, 230, 0.94) 55%,
+        rgba(254, 205, 211, 0.92) 100%
+      );
   }
 
   .product-status-icon-notification::after {
@@ -625,7 +665,9 @@ button {
     background: rgba(109, 93, 252, 0.06);
     color: #5f6f88;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
     padding: 0;
   }
 
@@ -648,11 +690,17 @@ button {
   }
 
   .product-status-guest-btn {
-    transition: background 0.15s, color 0.15s, transform 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      transform 0.15s;
   }
 
   .product-status-guest-btn-primary {
-    transition: background 0.15s, color 0.15s, transform 0.15s,
+    transition:
+      background 0.15s,
+      color 0.15s,
+      transform 0.15s,
       box-shadow 0.15s;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   }
@@ -701,7 +749,7 @@ button {
   }
 
   .product-status-media-unavailable-badge::before {
-    content: '';
+    content: "";
     width: 5px;
     height: 5px;
     border-radius: 999px;
@@ -729,10 +777,22 @@ button {
   }
 
   @keyframes product-status-toast-flash {
-    0%   { opacity: 0; transform: translateX(-50%) translateY(6px); }
-    12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
-    82%  { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(2px); }
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(6px);
+    }
+    12% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    82% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(2px);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -755,15 +815,21 @@ button {
   /* ---- Win11 Settings Panel (matches SettingsPanel.tsx) ---- */
 
   @keyframes win11-panel-enter {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* ── Panel shell ── */
 
   .win11-settings-panel {
-    --win11-accent: #0078D4;
-    --win11-accent-hover: #106EBE;
+    --win11-accent: #0078d4;
+    --win11-accent-hover: #106ebe;
     --win11-accent-light: rgba(0, 120, 212, 0.08);
     --win11-card: rgba(255, 255, 255, 0.72);
     --win11-card-hover: rgba(255, 255, 255, 0.88);
@@ -794,7 +860,12 @@ button {
     overflow: hidden;
     z-index: 1000;
     animation: win11-panel-enter 180ms cubic-bezier(0.1, 0.9, 0.2, 1) both;
-    font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family:
+      "Segoe UI Variable",
+      "Segoe UI",
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 
   /* ── Header ── */
@@ -836,7 +907,9 @@ button {
     color: var(--win11-text-sec);
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 80ms ease, color 80ms ease;
+    transition:
+      background 80ms ease,
+      color 80ms ease;
   }
 
   .win11-settings-close:hover {
@@ -855,8 +928,12 @@ button {
     gap: 14px;
   }
 
-  .win11-settings-body::-webkit-scrollbar { width: 3px; }
-  .win11-settings-body::-webkit-scrollbar-track { background: transparent; }
+  .win11-settings-body::-webkit-scrollbar {
+    width: 3px;
+  }
+  .win11-settings-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .win11-settings-body::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.16);
     border-radius: 999px;
@@ -1181,7 +1258,8 @@ button {
   }
 
   @keyframes product-status-breathe {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.48),
         inset 0 1px 0 rgba(255, 255, 255, 0.82),
@@ -1195,7 +1273,6 @@ button {
     }
   }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   *,

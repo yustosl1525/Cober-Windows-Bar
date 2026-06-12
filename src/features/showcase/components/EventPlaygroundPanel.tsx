@@ -81,7 +81,12 @@ const eventTypeLabel: Record<HubEvent["type"], string> = {
   system: "System",
 };
 
-const mockProviderSources = new Set<HubEvent["source"]>(["music", "download", "ai", "notification"]);
+const mockProviderSources = new Set<HubEvent["source"]>([
+  "music",
+  "download",
+  "ai",
+  "notification",
+]);
 
 export function EventPlaygroundPanel({
   activeEvents,
@@ -160,13 +165,16 @@ export function EventPlaygroundPanel({
       <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(248,251,255,0.12),rgba(226,238,255,0.065))] shadow-[0_18px_52px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-sky-200/20 bg-sky-300/12 text-sky-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
+            <span className="bg-sky-300/12 grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-sky-200/20 text-sky-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
               <Radio size={18} strokeWidth={1.8} />
             </span>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold leading-6 text-white">Diagnostics and replay</h2>
+              <h2 className="truncate text-lg font-semibold leading-6 text-white">
+                Diagnostics and replay
+              </h2>
               <p className="truncate text-sm leading-5 text-slate-300">
-                Inspect the current resolver path, replay known states, and compare provider versus fixture sources.
+                Inspect the current resolver path, replay known states, and compare provider versus
+                fixture sources.
               </p>
             </div>
           </div>
@@ -175,7 +183,7 @@ export function EventPlaygroundPanel({
             type="button"
             onClick={onStartDemo}
             disabled={isAutoRunning}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#60cdff]/30 bg-[#60cdff]/14 px-4 text-sm font-semibold text-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-[#60cdff]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-[#60cdff]/14 inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#60cdff]/30 px-4 text-sm font-semibold text-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-[#60cdff]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isAutoRunning ? <Sparkles size={16} /> : <Play size={16} />}
             {isAutoRunning ? "Replay running" : "Start replay"}
@@ -200,18 +208,45 @@ export function EventPlaygroundPanel({
         <div className="border-b border-white/10 px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="mr-1 min-w-[124px]">
-              <div className="text-xs font-semibold uppercase tracking-normal text-slate-400">Source replay</div>
+              <div className="text-xs font-semibold uppercase tracking-normal text-slate-400">
+                Source replay
+              </div>
               <div className="truncate text-[12px] leading-4 text-slate-300">
                 {activeProviderLabel ?? "Stopped, events stay"}
               </div>
             </div>
             <ProviderButton label="Music" icon={Music2} onClick={onProviderMusic} tone="rose" />
             <ProviderButton label="AI" icon={Bot} onClick={onProviderAi} tone="sky" />
-            <ProviderButton label="Download" icon={Download} onClick={onProviderDownload} tone="emerald" />
-            <ProviderButton label="Notify" icon={Bell} onClick={onProviderNotification} tone="amber" />
-            <ProviderButton label="Tauri Fixture" icon={Sparkles} onClick={onTauriFixture} tone="violet" />
-            <ProviderButton label="Stop source" icon={CircleStop} onClick={onProviderStop} tone="slate" />
-            <ProviderButton label="Return to idle" icon={Trash2} onClick={onProviderClear} tone="slate" />
+            <ProviderButton
+              label="Download"
+              icon={Download}
+              onClick={onProviderDownload}
+              tone="emerald"
+            />
+            <ProviderButton
+              label="Notify"
+              icon={Bell}
+              onClick={onProviderNotification}
+              tone="amber"
+            />
+            <ProviderButton
+              label="Tauri Fixture"
+              icon={Sparkles}
+              onClick={onTauriFixture}
+              tone="violet"
+            />
+            <ProviderButton
+              label="Stop source"
+              icon={CircleStop}
+              onClick={onProviderStop}
+              tone="slate"
+            />
+            <ProviderButton
+              label="Return to idle"
+              icon={Trash2}
+              onClick={onProviderClear}
+              tone="slate"
+            />
             <span
               className={`ml-auto rounded-full border px-2.5 py-1 text-xs font-semibold ${
                 activeProviderLabel
@@ -245,7 +280,9 @@ export function EventPlaygroundPanel({
                       <Icon size={18} strokeWidth={1.8} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[14px] font-semibold leading-5">{action.label}</span>
+                      <span className="block truncate text-[14px] font-semibold leading-5">
+                        {action.label}
+                      </span>
                       <span className="block truncate text-[12px] leading-4 text-slate-300/85">
                         {action.description}
                       </span>
@@ -290,7 +327,7 @@ export function EventPlaygroundPanel({
             </div>
 
             {activeEvents.length === 0 ? (
-              <div className="grid min-h-[132px] place-items-center rounded-[12px] border border-dashed border-white/12 bg-white/[0.035] px-4 text-center">
+              <div className="border-white/12 grid min-h-[132px] place-items-center rounded-[12px] border border-dashed bg-white/[0.035] px-4 text-center">
                 <div>
                   <div className="text-sm font-semibold text-slate-100">No active replay input</div>
                   <div className="mt-1 text-xs leading-5 text-slate-400">
@@ -321,7 +358,15 @@ function InsightCard({ title, description }: { title: string; description: strin
   );
 }
 
-function FlowPill({ label, value, isActive }: { label: string; value: string; isActive?: boolean }) {
+function FlowPill({
+  label,
+  value,
+  isActive,
+}: {
+  label: string;
+  value: string;
+  isActive?: boolean;
+}) {
   return (
     <div
       className={`min-w-0 rounded-[12px] border px-3 py-2 ${
@@ -330,7 +375,9 @@ function FlowPill({ label, value, isActive }: { label: string; value: string; is
           : "border-white/10 bg-white/[0.055] text-slate-200"
       }`}
     >
-      <div className="text-[11px] font-medium uppercase tracking-normal text-slate-400">{label}</div>
+      <div className="text-[11px] font-medium uppercase tracking-normal text-slate-400">
+        {label}
+      </div>
       <div className="truncate text-[13px] font-semibold">{value}</div>
     </div>
   );
@@ -407,7 +454,8 @@ function getEventDisplayText(event: HubEvent) {
 }
 
 function EventRow({ event }: { event: HubEvent }) {
-  const progress = typeof event.progress === "number" ? Math.max(0, Math.min(event.progress, 100)) : undefined;
+  const progress =
+    typeof event.progress === "number" ? Math.max(0, Math.min(event.progress, 100)) : undefined;
   const display = getEventDisplayText(event);
   const sourceLabel = getEventSourceLabel(event);
 
@@ -434,7 +482,10 @@ function EventRow({ event }: { event: HubEvent }) {
       </div>
       {typeof progress === "number" && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-500/25">
-          <div className="h-full rounded-full bg-gradient-to-r from-sky-300 to-blue-500" style={{ width: `${progress}%` }} />
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-sky-300 to-blue-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       )}
     </div>

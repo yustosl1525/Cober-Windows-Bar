@@ -34,7 +34,9 @@ export function IdleHub() {
       </div>
 
       <div className="relative z-[1] min-w-0 flex-1 text-left">
-        <div className="truncate text-[13px] font-semibold tracking-[0] text-slate-900">Status Center Ready</div>
+        <div className="truncate text-[13px] font-semibold tracking-[0] text-slate-900">
+          Status Center Ready
+        </div>
         <div className="mt-0.5 truncate text-[11px] font-medium tracking-[0] text-slate-600">
           Waiting for media, AI, download, or system events
         </div>
@@ -42,7 +44,9 @@ export function IdleHub() {
 
       <div className="relative z-[1] flex items-center gap-2">
         <span className="h-2 w-2 rounded-full bg-[radial-gradient(circle,#4ade80_0%,#16a34a_100%)] shadow-[0_0_0_4px_rgba(74,222,128,0.14)]" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0] text-emerald-700">Idle</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0] text-emerald-700">
+          Idle
+        </span>
       </div>
     </motion.section>
   );

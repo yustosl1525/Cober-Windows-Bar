@@ -15,7 +15,15 @@ export type HubProviderStatus = {
   health: HubProviderHealth;
 };
 
-export type HubProviderKind = "music" | "ai" | "download" | "notification" | "media" | "clipboard" | "focus" | "system";
+export type HubProviderKind =
+  | "music"
+  | "ai"
+  | "download"
+  | "notification"
+  | "media"
+  | "clipboard"
+  | "focus"
+  | "system";
 
 export type HubProviderMetadata = {
   id: string;

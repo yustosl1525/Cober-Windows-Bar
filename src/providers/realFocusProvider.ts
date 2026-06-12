@@ -45,21 +45,25 @@ export function createRealFocusProvider(): HubProvider {
     capabilities,
 
     start(handle) {
-      getFocusAssistState().then((state) => {
-        if (state) {
-          handle.emit([focusPayloadToEvent(state)]);
-        }
-      }).catch(() => {
-        handle.markDegraded();
-      });
+      getFocusAssistState()
+        .then((state) => {
+          if (state) {
+            handle.emit([focusPayloadToEvent(state)]);
+          }
+        })
+        .catch(() => {
+          handle.markDegraded();
+        });
 
       onFocusAssistChanged((state) => {
         handle.emit([focusPayloadToEvent(state)]);
-      }).then((unlistenFn) => {
-        unlisten = unlistenFn;
-      }).catch(() => {
-        handle.markDegraded();
-      });
+      })
+        .then((unlistenFn) => {
+          unlisten = unlistenFn;
+        })
+        .catch(() => {
+          handle.markDegraded();
+        });
     },
 
     stop() {

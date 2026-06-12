@@ -1,10 +1,7 @@
 import type { HubEvent } from "../types/hub";
 import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import { createProviderShell } from "./providerShell";
-import {
-  loadTauriMediaSessionStatus,
-  type TauriMediaSessionStatus,
-} from "../runtime/tauriRuntime";
+import { loadTauriMediaSessionStatus, type TauriMediaSessionStatus } from "../runtime/tauriRuntime";
 import {
   onMediaSessionChanged,
   type MediaSessionChangedPayload,
@@ -16,9 +13,7 @@ const POLL_FALLBACK_MS = 30_000;
 
 function mediaPayloadToEvent(payload: MediaSessionChangedPayload): HubEvent {
   const createdAt = payload.checkedAt || Date.now();
-  const expiresAt = payload.available
-    ? createdAt + MEDIA_DISPLAY_WINDOW_MS
-    : createdAt;
+  const expiresAt = payload.available ? createdAt + MEDIA_DISPLAY_WINDOW_MS : createdAt;
 
   return {
     id: `${PROVIDER_ID}-media-${createdAt}`,

@@ -26,10 +26,7 @@ import {
   getDesktopStatusTemplateDescriptors,
   getDesktopStatusSettingsCopy,
 } from "@/data/desktopStatusConfig";
-import type {
-  DesktopStatusKind,
-  DesktopStatusPreferences,
-} from "@/types/hub";
+import type { DesktopStatusKind, DesktopStatusPreferences } from "@/types/hub";
 
 export type SettingsPanelProps = {
   preferences: DesktopStatusPreferences;
@@ -73,7 +70,7 @@ function Win11Toggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      className={`win11-toggle${checked ? " is-on" : ""}`}
+      className={`win11-toggle${checked ? "is-on" : ""}`}
       onClick={onChange}
     >
       <span className="win11-toggle-thumb" />
@@ -98,21 +95,14 @@ export function SettingsPanel({
   onClose,
 }: SettingsPanelProps) {
   const { t, i18n: i18nInstance } = useTranslation();
-  const settingsCopy = useMemo(
-    () => getDesktopStatusSettingsCopy(),
-    [i18nInstance.language, t],
-  );
+  const settingsCopy = useMemo(() => getDesktopStatusSettingsCopy(), [i18nInstance.language, t]);
   const templateDescriptors = useMemo(
     () => getDesktopStatusTemplateDescriptors(),
     [i18nInstance.language, t],
   );
 
   return (
-    <aside
-      className="win11-settings-panel"
-      role="dialog"
-      aria-label={settingsCopy.panel.ariaLabel}
-    >
+    <aside className="win11-settings-panel" role="dialog" aria-label={settingsCopy.panel.ariaLabel}>
       {/* ── Header ── */}
       <header className="win11-settings-header">
         <div className="win11-settings-header-text">
@@ -133,9 +123,7 @@ export function SettingsPanel({
       <div className="win11-settings-body">
         {/* ── Window Behavior ── */}
         <section className="win11-settings-section">
-          <h3 className="win11-settings-section-title">
-            {settingsCopy.sections.windowBehavior}
-          </h3>
+          <h3 className="win11-settings-section-title">{settingsCopy.sections.windowBehavior}</h3>
           <div className="win11-settings-card">
             <SettingRow
               icon={Monitor}
@@ -191,9 +179,7 @@ export function SettingsPanel({
 
         {/* ── Status Templates ── */}
         <section className="win11-settings-section">
-          <h3 className="win11-settings-section-title">
-            {settingsCopy.sections.statusTemplates}
-          </h3>
+          <h3 className="win11-settings-section-title">{settingsCopy.sections.statusTemplates}</h3>
           <div className="win11-template-grid">
             {templateDescriptors.map((descriptor) => {
               const isActive = descriptor.kind === activeStatusKind;
@@ -202,15 +188,13 @@ export function SettingsPanel({
                 <button
                   key={descriptor.kind}
                   type="button"
-                  className={`win11-template-card${isActive ? " is-active" : ""}`}
+                  className={`win11-template-card${isActive ? "is-active" : ""}`}
                   onClick={() => onKindSelect(descriptor.kind)}
                 >
                   <span className="win11-template-icon-tile">
                     <Icon size={16} strokeWidth={1.8} />
                   </span>
-                  <span className="win11-template-label">
-                    {descriptor.label}
-                  </span>
+                  <span className="win11-template-label">{descriptor.label}</span>
                   {isActive && (
                     <span className="win11-template-check">
                       <Check size={10} strokeWidth={2.5} />
@@ -224,17 +208,13 @@ export function SettingsPanel({
 
         {/* ── Language ── */}
         <section className="win11-settings-section">
-          <h3 className="win11-settings-section-title">
-            {t("settings.language.title")}
-          </h3>
+          <h3 className="win11-settings-section-title">{t("settings.language.title")}</h3>
           <div className="win11-settings-card">
             <SettingRow
               icon={Globe}
               title={t("settings.language.zh-CN")}
               description={
-                i18nInstance.language === "zh-CN"
-                  ? t("common.enabled")
-                  : t("common.disabled")
+                i18nInstance.language === "zh-CN" ? t("common.enabled") : t("common.disabled")
               }
             >
               {i18nInstance.language === "zh-CN" ? (
@@ -242,11 +222,7 @@ export function SettingsPanel({
                   <Check size={12} strokeWidth={2.5} />
                 </span>
               ) : (
-                <ArrowRight
-                  size={14}
-                  strokeWidth={2}
-                  className="win11-row-chevron"
-                />
+                <ArrowRight size={14} strokeWidth={2} className="win11-row-chevron" />
               )}
               <button
                 type="button"
@@ -260,9 +236,7 @@ export function SettingsPanel({
               icon={Globe}
               title={t("settings.language.en")}
               description={
-                i18nInstance.language === "en"
-                  ? t("common.enabled")
-                  : t("common.disabled")
+                i18nInstance.language === "en" ? t("common.enabled") : t("common.disabled")
               }
               isLast
             >
@@ -271,11 +245,7 @@ export function SettingsPanel({
                   <Check size={12} strokeWidth={2.5} />
                 </span>
               ) : (
-                <ArrowRight
-                  size={14}
-                  strokeWidth={2}
-                  className="win11-row-chevron"
-                />
+                <ArrowRight size={14} strokeWidth={2} className="win11-row-chevron" />
               )}
               <button
                 type="button"
@@ -289,9 +259,7 @@ export function SettingsPanel({
 
         {/* ── Quick Controls ── */}
         <section className="win11-settings-section">
-          <h3 className="win11-settings-section-title">
-            {settingsCopy.actions.quickPanelTitle}
-          </h3>
+          <h3 className="win11-settings-section-title">{settingsCopy.actions.quickPanelTitle}</h3>
           <div className="win11-actions-grid">
             <Win11ActionButton
               icon={RefreshCw}
@@ -335,7 +303,7 @@ function SettingRow({
   isLast?: boolean;
 }) {
   return (
-    <div className={`win11-setting-row${isLast ? " is-last" : ""}`}>
+    <div className={`win11-setting-row${isLast ? "is-last" : ""}`}>
       <span className="win11-setting-icon">
         <Icon size={15} strokeWidth={1.8} />
       </span>

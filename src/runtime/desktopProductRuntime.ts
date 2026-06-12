@@ -75,9 +75,7 @@ function isStatusCenterMenuAction(value: unknown): value is StatusCenterMenuActi
   );
 }
 
-function normalizeStatusCenterMenuAction(
-  value: unknown,
-): StatusCenterMenuAction | undefined {
+function normalizeStatusCenterMenuAction(value: unknown): StatusCenterMenuAction | undefined {
   if (!isDesktopStatusMenuActionId(value)) {
     return undefined;
   }
@@ -119,5 +117,3 @@ function isDesktopStatusPreferences(
     typeof value.lockPosition === "boolean"
   );
 }
-
-

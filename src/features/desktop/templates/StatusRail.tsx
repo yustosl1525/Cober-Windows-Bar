@@ -8,7 +8,13 @@ type StatusRailProps = {
   shimmer?: boolean;
 };
 
-export function StatusRail({ value, label, accent, active = false, shimmer = false }: StatusRailProps) {
+export function StatusRail({
+  value,
+  label,
+  accent,
+  active = false,
+  shimmer = false,
+}: StatusRailProps) {
   const safeValue = Math.max(0, Math.min(100, value));
   const showShimmer = active && shimmer && safeValue > 0 && safeValue < 100;
   const fillWidth = Math.max(12, safeValue);

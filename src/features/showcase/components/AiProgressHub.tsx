@@ -8,7 +8,9 @@ type AiProgressHubProps = {
 
 export function AiProgressHub({ task }: AiProgressHubProps) {
   const prefersReducedMotion = useReducedMotion();
-  const safeProgress = Number.isFinite(task.progress) ? Math.max(0, Math.min(task.progress ?? 0, 100)) : 0;
+  const safeProgress = Number.isFinite(task.progress)
+    ? Math.max(0, Math.min(task.progress ?? 0, 100))
+    : 0;
   const isActive = safeProgress > 0 && safeProgress < 100;
 
   return (
@@ -73,7 +75,9 @@ export function AiProgressHub({ task }: AiProgressHubProps) {
       <div className="relative z-[1] min-w-0 flex-1">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">{task.title}</div>
+            <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">
+              {task.title}
+            </div>
             <motion.div
               className="mt-0.5 truncate text-[12px] font-medium tracking-[0] text-slate-600"
               animate={

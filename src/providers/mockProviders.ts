@@ -101,7 +101,11 @@ export const createMockNotificationEvent = (options: MockProviderOptions = {}): 
   };
 };
 
-const createMockProvider = ({ metadata, capabilities, events }: MockProviderConfig): HubProvider => {
+const createMockProvider = ({
+  metadata,
+  capabilities,
+  events,
+}: MockProviderConfig): HubProvider => {
   let lifecycle: HubProviderLifecycle = "Stopped";
   const listeners = new Set<HubProviderListener>();
 
@@ -164,9 +168,7 @@ const createMockMetadata = (
   mock: true,
 });
 
-const createMockCapabilities = (
-  kind: HubProviderCapability["kind"],
-): HubProviderCapability[] => [
+const createMockCapabilities = (kind: HubProviderCapability["kind"]): HubProviderCapability[] => [
   {
     id: kind,
     kind,

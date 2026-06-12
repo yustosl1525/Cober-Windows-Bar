@@ -24,7 +24,10 @@ import {
   createMockMusicProvider,
   createMockNotificationProvider,
 } from "../../providers/mockProviders";
-import { connectProviderToEventBus, type ProviderConnection } from "../../providers/providerAdapter";
+import {
+  connectProviderToEventBus,
+  type ProviderConnection,
+} from "../../providers/providerAdapter";
 import type { HubProvider } from "../../providers/types";
 import { publishTauriFixtureEvents } from "../../runtime/tauriRuntime";
 import type { HubMode, HubStoreState } from "../../types/hub";
@@ -68,7 +71,11 @@ export function ShowcasePage() {
   const previewStatus =
     tauriFixtureLabel ??
     activeProviderLabel ??
-    (isAutoRunning ? "Sequence running" : activeMode === "idle" ? "Idle event stream" : "Resolved from Event Bus");
+    (isAutoRunning
+      ? "Sequence running"
+      : activeMode === "idle"
+        ? "Idle event stream"
+        : "Resolved from Event Bus");
 
   const clearDemoTimers = useCallback(() => {
     demoTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -231,7 +238,9 @@ export function ShowcasePage() {
           <div className="showcase-titlebar">
             <div className="flex min-w-0 items-center gap-3">
               <span className="showcase-app-icon" aria-hidden="true" />
-              <span className="truncate text-[13px] font-medium text-slate-200">Cober Showcase</span>
+              <span className="truncate text-[13px] font-medium text-slate-200">
+                Cober Showcase
+              </span>
             </div>
             <div className="flex items-center" aria-hidden="true">
               <span className="showcase-window-control" />
@@ -263,7 +272,7 @@ export function ShowcasePage() {
                       <span className="rounded-full border border-white/10 bg-white/[0.065] px-3 py-1 text-xs font-semibold text-slate-200">
                         Events: {activeEventCount}
                       </span>
-                      <span className="rounded-full border border-emerald-200/18 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                      <span className="border-emerald-200/18 rounded-full border bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
                         Store-driven
                       </span>
                     </div>

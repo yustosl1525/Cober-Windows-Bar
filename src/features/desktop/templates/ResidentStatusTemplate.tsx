@@ -76,19 +76,26 @@ export function ResidentStatusTemplate({ state }: ResidentStatusTemplateProps) {
         })}
 
         {(downloadMetric || uploadMetric) && (
-          <div className="product-status-metric product-status-metric-network" aria-label="Network speed">
+          <div
+            className="product-status-metric product-status-metric-network"
+            aria-label="Network speed"
+          >
             {downloadMetric && (
               <div className="product-status-net-row">
                 <span className="product-status-net-arrow product-status-net-arrow-down">↓</span>
                 <span className="product-status-label-name">{downloadMetric.label}</span>
-                <strong className="product-status-net-value">{formatSpeed(downloadMetric.value)}</strong>
+                <strong className="product-status-net-value">
+                  {formatSpeed(downloadMetric.value)}
+                </strong>
               </div>
             )}
             {uploadMetric && (
               <div className="product-status-net-row">
                 <span className="product-status-net-arrow product-status-net-arrow-up">↑</span>
                 <span className="product-status-label-name">{uploadMetric.label}</span>
-                <strong className="product-status-net-value">{formatSpeed(uploadMetric.value)}</strong>
+                <strong className="product-status-net-value">
+                  {formatSpeed(uploadMetric.value)}
+                </strong>
               </div>
             )}
           </div>
@@ -104,7 +111,10 @@ function visibleMetricValue(value: number) {
 
 type TranslationFn = (key: string) => string;
 
-export function sourceQualityLabel(quality: SystemPerformanceSourceQuality | undefined, t?: TranslationFn) {
+export function sourceQualityLabel(
+  quality: SystemPerformanceSourceQuality | undefined,
+  t?: TranslationFn,
+) {
   const translate = t ?? i18n.t.bind(i18n);
   switch (quality) {
     case "live":

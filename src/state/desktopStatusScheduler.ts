@@ -32,7 +32,9 @@ export function getDesktopStatusPriorityOrder(): DesktopStatusKind[] {
   return [...DESKTOP_STATUS_PRIORITY_ORDER];
 }
 
-export function scheduleDesktopStatus(input: DesktopStatusSchedulerInput): DesktopStatusScheduleDecision {
+export function scheduleDesktopStatus(
+  input: DesktopStatusSchedulerInput,
+): DesktopStatusScheduleDecision {
   const now = typeof input.now === "number" && Number.isFinite(input.now) ? input.now : 0;
   const availableKinds = filterKnownKinds(dedupeKindsOrEmpty(input.availableKinds));
   const preferredKind = input.preferredKind;
@@ -198,8 +200,7 @@ export function shouldAlternateMediaWithResident({
   availableKinds: DesktopStatusKind[];
   previousKind?: DesktopStatusKind;
 }): DesktopStatusKind {
-  const bothAvailable =
-    availableKinds.includes("media") && availableKinds.includes("resident");
+  const bothAvailable = availableKinds.includes("media") && availableKinds.includes("resident");
   const eitherActive = activeKinds.includes("media") || activeKinds.includes("resident");
 
   if (!bothAvailable || !eitherActive) {

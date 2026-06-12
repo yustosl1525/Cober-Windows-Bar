@@ -1,10 +1,7 @@
 import type { HubEvent } from "../types/hub";
 import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import { createProviderShell } from "./providerShell";
-import {
-  onClipboardChanged,
-  type ClipboardChangedPayload,
-} from "../runtime/systemMonitorRuntime";
+import { onClipboardChanged, type ClipboardChangedPayload } from "../runtime/systemMonitorRuntime";
 
 const PROVIDER_ID = "real-clipboard-provider";
 const CLIPBOARD_DISPLAY_WINDOW_MS = 5_000;
@@ -57,11 +54,13 @@ export function createRealClipboardProvider(): HubProvider {
         }
         lastEmittedText = payload.text;
         handle.emit([clipboardPayloadToEvent(payload)]);
-      }).then((unlistenFn) => {
-        unlisten = unlistenFn;
-      }).catch(() => {
-        handle.markDegraded();
-      });
+      })
+        .then((unlistenFn) => {
+          unlisten = unlistenFn;
+        })
+        .catch(() => {
+          handle.markDegraded();
+        });
     },
 
     stop() {

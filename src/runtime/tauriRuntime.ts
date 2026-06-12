@@ -154,7 +154,13 @@ const mediaSessionDiagnosticContext = {
   surface: "mediaSession",
   command: TAURI_MEDIA_SESSION_STATUS_COMMAND,
 } as const;
-const guestKinds = new Set<DesktopGuestStatusKind>(["media", "download", "update", "clipboard", "focus"]);
+const guestKinds = new Set<DesktopGuestStatusKind>([
+  "media",
+  "download",
+  "update",
+  "clipboard",
+  "focus",
+]);
 const guestQualities = new Set<GuestProviderSourceQuality>([
   "native",
   "app-owned",
@@ -688,11 +694,19 @@ function parseMediaSessionStatus(value: unknown): TauriMediaSessionStatus | unde
 }
 
 function isMediaPlaybackStatus(value: unknown): value is TauriMediaSessionStatus["playbackStatus"] {
-  return value === "playing" || value === "paused" || value === "unavailable" || value === "unsupported";
+  return (
+    value === "playing" || value === "paused" || value === "unavailable" || value === "unsupported"
+  );
 }
 
 function isMediaSessionCode(value: unknown): value is TauriMediaSessionStatus["code"] {
-  return value === "available" || value === "not-playing" || value === "unsupported" || value === "provider-failed" || value === "sta-timeout";
+  return (
+    value === "available" ||
+    value === "not-playing" ||
+    value === "unsupported" ||
+    value === "provider-failed" ||
+    value === "sta-timeout"
+  );
 }
 
 function isConfiguredShellWindow(value: unknown): value is TauriConfiguredShellWindow {

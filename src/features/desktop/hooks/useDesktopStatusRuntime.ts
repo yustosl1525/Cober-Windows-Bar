@@ -52,10 +52,7 @@ function applyDesktopStatusSnapshot(
     clipboard: prev.clipboard ?? snapshot.state.clipboard,
     focus: prev.focus ?? snapshot.state.focus,
     systemPerformance: prev.systemPerformance ?? snapshot.state.systemPerformance,
-    events: [
-      ...prev.events.filter((e) => e.type === "media"),
-      ...(snapshot.state.events ?? []),
-    ],
+    events: [...prev.events.filter((e) => e.type === "media"), ...(snapshot.state.events ?? [])],
   }));
 }
 
@@ -67,7 +64,12 @@ function systemPayloadToMetrics(payload: SystemPerformancePayload): SystemPerfor
   return [
     { id: "cpu", label: "CPU", value: payload.cpu, tone: "blue" },
     { id: "memory", label: i18n.t("metrics.memory"), value: payload.memory, tone: "violet" },
-    { id: "download", label: i18n.t("metrics.download"), value: payload.downloadSpeed, tone: "cyan" },
+    {
+      id: "download",
+      label: i18n.t("metrics.download"),
+      value: payload.downloadSpeed,
+      tone: "cyan",
+    },
     { id: "upload", label: i18n.t("metrics.upload"), value: payload.uploadSpeed, tone: "emerald" },
   ];
 }
@@ -173,16 +175,18 @@ export function useDesktopStatusRuntime(
 
   // Aggregation (memoized to avoid recomputing on every render)
   const aggregatedStatus = useMemo(
-    () => aggregateDesktopStatusInput({
-      hubState,
-      availableKinds: DESKTOP_STATUS_TEMPLATE_ORDER,
-    }),
+    () =>
+      aggregateDesktopStatusInput({
+        hubState,
+        availableKinds: DESKTOP_STATUS_TEMPLATE_ORDER,
+      }),
     [hubState],
   );
 
   // Extract system performance metrics from the unified pipeline
   const busMetrics = useMemo(
-    () => hubState.systemPerformance ? systemPayloadToMetrics(hubState.systemPerformance) : undefined,
+    () =>
+      hubState.systemPerformance ? systemPayloadToMetrics(hubState.systemPerformance) : undefined,
     [hubState.systemPerformance],
   );
   const effectiveMetrics = busMetrics ?? metrics;
@@ -210,7 +214,9 @@ export function useDesktopStatusRuntime(
 
   const resolvedState = resolveDesktopStatusState({
     metrics: effectiveMetrics,
-    systemPerformanceSourceStatus: { quality: effectiveQuality as "live" | "fallback" | "stale" | "unavailable" },
+    systemPerformanceSourceStatus: {
+      quality: effectiveQuality as "live" | "fallback" | "stale" | "unavailable",
+    },
     activeKinds: aggregatedStatus.activeKinds,
     availableKinds: aggregatedStatus.availableKinds,
     states: aggregatedStatus.states,
@@ -272,7 +278,9 @@ export function useDesktopStatusRuntime(
   const finalResolvedState = clipboardExpiredRef.current
     ? resolveDesktopStatusState({
         metrics: effectiveMetrics,
-        systemPerformanceSourceStatus: { quality: effectiveQuality as "live" | "fallback" | "stale" | "unavailable" },
+        systemPerformanceSourceStatus: {
+          quality: effectiveQuality as "live" | "fallback" | "stale" | "unavailable",
+        },
         activeKinds: effectiveActiveKinds,
         availableKinds: aggregatedStatus.availableKinds,
         states: aggregatedStatus.states,

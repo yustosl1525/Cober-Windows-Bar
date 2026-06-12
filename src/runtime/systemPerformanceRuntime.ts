@@ -16,12 +16,7 @@ function getSystemPerformanceLabels() {
   };
 }
 
-const SYSTEM_STATUS_DIAGNOSTIC_QUALITIES = [
-  "live",
-  "fallback",
-  "stale",
-  "unavailable",
-] as const;
+const SYSTEM_STATUS_DIAGNOSTIC_QUALITIES = ["live", "fallback", "stale", "unavailable"] as const;
 export const SYSTEM_STATUS_DIAGNOSTIC_CODES = [
   "unsupported",
   "unavailable",
@@ -118,7 +113,9 @@ function createSystemPerformanceMetrics(
   ];
 }
 
-export function normalizeSystemStatusDiagnostic(value: unknown): SystemStatusDiagnostic | undefined {
+export function normalizeSystemStatusDiagnostic(
+  value: unknown,
+): SystemStatusDiagnostic | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -194,7 +191,12 @@ function parseSystemPerformanceSnapshot(value: unknown): SystemPerformanceSnapsh
   const downloadSpeed = toSpeed(value.downloadSpeed);
   const uploadSpeed = toSpeed(value.uploadSpeed);
 
-  if (cpu === undefined || memory === undefined || downloadSpeed === undefined || uploadSpeed === undefined) {
+  if (
+    cpu === undefined ||
+    memory === undefined ||
+    downloadSpeed === undefined ||
+    uploadSpeed === undefined
+  ) {
     return undefined;
   }
 
@@ -210,7 +212,8 @@ function createDiagnosticResult({
   fallbackMetrics: SystemPerformanceMetric[];
   lastSuccessfulSource?: SystemStatusDiagnosticSource;
 }): SystemPerformanceStatusResult {
-  const safeLastSuccessfulSource = lastSuccessfulSource === "mock" ? undefined : lastSuccessfulSource;
+  const safeLastSuccessfulSource =
+    lastSuccessfulSource === "mock" ? undefined : lastSuccessfulSource;
 
   return {
     metrics: fallbackMetrics,
@@ -263,7 +266,11 @@ function classifySystemStatusInvokeError(error: unknown): SystemStatusDiagnostic
     return "timeout";
   }
 
-  if (isRecord(error) && typeof error.code === "string" && isSystemStatusDiagnosticCode(error.code)) {
+  if (
+    isRecord(error) &&
+    typeof error.code === "string" &&
+    isSystemStatusDiagnosticCode(error.code)
+  ) {
     return error.code;
   }
 

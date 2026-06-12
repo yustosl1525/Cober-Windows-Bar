@@ -2,10 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import i18n from "@/i18n";
 import { SettingsPanel } from "./SettingsPanel";
-import type {
-  DesktopStatusKind,
-  DesktopStatusPreferences,
-} from "@/types/hub";
+import type { DesktopStatusKind, DesktopStatusPreferences } from "@/types/hub";
 
 vi.mock("@/runtime/autostartRuntime", () => ({
   getAutostartEnabled: vi.fn().mockResolvedValue(false),

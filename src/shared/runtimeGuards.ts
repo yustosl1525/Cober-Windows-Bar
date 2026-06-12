@@ -39,7 +39,16 @@ export function snapshotHubEvent(event: HubEvent): HubEvent {
   };
 }
 
-const HUB_EVENT_TYPES = new Set(["music", "ai", "download", "notification", "media", "clipboard", "focus", "system"]);
+const HUB_EVENT_TYPES = new Set([
+  "music",
+  "ai",
+  "download",
+  "notification",
+  "media",
+  "clipboard",
+  "focus",
+  "system",
+]);
 const HUB_EVENT_SOURCES = new Set([
   "mock",
   "system",
@@ -110,9 +119,7 @@ export function parseHubEvent(value: unknown): HubEvent | undefined {
 }
 
 export function parseHubEvents(values: unknown[]): HubEvent[] {
-  return values
-    .map(parseHubEvent)
-    .filter((event): event is HubEvent => event !== undefined);
+  return values.map(parseHubEvent).filter((event): event is HubEvent => event !== undefined);
 }
 
 /**

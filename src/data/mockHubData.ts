@@ -1,12 +1,20 @@
 import { createSystemPerformanceMetricSnapshot } from "./desktopStatusConfig";
-import type { HubEvent, HubTask, MusicState, NotificationState, ShowcaseStep, SystemPerformanceMetric } from "../types/hub";
+import type {
+  HubEvent,
+  HubTask,
+  MusicState,
+  NotificationState,
+  ShowcaseStep,
+  SystemPerformanceMetric,
+} from "../types/hub";
 
-export const systemPerformanceMetrics: SystemPerformanceMetric[] = createSystemPerformanceMetricSnapshot({
-  cpu: 23,
-  memory: 68,
-  downloadSpeed: 2_457_600,
-  uploadSpeed: 512_000,
-});
+export const systemPerformanceMetrics: SystemPerformanceMetric[] =
+  createSystemPerformanceMetricSnapshot({
+    cpu: 23,
+    memory: 68,
+    downloadSpeed: 2_457_600,
+    uploadSpeed: 512_000,
+  });
 
 export const musicState: MusicState = {
   title: "Starline OST",
@@ -57,7 +65,12 @@ export const showcaseSteps: ShowcaseStep[] = [
   { id: "music", mode: "music", label: "2. Music playback", caption: "Media controls" },
   { id: "ai", mode: "aiProgress", label: "3. AI task running", caption: "Progress feedback" },
   { id: "download", mode: "download", label: "4. Download running", caption: "File progress" },
-  { id: "notification", mode: "notification", label: "5. Message received", caption: "Auto collapse after 3s" },
+  {
+    id: "notification",
+    mode: "notification",
+    label: "5. Message received",
+    caption: "Auto collapse after 3s",
+  },
   { id: "multi", mode: "multiTask", label: "6. Multi-task stack", caption: "Expanded" },
 ];
 

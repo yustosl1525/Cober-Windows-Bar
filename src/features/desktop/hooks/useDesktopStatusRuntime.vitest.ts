@@ -45,27 +45,21 @@ afterEach(() => {
 
 describe("useDesktopStatusRuntime", () => {
   it("returns a resident resolved state when no providers are emitting", () => {
-    const { result } = renderHook(() =>
-      useDesktopStatusRuntime(baseMetrics, "fallback"),
-    );
+    const { result } = renderHook(() => useDesktopStatusRuntime(baseMetrics, "fallback"));
 
     expect(result.current.activeKinds).toEqual([]);
     expect(result.current.resolvedState.kind).toBe("resident");
   });
 
   it("exposes the preferred window constant via the result", () => {
-    const { result } = renderHook(() =>
-      useDesktopStatusRuntime(baseMetrics, "fallback"),
-    );
+    const { result } = renderHook(() => useDesktopStatusRuntime(baseMetrics, "fallback"));
 
     // 20_000 ms per desktopStatusScheduler — keep this in sync if it changes.
     expect(result.current.preferredWindowMs).toBe(20_000);
   });
 
   it("clears the preferred kind when setPreferredUntil + setActiveStatusKind are reset", () => {
-    const { result } = renderHook(() =>
-      useDesktopStatusRuntime(baseMetrics, "fallback"),
-    );
+    const { result } = renderHook(() => useDesktopStatusRuntime(baseMetrics, "fallback"));
 
     act(() => {
       result.current.setActiveStatusKind("media");
@@ -85,9 +79,7 @@ describe("useDesktopStatusRuntime", () => {
   });
 
   it("returns stable setter identities across renders", () => {
-    const { result, rerender } = renderHook(() =>
-      useDesktopStatusRuntime(baseMetrics, "fallback"),
-    );
+    const { result, rerender } = renderHook(() => useDesktopStatusRuntime(baseMetrics, "fallback"));
 
     const firstSetters = {
       setActiveStatusKind: result.current.setActiveStatusKind,

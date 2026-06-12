@@ -61,7 +61,12 @@ type DesktopStatusTauriListen = (
 ) => Promise<UnlistenFn>;
 
 function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
-  return typeof value === "object" && value !== null && "then" in value && typeof value.then === "function";
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "then" in value &&
+    typeof value.then === "function"
+  );
 }
 
 type CreateDesktopStatusRuntimeOptions = {
@@ -124,7 +129,8 @@ export function createDesktopStatusRuntime({
   let unsubscribeBus: (() => void) | undefined;
   let unsubscribePushSource: (() => void) | undefined;
   const eventSourceSubscription =
-    subscribeToEvents ?? (invoke ? createTauriDesktopStatusEventSource({ tauriListen }) : undefined);
+    subscribeToEvents ??
+    (invoke ? createTauriDesktopStatusEventSource({ tauriListen }) : undefined);
 
   eventBus.replaceHubEvents(snapshotFallbackEvents);
 
@@ -143,7 +149,10 @@ export function createDesktopStatusRuntime({
     };
   }
 
-  function deliver(subscriber: (value: DesktopStatusRuntimeSnapshot) => void, value: DesktopStatusRuntimeSnapshot) {
+  function deliver(
+    subscriber: (value: DesktopStatusRuntimeSnapshot) => void,
+    value: DesktopStatusRuntimeSnapshot,
+  ) {
     try {
       subscriber(value);
     } catch {
@@ -176,18 +185,20 @@ export function createDesktopStatusRuntime({
   }, EXPIRY_CHECK_INTERVAL_MS);
 
   if (eventSourceSubscription) {
-    const subscription = eventSourceSubscription((events, nextSource = "tauri-fixture", nextDiagnostic) => {
-      if (disposed) {
-        return;
-      }
+    const subscription = eventSourceSubscription(
+      (events, nextSource = "tauri-fixture", nextDiagnostic) => {
+        if (disposed) {
+          return;
+        }
 
-      source = nextSource;
-      diagnostic = nextDiagnostic;
-      if (nextSource !== "mock") {
-        lastSuccessfulSource = nextSource;
-      }
-      eventBus.replaceHubEvents(events.map(snapshotHubEvent));
-    });
+        source = nextSource;
+        diagnostic = nextDiagnostic;
+        if (nextSource !== "mock") {
+          lastSuccessfulSource = nextSource;
+        }
+        eventBus.replaceHubEvents(events.map(snapshotHubEvent));
+      },
+    );
 
     if (isPromiseLike(subscription)) {
       void subscription.then((unsubscribe) => {
@@ -276,7 +287,9 @@ export function createTauriDesktopStatusEventSource({
   };
 }
 
-export function getDesktopStatusRuntime(options: CreateDesktopStatusRuntimeOptions = {}): DesktopStatusRuntime {
+export function getDesktopStatusRuntime(
+  options: CreateDesktopStatusRuntimeOptions = {},
+): DesktopStatusRuntime {
   if (options.eventBus || options.fallbackEvents || options.invoke) {
     return createDesktopStatusRuntime(options);
   }
@@ -290,9 +303,7 @@ export function getDesktopStatusRuntime(options: CreateDesktopStatusRuntimeOptio
   return runtime;
 }
 
-function parseDesktopStatusInputEventPayload(
-  value: unknown,
-): { events: HubEvent[] } | undefined {
+function parseDesktopStatusInputEventPayload(value: unknown): { events: HubEvent[] } | undefined {
   const rawArray = Array.isArray(value)
     ? value
     : isRecord(value) && Array.isArray(value.events)
@@ -353,4 +364,3 @@ function createSourceStatus({
     quality: "fallback",
   };
 }
-

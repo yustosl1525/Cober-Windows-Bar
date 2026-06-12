@@ -1,9 +1,5 @@
 import { PhysicalPosition, type PhysicalSize } from "@tauri-apps/api/dpi";
-import {
-  currentMonitor,
-  getCurrentWindow,
-  type Monitor,
-} from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow, type Monitor } from "@tauri-apps/api/window";
 import { isRecord } from "../shared/runtimeGuards";
 import { getTauriInvoke, type TauriInvoke } from "./tauriRuntime";
 
@@ -22,10 +18,7 @@ type OverlayPolicy = {
   shouldFloat: boolean;
 };
 
-type StatusWindowOverlayMode =
-  | "floating"
-  | "suppressed_for_fullscreen"
-  | "restoring";
+type StatusWindowOverlayMode = "floating" | "suppressed_for_fullscreen" | "restoring";
 
 export type StatusWindowOverlayState = {
   appliedFloating: boolean | null;
@@ -98,15 +91,21 @@ async function moveStatusWindowDrag(
   pointerX: number,
   pointerY: number,
 ): Promise<void> {
-  const x = clamp(dragState.startWindowX + (pointerX - dragState.startPointerX), dragState.minX, dragState.maxX);
-  const y = clamp(dragState.startWindowY + (pointerY - dragState.startPointerY), dragState.minY, dragState.maxY);
+  const x = clamp(
+    dragState.startWindowX + (pointerX - dragState.startPointerX),
+    dragState.minX,
+    dragState.maxX,
+  );
+  const y = clamp(
+    dragState.startWindowY + (pointerY - dragState.startPointerY),
+    dragState.minY,
+    dragState.maxY,
+  );
 
   await getCurrentWindow().setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
 }
 
-export async function correctStatusWindowPosition(
-  invoke = getTauriInvoke(),
-): Promise<void> {
+export async function correctStatusWindowPosition(invoke = getTauriInvoke()): Promise<void> {
   if (!invoke) {
     return;
   }
@@ -128,14 +127,17 @@ export async function enforceStatusWindowOverlay(
   const topmostReassertMs = options.topmostReassertMs ?? STATUS_WINDOW_TOPMOST_REASSERT_MS;
   const positionCorrectionMs = options.positionCorrectionMs ?? STATUS_WINDOW_POSITION_CORRECTION_MS;
   const policy =
-    parseOverlayPolicy(await invoke(STATUS_WINDOW_OVERLAY_POLICY_COMMAND)) ?? defaultOverlayPolicy();
+    parseOverlayPolicy(await invoke(STATUS_WINDOW_OVERLAY_POLICY_COMMAND)) ??
+    defaultOverlayPolicy();
   const currentMode = state.mode;
   const resolvedMode = resolveOverlayMode(policy);
   const enteringFullscreenSuppression =
     currentMode !== "suppressed_for_fullscreen" && resolvedMode === "suppressed_for_fullscreen";
   const leavingFullscreenSuppression =
     currentMode === "suppressed_for_fullscreen" && resolvedMode === "floating";
-  const nextMode: StatusWindowOverlayMode = leavingFullscreenSuppression ? "restoring" : resolvedMode;
+  const nextMode: StatusWindowOverlayMode = leavingFullscreenSuppression
+    ? "restoring"
+    : resolvedMode;
   const consumedStartupReasserts = consumeStartupReasserts(state.startupReassertPendingAt, now);
   if (enteringFullscreenSuppression) {
     state.pendingRestorePositionCorrection = true;

@@ -11,7 +11,9 @@ import { DesktopPage } from "./features/desktop/DesktopPage";
 // showcase.css into the same async chunk, which keeps it out of the main
 // bundle. The Tauri runtime builds the status center as a single-window
 // app, so the main bundle must stay under our 250KB production target.
-const ShowcasePage = lazy(() => import("./features/showcase/ShowcasePage").then((m) => ({ default: m.ShowcasePage })));
+const ShowcasePage = lazy(() =>
+  import("./features/showcase/ShowcasePage").then((m) => ({ default: m.ShowcasePage })),
+);
 
 export default function App() {
   const [path, setPath] = useState(() => window.location.pathname);

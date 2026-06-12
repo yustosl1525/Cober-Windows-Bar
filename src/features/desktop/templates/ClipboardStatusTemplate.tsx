@@ -43,10 +43,7 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
 
   return (
     <>
-      <div
-        className="product-status-icon product-status-icon-clipboard"
-        aria-hidden="true"
-      >
+      <div className="product-status-icon product-status-icon-clipboard" aria-hidden="true">
         <Clipboard size={20} strokeWidth={2.2} />
         <GuestSourceHealthIndicator sourceHealth={state.sourceHealth} />
       </div>

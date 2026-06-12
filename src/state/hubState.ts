@@ -1,5 +1,13 @@
 import { clampProgress, isFiniteNumber, snapshotHubEvent } from "../shared/runtimeGuards";
-import type { ClipboardPayload, FocusAssistPayload, HubEvent, HubMode, HubStoreState, HubTask, SystemPerformancePayload } from "../types/hub";
+import type {
+  ClipboardPayload,
+  FocusAssistPayload,
+  HubEvent,
+  HubMode,
+  HubStoreState,
+  HubTask,
+  SystemPerformancePayload,
+} from "../types/hub";
 
 const taskAccentMap: Record<string, HubTask["accent"]> = {
   music: "pink",
@@ -14,7 +22,8 @@ export function getActiveHubEvents(events: HubEvent[], now = Date.now()) {
     .filter(
       (event) =>
         isFiniteNumber(event.createdAt) &&
-        (event.expiresAt === undefined || (isFiniteNumber(event.expiresAt) && event.expiresAt > now)),
+        (event.expiresAt === undefined ||
+          (isFiniteNumber(event.expiresAt) && event.expiresAt > now)),
     )
     .sort((a, b) => b.createdAt - a.createdAt);
 }
@@ -32,7 +41,11 @@ export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
 
   // Filter out non-task events (clipboard, focus, system are status events, not tasks)
   const taskEvents = activeEvents.filter(
-    (event) => event.type !== "notification" && event.type !== "clipboard" && event.type !== "focus" && event.type !== "system",
+    (event) =>
+      event.type !== "notification" &&
+      event.type !== "clipboard" &&
+      event.type !== "focus" &&
+      event.type !== "system",
   );
 
   if (taskEvents.length > 1) {
@@ -65,7 +78,8 @@ export function resolveHubMode(events: HubEvent[], now = Date.now()): HubMode {
 function eventToTask(event: HubEvent): HubTask {
   const payload = event.payload && "title" in event.payload ? event.payload : undefined;
   const shouldDefaultProgress = event.type === "ai" || event.type === "download";
-  const subtitle = payload && "subtitle" in payload ? (payload as { subtitle: string }).subtitle : "";
+  const subtitle =
+    payload && "subtitle" in payload ? (payload as { subtitle: string }).subtitle : "";
 
   return {
     id: event.id,
@@ -95,11 +109,21 @@ export function createHubStoreState(events: HubEvent[], now = Date.now()): HubSt
 
   for (const event of activeEvents) {
     switch (event.type) {
-      case "notification": notificationEvent ??= event; break;
-      case "music": musicEvent ??= event; break;
-      case "clipboard": clipboardEvent ??= event; break;
-      case "focus": focusEvent ??= event; break;
-      case "system": systemEvent ??= event; break;
+      case "notification":
+        notificationEvent ??= event;
+        break;
+      case "music":
+        musicEvent ??= event;
+        break;
+      case "clipboard":
+        clipboardEvent ??= event;
+        break;
+      case "focus":
+        focusEvent ??= event;
+        break;
+      case "system":
+        systemEvent ??= event;
+        break;
     }
   }
 

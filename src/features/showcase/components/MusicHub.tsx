@@ -36,23 +36,31 @@ export function MusicHub({ music }: MusicHubProps) {
       <div className="relative z-[1] flex items-center gap-3">
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-[radial-gradient(circle_at_30%_28%,rgba(255,255,255,0.84),transparent_42%),linear-gradient(145deg,rgba(253,242,248,0.96)_0%,rgba(224,231,255,0.84)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.66),0_6px_16px_rgba(219,39,119,0.14)]">
           <div className="absolute inset-[8px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.18)_0%,rgba(236,72,153,0)_72%)] blur-[4px]" />
-          <span className="relative z-[1] text-[11px] font-semibold tracking-[0] text-fuchsia-700">OST</span>
+          <span className="relative z-[1] text-[11px] font-semibold tracking-[0] text-fuchsia-700">
+            OST
+          </span>
         </div>
         <FluentIconChip mode="music" compact />
       </div>
 
       <div className="relative z-[1] min-w-0 flex-1">
-        <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">{music.title}</div>
-        <div className="mt-0.5 truncate text-[12px] font-medium tracking-[0] text-slate-600">{music.subtitle}</div>
+        <div className="truncate text-[15px] font-semibold tracking-[0] text-slate-900">
+          {music.title}
+        </div>
+        <div className="mt-0.5 truncate text-[12px] font-medium tracking-[0] text-slate-600">
+          {music.subtitle}
+        </div>
         <div className="mt-3 flex items-center gap-3">
           <FluentProgressRail mode="music" value={music.progress} label="Music playback progress" />
-          <span className="whitespace-nowrap text-[11px] font-medium tabular-nums text-slate-500">{music.time}</span>
+          <span className="whitespace-nowrap text-[11px] font-medium tabular-nums text-slate-500">
+            {music.time}
+          </span>
         </div>
       </div>
 
       <div className="relative z-[1] flex items-center gap-2 text-slate-700">
         <button
-          className="grid h-8 w-8 place-items-center rounded-full border border-white/35 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform duration-150 hover:-translate-y-[1px] hover:bg-white/58"
+          className="hover:bg-white/58 grid h-8 w-8 place-items-center rounded-full border border-white/35 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform duration-150 hover:-translate-y-[1px]"
           type="button"
           aria-label="Previous track"
         >
@@ -66,7 +74,7 @@ export function MusicHub({ music }: MusicHubProps) {
           <Pause size={16} fill="currentColor" />
         </button>
         <button
-          className="grid h-8 w-8 place-items-center rounded-full border border-white/35 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform duration-150 hover:-translate-y-[1px] hover:bg-white/58"
+          className="hover:bg-white/58 grid h-8 w-8 place-items-center rounded-full border border-white/35 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform duration-150 hover:-translate-y-[1px]"
           type="button"
           aria-label="Next track"
         >

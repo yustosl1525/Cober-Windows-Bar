@@ -1,5 +1,9 @@
 import type { HubTask } from "../../../types/hub";
-import { FluentIconChip, FluentProgressRail, type ShowcaseFluentMode } from "./ShowcaseFluentTokens";
+import {
+  FluentIconChip,
+  FluentProgressRail,
+  type ShowcaseFluentMode,
+} from "./ShowcaseFluentTokens";
 
 type MultiTaskHubProps = {
   tasks: HubTask[];
@@ -23,15 +27,24 @@ export function MultiTaskHub({ tasks }: MultiTaskHubProps) {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className="grid grid-cols-[36px_1fr_40px] items-center gap-3 rounded-[22px] border border-white/26 bg-white/28 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+            className="border-white/26 bg-white/28 grid grid-cols-[36px_1fr_40px] items-center gap-3 rounded-[22px] border px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
           >
             <FluentIconChip mode={modeMap[task.type]} compact />
             <div className="min-w-0">
-              <div className="truncate text-[13px] font-semibold tracking-[0] text-slate-900">{task.title}</div>
-              <div className="mt-0.5 truncate text-[11px] font-medium tracking-[0] text-slate-600">{task.subtitle}</div>
+              <div className="truncate text-[13px] font-semibold tracking-[0] text-slate-900">
+                {task.title}
+              </div>
+              <div className="mt-0.5 truncate text-[11px] font-medium tracking-[0] text-slate-600">
+                {task.subtitle}
+              </div>
               <div className="mt-1.5">
                 {task.progress !== undefined && (
-                  <FluentProgressRail mode={modeMap[task.type]} value={task.progress} label={`${task.title} progress`} shimmer={task.type !== "notification"} />
+                  <FluentProgressRail
+                    mode={modeMap[task.type]}
+                    value={task.progress}
+                    label={`${task.title} progress`}
+                    shimmer={task.type !== "notification"}
+                  />
                 )}
               </div>
             </div>

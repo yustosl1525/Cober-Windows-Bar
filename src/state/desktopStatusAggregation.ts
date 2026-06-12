@@ -35,8 +35,9 @@ const DESKTOP_STATUS_AVAILABLE_KINDS: DesktopStatusKind[] = [
   "notification",
 ];
 
-
-function normalizeAvailableKinds(kinds: DesktopStatusKind[] | undefined): DesktopStatusKind[] | undefined {
+function normalizeAvailableKinds(
+  kinds: DesktopStatusKind[] | undefined,
+): DesktopStatusKind[] | undefined {
   if (!kinds?.length) {
     return undefined;
   }
@@ -58,18 +59,23 @@ function snapshotMusicState(music: MusicState): DesktopMediaState {
   };
 }
 
-function snapshotRealMediaState(payload: MediaSessionPayload, metadata?: Record<string, unknown>): DesktopMediaState {
-  const timeLabel = payload.positionMs !== undefined && payload.durationMs !== undefined && payload.durationMs > 0
-    ? formatMediaTime(payload.positionMs, payload.durationMs)
-    : typeof metadata?.["timeLabel"] === "string"
-      ? metadata["timeLabel"]
-      : "";
+function snapshotRealMediaState(
+  payload: MediaSessionPayload,
+  metadata?: Record<string, unknown>,
+): DesktopMediaState {
+  const timeLabel =
+    payload.positionMs !== undefined && payload.durationMs !== undefined && payload.durationMs > 0
+      ? formatMediaTime(payload.positionMs, payload.durationMs)
+      : typeof metadata?.["timeLabel"] === "string"
+        ? metadata["timeLabel"]
+        : "";
 
   return {
     kind: "media",
-    title: payload.playbackStatus === "playing"
-      ? (payload.title || i18n.t("aggregation.nowPlaying"))
-      : "Media",
+    title:
+      payload.playbackStatus === "playing"
+        ? payload.title || i18n.t("aggregation.nowPlaying")
+        : "Media",
     subtitle: payload.playbackStatus === "playing" ? "Playing" : "Paused",
     source: "system",
     artist: payload.artist ?? "",
@@ -80,7 +86,10 @@ function snapshotRealMediaState(payload: MediaSessionPayload, metadata?: Record<
     sourceHealth: {
       kind: "media",
       quality: "native",
-      code: typeof metadata?.["code"] === "string" ? metadata["code"] as "available" | "unsupported" : "available",
+      code:
+        typeof metadata?.["code"] === "string"
+          ? (metadata["code"] as "available" | "unsupported")
+          : "available",
       safeToDisplay: true,
       lastCheckedAt: Date.now(),
     },
@@ -157,7 +166,9 @@ function snapshotAiTask(task: HubTask): DesktopUpdateState {
   };
 }
 
-function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | DesktopFocusState | DesktopNotificationState | undefined {
+function snapshotNotificationEvent(
+  event: HubEvent,
+): DesktopClipboardState | DesktopFocusState | DesktopNotificationState | undefined {
   if (event.source === "notification") {
     const payload = event.payload && "message" in event.payload ? event.payload : undefined;
 
@@ -179,8 +190,14 @@ function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | Des
       title: i18n.t("aggregation.focusMode"),
       subtitle: i18n.t("aggregation.systemStatus"),
       source: "system",
-      sessionLabel: typeof event.metadata["label"] === "string" ? event.metadata["label"] : i18n.t("aggregation.focusModeEnabled"),
-      detail: typeof event.metadata["detail"] === "string" ? event.metadata["detail"] : i18n.t("aggregation.doNotDisturb"),
+      sessionLabel:
+        typeof event.metadata["label"] === "string"
+          ? event.metadata["label"]
+          : i18n.t("aggregation.focusModeEnabled"),
+      detail:
+        typeof event.metadata["detail"] === "string"
+          ? event.metadata["detail"]
+          : i18n.t("aggregation.doNotDisturb"),
       accent: "pink",
     };
   }
@@ -236,7 +253,9 @@ function deriveStateOverrides(hubState: HubStoreState): Partial<DesktopStatusSta
     const latestNotification = hubState.events.find(
       (event) => event.type === "notification" && event.source === "notification",
     );
-    const notificationState = latestNotification ? snapshotNotificationEvent(latestNotification) : undefined;
+    const notificationState = latestNotification
+      ? snapshotNotificationEvent(latestNotification)
+      : undefined;
     if (notificationState?.kind === "notification") {
       overrides.notification = notificationState;
     }
@@ -264,12 +283,15 @@ function deriveActiveKinds(hubState: HubStoreState, events: HubEvent[]): Desktop
   }
 
   // Media (real provider)
-  if (events.some((event) => {
-    if (event.type !== "media") return false;
-    const payload = event.payload;
-    const isAvailable = payload && "available" in payload && (payload as MediaSessionPayload).available;
-    return isAvailable;
-  })) {
+  if (
+    events.some((event) => {
+      if (event.type !== "media") return false;
+      const payload = event.payload;
+      const isAvailable =
+        payload && "available" in payload && (payload as MediaSessionPayload).available;
+      return isAvailable;
+    })
+  ) {
     activeKinds.push("media");
   }
 
@@ -296,7 +318,9 @@ function deriveActiveKinds(hubState: HubStoreState, events: HubEvent[]): Desktop
   // Focus (real provider or mock)
   if (hubState.focus && hubState.focus.active) {
     activeKinds.push("focus");
-  } else if (events.some((event) => event.source === "system" && event.metadata?.["focus"] === true)) {
+  } else if (
+    events.some((event) => event.source === "system" && event.metadata?.["focus"] === true)
+  ) {
     activeKinds.push("focus");
   }
 
@@ -332,7 +356,10 @@ export function aggregateDesktopStatusInput(
   // This remains as a fallback for any data that hasn't been migrated
   // to the unified provider pipeline yet.
   if (input.externalStates) {
-    for (const [kind, state] of Object.entries(input.externalStates) as [DesktopStatusKind, DesktopStatusState][]) {
+    for (const [kind, state] of Object.entries(input.externalStates) as [
+      DesktopStatusKind,
+      DesktopStatusState,
+    ][]) {
       if (state && !states[kind]) {
         (states as Record<string, unknown>)[kind] = state;
       }

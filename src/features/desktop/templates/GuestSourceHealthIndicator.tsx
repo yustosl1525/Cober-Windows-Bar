@@ -25,7 +25,10 @@ export function GuestSourceHealthIndicator({ sourceHealth }: GuestSourceHealthIn
 
 type TranslationFn = (key: string) => string;
 
-export function guestSourceQualityLabel(quality: GuestProviderSourceQuality | undefined, t?: TranslationFn) {
+export function guestSourceQualityLabel(
+  quality: GuestProviderSourceQuality | undefined,
+  t?: TranslationFn,
+) {
   const translate = t ?? i18n.t.bind(i18n);
   switch (quality) {
     case "native":

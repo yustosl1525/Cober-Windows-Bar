@@ -1,5 +1,15 @@
 import type { ReactNode } from "react";
-import { Bot, Download, Folder, GitBranch, LayoutGrid, MessageCircleMore, Music2, PanelTop, Search } from "lucide-react";
+import {
+  Bot,
+  Download,
+  Folder,
+  GitBranch,
+  LayoutGrid,
+  MessageCircleMore,
+  Music2,
+  PanelTop,
+  Search,
+} from "lucide-react";
 import { FluentIconChip, FluentProgressRail } from "./ShowcaseFluentTokens";
 
 export function FluentStyleGuide() {
@@ -13,10 +23,18 @@ export function FluentStyleGuide() {
             value="Soft glass surface"
             swatch="bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(255,255,255,0.42))]"
           />
-          <SpecCard title="Backdrop blur" value="24px + saturate" swatch="bg-white/[0.12] backdrop-blur-2xl" />
+          <SpecCard
+            title="Backdrop blur"
+            value="24px + saturate"
+            swatch="bg-white/[0.12] backdrop-blur-2xl"
+          />
           <SpecCard title="Shape language" value="9999px / 30px / 22px" swatch="bg-violet-300/18" />
           <SpecCard title="Typography" value="Segoe UI hierarchy" swatch="bg-slate-100/14" />
-          <SpecCard title="Mode accents" value="AI / Media / Download / Notify / Git / Multi" swatch="bg-[linear-gradient(90deg,#7c3aed,#ec4899,#10b981,#f59e0b,#0ea5e9)]" />
+          <SpecCard
+            title="Mode accents"
+            value="AI / Media / Download / Notify / Git / Multi"
+            swatch="bg-[linear-gradient(90deg,#7c3aed,#ec4899,#10b981,#f59e0b,#0ea5e9)]"
+          />
 
           <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl">
             <div className="text-sm text-slate-300">Mode chips</div>
@@ -42,12 +60,36 @@ export function FluentStyleGuide() {
           <div className="rounded-[18px] border border-white/10 bg-white/[0.055] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl md:col-span-2 min-[1700px]:col-span-2">
             <div className="text-sm text-slate-300">Future mode palette</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-slate-100 min-[1700px]:grid-cols-3">
-              <ModePill icon={<Bot size={14} />} label="AI" tint="bg-violet-300/16 text-violet-100" />
-              <ModePill icon={<Music2 size={14} />} label="Music" tint="bg-fuchsia-300/16 text-fuchsia-100" />
-              <ModePill icon={<Download size={14} />} label="Download" tint="bg-emerald-300/16 text-emerald-100" />
-              <ModePill icon={<MessageCircleMore size={14} />} label="Notification" tint="bg-amber-300/16 text-amber-100" />
-              <ModePill icon={<GitBranch size={14} />} label="Git" tint="bg-sky-300/16 text-sky-100" />
-              <ModePill icon={<LayoutGrid size={14} />} label="MultiTask" tint="bg-slate-200/16 text-slate-100" />
+              <ModePill
+                icon={<Bot size={14} />}
+                label="AI"
+                tint="bg-violet-300/16 text-violet-100"
+              />
+              <ModePill
+                icon={<Music2 size={14} />}
+                label="Music"
+                tint="bg-fuchsia-300/16 text-fuchsia-100"
+              />
+              <ModePill
+                icon={<Download size={14} />}
+                label="Download"
+                tint="bg-emerald-300/16 text-emerald-100"
+              />
+              <ModePill
+                icon={<MessageCircleMore size={14} />}
+                label="Notification"
+                tint="bg-amber-300/16 text-amber-100"
+              />
+              <ModePill
+                icon={<GitBranch size={14} />}
+                label="Git"
+                tint="bg-sky-300/16 text-sky-100"
+              />
+              <ModePill
+                icon={<LayoutGrid size={14} />}
+                label="MultiTask"
+                tint="bg-slate-200/16 text-slate-100"
+              />
             </div>
           </div>
         </div>
@@ -83,7 +125,9 @@ export function FluentStyleGuide() {
               <FluentIconChip mode="ai" compact />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold text-slate-900">GPT-5.5</div>
-                <div className="truncate text-[11px] font-medium text-slate-600">Generating code...</div>
+                <div className="truncate text-[11px] font-medium text-slate-600">
+                  Generating code...
+                </div>
               </div>
               <span className="text-[10px] font-semibold uppercase text-violet-700">Live</span>
             </div>
@@ -92,7 +136,7 @@ export function FluentStyleGuide() {
             </div>
           </div>
 
-          <div className="absolute right-8 top-8 rounded-[14px] border border-white/12 bg-white/[0.11] px-4 py-3 text-sm text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl">
+          <div className="border-white/12 absolute right-8 top-8 rounded-[14px] border bg-white/[0.11] px-4 py-3 text-sm text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl">
             Floats above windowed apps
             <br />
             Avoids fullscreen surfaces
@@ -126,14 +170,18 @@ function FluentRailRow({
     <div className="grid grid-cols-[48px_minmax(0,1fr)_36px] items-center gap-3">
       <span className="text-xs font-semibold text-slate-200">{label}</span>
       <FluentProgressRail mode={mode} value={value} label={`${label} token progress`} />
-      <span className="text-right text-[11px] font-medium tabular-nums text-slate-300">{value}%</span>
+      <span className="text-right text-[11px] font-medium tabular-nums text-slate-300">
+        {value}%
+      </span>
     </div>
   );
 }
 
 function ModePill({ icon, label, tint }: { icon: ReactNode; label: string; tint: string }) {
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 ${tint}`}>
+    <div
+      className={`inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 ${tint}`}
+    >
       {icon}
       <span>{label}</span>
     </div>

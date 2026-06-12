@@ -1,14 +1,25 @@
-export type HubMode =
-  | "idle"
+export type HubMode = "idle" | "music" | "aiProgress" | "download" | "notification" | "multiTask";
+
+export type HubTaskType =
   | "music"
-  | "aiProgress"
+  | "ai"
   | "download"
   | "notification"
-  | "multiTask";
+  | "media"
+  | "clipboard"
+  | "focus"
+  | "system";
 
-export type HubTaskType = "music" | "ai" | "download" | "notification" | "media" | "clipboard" | "focus" | "system";
-
-export type HubEventSource = "mock" | "system" | "music" | "download" | "ai" | "notification" | "media" | "clipboard" | "focus";
+export type HubEventSource =
+  | "mock"
+  | "system"
+  | "music"
+  | "download"
+  | "ai"
+  | "notification"
+  | "media"
+  | "clipboard"
+  | "focus";
 
 export type SystemPerformanceMetricId = "cpu" | "memory" | "download" | "upload";
 
@@ -49,7 +60,12 @@ export type DesktopStatusAttentionReason = "new" | "near-complete" | "completion
 
 type DesktopStatusSource = "default" | "mock" | "system";
 
-export type GuestProviderSourceQuality = "native" | "app-owned" | "fixture" | "mock" | "unavailable";
+export type GuestProviderSourceQuality =
+  | "native"
+  | "app-owned"
+  | "fixture"
+  | "mock"
+  | "unavailable";
 
 export type GuestProviderDiagnosticCode =
   | "available"
@@ -68,7 +84,9 @@ export type GuestProviderSourceHealth = {
   lastCheckedAt: number;
 };
 
-export type GuestProviderSourceHealthMap = Partial<Record<DesktopGuestStatusKind, GuestProviderSourceHealth>>;
+export type GuestProviderSourceHealthMap = Partial<
+  Record<DesktopGuestStatusKind, GuestProviderSourceHealth>
+>;
 
 type DesktopStatusAccentTone = "blue" | "violet" | "cyan" | "green" | "orange" | "pink";
 
@@ -269,7 +287,14 @@ export type HubEvent = {
   createdAt: number;
   expiresAt?: number;
   progress?: number;
-  payload?: MusicState | NotificationState | HubTask | MediaSessionPayload | ClipboardPayload | FocusAssistPayload | SystemPerformancePayload;
+  payload?:
+    | MusicState
+    | NotificationState
+    | HubTask
+    | MediaSessionPayload
+    | ClipboardPayload
+    | FocusAssistPayload
+    | SystemPerformancePayload;
   metadata?: Record<string, unknown>;
 };
 

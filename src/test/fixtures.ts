@@ -18,7 +18,9 @@ import type {
 
 // ── Metrics ────────────────────────────────────────────────────────
 
-export function mockMetrics(overrides?: Partial<SystemPerformanceMetric>[]): SystemPerformanceMetric[] {
+export function mockMetrics(
+  overrides?: Partial<SystemPerformanceMetric>[],
+): SystemPerformanceMetric[] {
   const base: SystemPerformanceMetric[] = [
     { id: "cpu", label: "CPU", value: 42, tone: "blue" },
     { id: "memory", label: "Memory", value: 61, tone: "violet" },
@@ -74,7 +76,9 @@ export function mockMediaState(overrides?: Partial<DesktopMediaState>): DesktopM
   };
 }
 
-export function mockClipboardState(overrides?: Partial<DesktopClipboardState>): DesktopClipboardState {
+export function mockClipboardState(
+  overrides?: Partial<DesktopClipboardState>,
+): DesktopClipboardState {
   return {
     kind: "clipboard",
     title: "Copied Content",

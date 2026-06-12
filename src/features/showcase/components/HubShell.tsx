@@ -1,6 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { HubMode, HubTask, MusicState, NotificationState } from "../../../types/hub";
-import { aiTask, downloadTask, multiTasks, musicState, notificationState } from "../../../data/mockHubData";
+import {
+  aiTask,
+  downloadTask,
+  multiTasks,
+  musicState,
+  notificationState,
+} from "../../../data/mockHubData";
 import { GlassPanel } from "../../../shared/ui/GlassPanel";
 import { AiProgressHub } from "./AiProgressHub";
 import { DownloadHub } from "./DownloadHub";

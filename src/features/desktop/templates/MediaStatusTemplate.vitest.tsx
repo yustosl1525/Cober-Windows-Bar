@@ -72,54 +72,54 @@ describe("MediaStatusTemplate", () => {
     expect(screen.getByText("Native")).toBeInTheDocument();
   });
 });
- 
- describe("MediaStatusTemplate UI details", () => {
-   it("applies the shared frame class to the state container", () => {
-     const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
-     expect(container.querySelector(".product-status-state")).toBeInTheDocument();
-   });
- 
-   it("adds is-playing class to icon when playback is active", () => {
-     const { container } = render(
-       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />,
-     );
-     const icon = container.querySelector(".product-status-icon-media");
-     expect(icon).toHaveClass("is-playing");
-   });
- 
-   it("omits is-playing class when paused", () => {
-     const { container } = render(
-       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "paused" })} />,
-     );
-     const icon = container.querySelector(".product-status-icon-media");
-     expect(icon).not.toHaveClass("is-playing");
-   });
- 
-   it("progressbar label includes the i18n 'Media progress' prefix", () => {
-     const state = mockMediaState({ progress: 48 });
-     render(<MediaStatusTemplate state={state} />);
-     const progressBar = screen.getByRole("progressbar");
-     expect(progressBar.getAttribute("aria-label")).toBe("Media progress 48%");
-   });
- 
-   it("media control buttons expose title tooltips for hover", () => {
-     render(<MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />);
-     expect(screen.getByLabelText("Previous")).toHaveAttribute("title", "Previous");
-     expect(screen.getByLabelText("Pause")).toHaveAttribute("title", "Pause");
-     expect(screen.getByLabelText("Next")).toHaveAttribute("title", "Next");
-   });
- 
-   it("shows the unavailable badge and disables controls when no player is detected", () => {
-     const { container } = render(
-       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
-     );
-     expect(container.querySelector(".product-status-media-unavailable-badge")).toBeInTheDocument();
-     const prev = screen.getByLabelText("Previous");
-     const next = screen.getByLabelText("Next");
-     expect(prev).toBeDisabled();
-     expect(next).toBeDisabled();
-   });
- 
+
+describe("MediaStatusTemplate UI details", () => {
+  it("applies the shared frame class to the state container", () => {
+    const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+    expect(container.querySelector(".product-status-state")).toBeInTheDocument();
+  });
+
+  it("adds is-playing class to icon when playback is active", () => {
+    const { container } = render(
+      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />,
+    );
+    const icon = container.querySelector(".product-status-icon-media");
+    expect(icon).toHaveClass("is-playing");
+  });
+
+  it("omits is-playing class when paused", () => {
+    const { container } = render(
+      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "paused" })} />,
+    );
+    const icon = container.querySelector(".product-status-icon-media");
+    expect(icon).not.toHaveClass("is-playing");
+  });
+
+  it("progressbar label includes the i18n 'Media progress' prefix", () => {
+    const state = mockMediaState({ progress: 48 });
+    render(<MediaStatusTemplate state={state} />);
+    const progressBar = screen.getByRole("progressbar");
+    expect(progressBar.getAttribute("aria-label")).toBe("Media progress 48%");
+  });
+
+  it("media control buttons expose title tooltips for hover", () => {
+    render(<MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />);
+    expect(screen.getByLabelText("Previous")).toHaveAttribute("title", "Previous");
+    expect(screen.getByLabelText("Pause")).toHaveAttribute("title", "Pause");
+    expect(screen.getByLabelText("Next")).toHaveAttribute("title", "Next");
+  });
+
+  it("shows the unavailable badge and disables controls when no player is detected", () => {
+    const { container } = render(
+      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
+    );
+    expect(container.querySelector(".product-status-media-unavailable-badge")).toBeInTheDocument();
+    const prev = screen.getByLabelText("Previous");
+    const next = screen.getByLabelText("Next");
+    expect(prev).toBeDisabled();
+    expect(next).toBeDisabled();
+  });
+
   it("hides the controls and progressbar when no player is detected", () => {
     const { container } = render(
       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
@@ -132,7 +132,7 @@ describe("MediaStatusTemplate", () => {
     // Progressbar is still rendered (progress may be 0)
     expect(container.querySelectorAll('[role="progressbar"]').length).toBeGreaterThan(0);
   });
- });
+});
 
 describe("MediaStatusTemplate UI tokens", () => {
   it("applies the shared guest-btn / guest-btn-primary class hooks", () => {
@@ -154,9 +154,7 @@ describe("MediaStatusTemplate UI tokens", () => {
   });
 
   it("disables the primary play/pause button when source is unavailable", () => {
-    render(
-      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
-    );
+    render(<MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />);
     const playBtn = screen.getByLabelText("Play");
     expect(playBtn).toBeDisabled();
     expect(playBtn).toHaveClass("product-status-guest-btn-primary");

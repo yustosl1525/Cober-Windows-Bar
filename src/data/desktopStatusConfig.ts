@@ -7,7 +7,10 @@ import type {
   SystemPerformanceMetricId,
 } from "../types/hub";
 
-const DESKTOP_STATUS_METRIC_TONES: Record<SystemPerformanceMetricId, SystemPerformanceMetric["tone"]> = {
+const DESKTOP_STATUS_METRIC_TONES: Record<
+  SystemPerformanceMetricId,
+  SystemPerformanceMetric["tone"]
+> = {
   cpu: "blue",
   memory: "violet",
   download: "cyan",
@@ -54,16 +57,34 @@ export function getDesktopStatusLabels(): Record<SystemPerformanceMetricId, stri
   };
 }
 
-export function createSystemPerformanceMetricSnapshot(
-  snapshot: { cpu: number; memory: number; downloadSpeed: number; uploadSpeed: number },
-): SystemPerformanceMetric[] {
+export function createSystemPerformanceMetricSnapshot(snapshot: {
+  cpu: number;
+  memory: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+}): SystemPerformanceMetric[] {
   const labels = getDesktopStatusLabels();
 
   return [
     { id: "cpu", label: labels.cpu, value: snapshot.cpu, tone: DESKTOP_STATUS_METRIC_TONES.cpu },
-    { id: "memory", label: labels.memory, value: snapshot.memory, tone: DESKTOP_STATUS_METRIC_TONES.memory },
-    { id: "download", label: labels.download, value: snapshot.downloadSpeed, tone: DESKTOP_STATUS_METRIC_TONES.download },
-    { id: "upload", label: labels.upload, value: snapshot.uploadSpeed, tone: DESKTOP_STATUS_METRIC_TONES.upload },
+    {
+      id: "memory",
+      label: labels.memory,
+      value: snapshot.memory,
+      tone: DESKTOP_STATUS_METRIC_TONES.memory,
+    },
+    {
+      id: "download",
+      label: labels.download,
+      value: snapshot.downloadSpeed,
+      tone: DESKTOP_STATUS_METRIC_TONES.download,
+    },
+    {
+      id: "upload",
+      label: labels.upload,
+      value: snapshot.uploadSpeed,
+      tone: DESKTOP_STATUS_METRIC_TONES.upload,
+    },
   ];
 }
 
