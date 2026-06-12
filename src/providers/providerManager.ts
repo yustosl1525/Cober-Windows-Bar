@@ -4,6 +4,7 @@ import { connectProviderToEventBus, type ProviderConnection } from "./providerAd
 import type { HubProvider } from "./types";
 import { createRealClipboardProvider } from "./realClipboardProvider";
 import { createRealFocusProvider } from "./realFocusProvider";
+import { createRealMediaSessionProvider } from "./realMediaSessionProvider";
 import { createRealSystemPerformanceProvider } from "./realSystemPerformanceProvider";
 import {
   createMockMusicProvider,
@@ -59,12 +60,16 @@ export function createProviderManager(
     }
   }
 
-  // Register real providers (Tauri-backed)
-  // Note: Media is handled via a direct listener in useDesktopStatusRuntime,
-  // not through the Provider pipeline, to avoid duplicate event registration.
+  // Register real providers (Tauri-backed). All four real providers
+  // (clipboard, focus, media session, system performance) go through
+  // the unified Provider pipeline. The previous direct-listener path
+  // for media in useDesktopStatusRuntime has been removed; media
+  // events now flow provider → adapter → HubEventBus → store →
+  // aggregation, just like every other guest kind.
   if (realProviders) {
     registerProvider(createRealClipboardProvider());
     registerProvider(createRealFocusProvider());
+    registerProvider(createRealMediaSessionProvider());
     registerProvider(createRealSystemPerformanceProvider());
   }
 

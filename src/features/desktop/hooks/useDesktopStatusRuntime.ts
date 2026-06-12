@@ -31,9 +31,6 @@ import type {
 import { DESKTOP_STATUS_TEMPLATE_ORDER } from "../../../data/desktopStatusConfig";
 import { createHubEventBus } from "../../../state/hubState";
 import { createProviderManager, type ProviderManager } from "../../../providers/providerManager";
-import { onMediaSessionChanged, type MediaSessionChangedPayload } from "../../../runtime/systemMonitorRuntime";
-import { loadTauriMediaSessionStatus } from "../../../runtime/tauriRuntime";
-import { MEDIA_DISPLAY_WINDOW_MS, formatMediaTime } from "../../../shared/mediaTime";
 
 export type UseDesktopStatusRuntimeResult = {
   resolvedState: DesktopStatusState;
@@ -75,35 +72,6 @@ function systemPayloadToMetrics(payload: SystemPerformancePayload): SystemPerfor
   ];
 }
 
-function mediaPayloadToHubEvent(payload: MediaSessionChangedPayload): HubEvent {
-  const createdAt = payload.checkedAt || Date.now();
-  const expiresAt = payload.available
-    ? createdAt + MEDIA_DISPLAY_WINDOW_MS
-    : createdAt;
-
-  return {
-    id: "native-media-session",
-    type: "media",
-    source: "media",
-    createdAt,
-    expiresAt,
-    progress: payload.progress,
-    payload: {
-      available: payload.available,
-      playbackStatus: payload.playbackStatus,
-      progress: payload.progress,
-      positionMs: payload.positionMs,
-      durationMs: payload.durationMs,
-      title: payload.title,
-      artist: payload.artist,
-    },
-    metadata: {
-      timeLabel: formatMediaTime(payload.positionMs, payload.durationMs),
-      code: payload.code,
-    },
-  };
-}
-
 export function useDesktopStatusRuntime(
   metrics: SystemPerformanceMetric[],
   systemPerformanceSourceQuality: string,
@@ -112,6 +80,9 @@ export function useDesktopStatusRuntime(
   const initialSnapshot = runtimeRef.current.getSnapshot();
 
   // Create a shared HubEventBus and ProviderManager for the unified pipeline.
+  // After the W1 migration, ALL real providers (clipboard, focus, media
+  // session, system performance) publish through this bus — there is no
+  // direct-listener shortcut in this hook any more.
   const busRef = useRef(createHubEventBus());
   const managerRef = useRef<ProviderManager | undefined>(undefined);
 
@@ -157,51 +128,9 @@ export function useDesktopStatusRuntime(
     return unsubscribe;
   }, []);
 
-  // Direct Tauri media session listener — the canonical media event path.
-  // The Provider pipeline's media events are not consumed by the bus subscriber,
-  // so this direct listener is the single source of truth for media events.
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    const handleMediaPayload = (payload: MediaSessionChangedPayload) => {
-      const mediaEvent = mediaPayloadToHubEvent(payload);
-      setHubState((prev) => ({
-        ...prev,
-        events: [mediaEvent, ...prev.events.filter((e) => e.id !== mediaEvent.id)],
-      }));
-    };
-
-    // Fetch initial media state on mount so we don't wait for the next change event
-    loadTauriMediaSessionStatus().then((result) => {
-      if (result.ok && result.status) {
-        handleMediaPayload({
-          available: result.status.available,
-          playbackStatus: result.status.playbackStatus,
-          progress: result.status.progress,
-          positionMs: result.status.positionMs,
-          durationMs: result.status.durationMs,
-          title: result.status.title,
-          artist: result.status.artist,
-          code: result.status.code,
-          checkedAt: result.status.checkedAt,
-        });
-      }
-    }).catch(() => {
-      // Initial fetch failed — non-critical, listener will catch future changes
-    });
-
-    onMediaSessionChanged(handleMediaPayload).then((fn) => {
-      unlisten = fn;
-    }).catch(() => {
-      // Media session listener not available — non-critical
-    });
-
-    return () => {
-      unlisten?.();
-    };
-  }, []);
-
-  // Start the unified ProviderManager for clipboard, focus, and system perf.
+  // Start the unified ProviderManager for clipboard, focus, media, and
+  // system perf. All four providers publish into the shared HubEventBus;
+  // the bus subscriber merges each new state slice into our hubState.
   useEffect(() => {
     const manager = managerRef.current;
     const bus = busRef.current;
@@ -212,6 +141,14 @@ export function useDesktopStatusRuntime(
         clipboard: busState.clipboard ?? prev.clipboard,
         focus: busState.focus ?? prev.focus,
         systemPerformance: busState.systemPerformance ?? prev.systemPerformance,
+        // Merge any media events the provider published so the aggregation
+        // layer can pick them up. Old `type === "music"` events (from the
+        // desktopStatusInputRuntime path) are dropped — they represented the
+        // same surface in a different shape.
+        events: [
+          ...busState.events.filter((event) => event.type === "media"),
+          ...prev.events.filter((event) => event.type !== "music"),
+        ],
       }));
     });
 
