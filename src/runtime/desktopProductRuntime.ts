@@ -1,4 +1,5 @@
 import { listen, type Event, type UnlistenFn } from "@tauri-apps/api/event";
+
 import { isRecord } from "../shared/runtimeGuards";
 import type { DesktopStatusMenuActionId, DesktopStatusPreferencesPayload } from "../types/hub";
 

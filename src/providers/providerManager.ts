@@ -1,17 +1,17 @@
-import type { HubEventBus } from "../state/hubState";
-import { createProviderRegistry } from "./providerRegistry";
-import { connectProviderToEventBus, type ProviderConnection } from "./providerAdapter";
-import type { HubProvider } from "./types";
-import { createRealClipboardProvider } from "./realClipboardProvider";
-import { createRealFocusProvider } from "./realFocusProvider";
-import { createRealMediaSessionProvider } from "./realMediaSessionProvider";
-import { createRealSystemPerformanceProvider } from "./realSystemPerformanceProvider";
 import {
   createMockMusicProvider,
   createMockDownloadProvider,
   createMockAIProvider,
   createMockNotificationProvider,
 } from "./mockProviders";
+import { connectProviderToEventBus, type ProviderConnection } from "./providerAdapter";
+import { createProviderRegistry } from "./providerRegistry";
+import { createRealClipboardProvider } from "./realClipboardProvider";
+import { createRealFocusProvider } from "./realFocusProvider";
+import { createRealMediaSessionProvider } from "./realMediaSessionProvider";
+import { createRealSystemPerformanceProvider } from "./realSystemPerformanceProvider";
+import type { HubProvider } from "./types";
+import type { HubEventBus } from "../state/hubState";
 
 export type ProviderManagerOptions = {
   /** When true, register real (Tauri-backed) providers. Default: true. */

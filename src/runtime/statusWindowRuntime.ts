@@ -1,12 +1,9 @@
-import { PhysicalPosition, type PhysicalSize } from "@tauri-apps/api/dpi";
-import { currentMonitor, getCurrentWindow, type Monitor } from "@tauri-apps/api/window";
-import { isRecord } from "../shared/runtimeGuards";
 import { getTauriInvoke, type TauriInvoke } from "./tauriRuntime";
+import { isRecord } from "../shared/runtimeGuards";
 
 export const STATUS_WINDOW_OVERLAY_POLICY_COMMAND = "get_overlay_policy";
 export const STATUS_WINDOW_FLOATING_COMMAND = "set_status_window_floating";
 export const STATUS_WINDOW_CORRECT_POSITION_COMMAND = "correct_status_window_position";
-const STATUS_WINDOW_EDGE_MARGIN = 8;
 const STATUS_WINDOW_TOPMOST_REASSERT_MS = 1800;
 const STATUS_WINDOW_POSITION_CORRECTION_MS = 2400;
 const STATUS_WINDOW_STARTUP_REASSERT_AT_MS = [1000, 5000, 9000] as const;
@@ -30,17 +27,6 @@ export type StatusWindowOverlayState = {
   startupReassertPendingAt: number[];
 };
 
-type StatusWindowDragState = {
-  startPointerX: number;
-  startPointerY: number;
-  startWindowX: number;
-  startWindowY: number;
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-};
-
 type EnforceStatusWindowOverlayOptions = {
   invoke?: TauriInvoke;
   now?: number;
@@ -58,51 +44,6 @@ export function createStatusWindowOverlayState(): StatusWindowOverlayState {
     pendingRestorePositionCorrection: false,
     startupReassertPendingAt: [...STATUS_WINDOW_STARTUP_REASSERT_AT_MS],
   };
-}
-
-async function captureStatusWindowDragState(
-  pointerX: number,
-  pointerY: number,
-  edgeMargin = STATUS_WINDOW_EDGE_MARGIN,
-): Promise<StatusWindowDragState | null> {
-  try {
-    const appWindow = getCurrentWindow();
-    const [windowPosition, windowSize, monitor] = await Promise.all([
-      appWindow.outerPosition(),
-      appWindow.outerSize(),
-      currentMonitor(),
-    ]);
-    const bounds = getMonitorDragBounds(monitor, windowSize, edgeMargin);
-
-    return {
-      startPointerX: pointerX,
-      startPointerY: pointerY,
-      startWindowX: windowPosition.x,
-      startWindowY: windowPosition.y,
-      ...bounds,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function moveStatusWindowDrag(
-  dragState: StatusWindowDragState,
-  pointerX: number,
-  pointerY: number,
-): Promise<void> {
-  const x = clamp(
-    dragState.startWindowX + (pointerX - dragState.startPointerX),
-    dragState.minX,
-    dragState.maxX,
-  );
-  const y = clamp(
-    dragState.startWindowY + (pointerY - dragState.startPointerY),
-    dragState.minY,
-    dragState.maxY,
-  );
-
-  await getCurrentWindow().setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
 }
 
 export async function correctStatusWindowPosition(invoke = getTauriInvoke()): Promise<void> {
@@ -240,27 +181,6 @@ export function parseOverlayPolicy(value: unknown): OverlayPolicy | undefined {
   };
 }
 
-function getMonitorDragBounds(
-  monitor: Monitor | null,
-  windowSize: PhysicalSize,
-  edgeMargin: number,
-) {
-  const workArea = monitor?.workArea;
-  const origin = workArea?.position ?? monitor?.position ?? { x: 0, y: 0 };
-  const size = workArea?.size ?? monitor?.size ?? { width: 1920, height: 1080 };
-  const minX = origin.x + edgeMargin;
-  const minY = origin.y + edgeMargin;
-  const maxX = origin.x + size.width - windowSize.width - edgeMargin;
-  const maxY = origin.y + size.height - windowSize.height - edgeMargin;
-
-  return {
-    minX,
-    minY,
-    maxX: Math.max(minX, maxX),
-    maxY: Math.max(minY, maxY),
-  };
-}
-
 function defaultOverlayPolicy(): OverlayPolicy {
   return {
     foregroundFullscreen: false,
@@ -285,8 +205,4 @@ function consumeStartupReasserts(queue: number[], now: number): number {
   }
 
   return consumed;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
 }

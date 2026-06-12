@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   BatteryMedium,
   Bot,
@@ -11,6 +10,8 @@ import {
   Wifi,
   Volume2,
 } from "lucide-react";
+import type { ReactNode } from "react";
+
 import { ProgressBar } from "../../../shared/ui/ProgressBar";
 
 export function TaskbarFusionDemo() {

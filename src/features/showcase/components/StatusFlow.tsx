@@ -1,6 +1,6 @@
-import type { HubMode } from "../../../types/hub";
-import { showcaseSteps } from "../../../data/mockHubData";
 import { HubShell } from "./HubShell";
+import { showcaseSteps } from "../../../data/mockHubData";
+import type { HubMode } from "../../../types/hub";
 
 type StatusFlowProps = {
   activeMode: HubMode;

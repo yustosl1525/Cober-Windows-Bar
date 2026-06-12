@@ -1,7 +1,8 @@
-import i18n from "../../../i18n";
 import { useTranslation } from "react-i18next";
-import type { GuestProviderSourceHealth, GuestProviderSourceQuality } from "../../../types/hub";
+
 import { sourceQualityClassName } from "./ResidentStatusTemplate";
+import i18n from "../../../i18n";
+import type { GuestProviderSourceHealth, GuestProviderSourceQuality } from "../../../types/hub";
 
 type GuestSourceHealthIndicatorProps = {
   sourceHealth?: GuestProviderSourceHealth;

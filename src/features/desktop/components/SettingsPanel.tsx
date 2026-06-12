@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import {
   X,
   Monitor,
@@ -22,6 +20,9 @@ import {
   Check,
   type LucideIcon,
 } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+
 import {
   getDesktopStatusTemplateDescriptors,
   getDesktopStatusSettingsCopy,
@@ -79,6 +80,7 @@ function Win11Toggle({
 }
 
 /* ─── Main component ─── */
+/* eslint-disable react-hooks/exhaustive-deps -- i18n singleton refs are stable */
 export function SettingsPanel({
   preferences,
   activeStatusKind,

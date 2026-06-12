@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { DesktopPage } from "./features/desktop/DesktopPage";
 
 // React.lazy + dynamic import puts ShowcasePage (and its CSS) in a separate

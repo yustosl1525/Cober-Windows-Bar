@@ -1,13 +1,15 @@
+import { invoke } from "@tauri-apps/api/core";
 import { Clipboard, ExternalLink } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { invoke } from "@tauri-apps/api/core";
-import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
-import type { DesktopClipboardState } from "@/types/hub";
+
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusToast as StatusToastView } from "./StatusToast";
+
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import type { DesktopClipboardState } from "@/types/hub";
 
 type ClipboardStatusTemplateProps = {
   state: DesktopClipboardState;

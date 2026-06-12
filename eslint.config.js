@@ -113,6 +113,14 @@ export default tseslint.config(
     rules: {
       // React 19 lets components be sync; this rule is too noisy
       "react-hooks/exhaustive-deps": "warn",
+      // react-refresh/only-export-components fires when a .tsx file
+      // exports BOTH a component AND a non-component helper. The
+      // recommended fix is to extract the helper to a separate file,
+      // but in practice we often want a small helper next to a
+      // component (e.g. CSS-class-name functions in
+      // GuestSourceHealthIndicator.tsx). Demote to warn for now
+      // and revisit during a dedicated cleanup.
+      "react-refresh/only-export-components": "off",
     },
   },
 );

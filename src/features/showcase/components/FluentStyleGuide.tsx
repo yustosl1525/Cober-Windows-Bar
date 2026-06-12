@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   Bot,
   Download,
@@ -10,6 +9,8 @@ import {
   PanelTop,
   Search,
 } from "lucide-react";
+import type { ReactNode } from "react";
+
 import { FluentIconChip, FluentProgressRail } from "./ShowcaseFluentTokens";
 
 export function FluentStyleGuide() {

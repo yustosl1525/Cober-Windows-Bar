@@ -1,23 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 // Side-effect import: pulls in the showcase-only CSS so the /showcase
 // route renders the wallpaper, mockup window, and Mica/Acrylic panels.
 // Vite emits this as a separate chunk that loads only when the user
 // navigates to /showcase — the main bundle stays free of ~7KB of
 // showcase-only gzipped styles.
 import "../../styles/showcase.css";
-import { HubShell } from "./components/HubShell";
 import { EventPlaygroundPanel } from "./components/EventPlaygroundPanel";
 import { FluentStyleGuide } from "./components/FluentStyleGuide";
+import { HubShell } from "./components/HubShell";
 import { ModeSidebar } from "./components/ModeSidebar";
 import { StatusFlow } from "./components/StatusFlow";
 import { TaskbarFusionDemo } from "./components/TaskbarFusionDemo";
-import {
-  createAutoDemoSequence,
-  createHubDemoScenario,
-  playHubDemoScenario,
-  type HubDemoScenarioId,
-} from "../../state/hubScenarios";
-import { createHubEventBus } from "../../state/hubState";
 import {
   createMockAiTaskProvider,
   createMockDownloadProvider,
@@ -30,6 +24,13 @@ import {
 } from "../../providers/providerAdapter";
 import type { HubProvider } from "../../providers/types";
 import { publishTauriFixtureEvents } from "../../runtime/tauriRuntime";
+import {
+  createAutoDemoSequence,
+  createHubDemoScenario,
+  playHubDemoScenario,
+  type HubDemoScenarioId,
+} from "../../state/hubScenarios";
+import { createHubEventBus } from "../../state/hubState";
 import type { HubMode, HubStoreState } from "../../types/hub";
 
 type ProviderDemoId = "music" | "ai" | "download" | "notification";

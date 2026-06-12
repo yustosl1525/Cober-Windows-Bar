@@ -1,4 +1,5 @@
 import { useCallback, type RefObject } from "react";
+
 import { scheduleOverlayStartupReassert } from "@/runtime/statusWindowRuntime";
 import type { StatusWindowOverlayState } from "@/runtime/statusWindowRuntime";
 import type { DesktopStatusPreferences } from "@/types/hub";

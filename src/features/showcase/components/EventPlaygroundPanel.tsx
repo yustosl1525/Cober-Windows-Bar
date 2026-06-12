@@ -1,4 +1,3 @@
-import type { HubEvent, HubMode } from "../../../types/hub";
 import {
   Bell,
   Bot,
@@ -11,6 +10,8 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
+
+import type { HubEvent, HubMode } from "../../../types/hub";
 
 type EventPlaygroundPanelProps = {
   activeEvents: HubEvent[];

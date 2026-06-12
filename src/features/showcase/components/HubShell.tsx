@@ -1,5 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { HubMode, HubTask, MusicState, NotificationState } from "../../../types/hub";
+
+import { AiProgressHub } from "./AiProgressHub";
+import { DownloadHub } from "./DownloadHub";
+import { IdleHub } from "./IdleHub";
+import { MultiTaskHub } from "./MultiTaskHub";
+import { MusicHub } from "./MusicHub";
+import { NotificationHub } from "./NotificationHub";
 import {
   aiTask,
   downloadTask,
@@ -8,12 +14,7 @@ import {
   notificationState,
 } from "../../../data/mockHubData";
 import { GlassPanel } from "../../../shared/ui/GlassPanel";
-import { AiProgressHub } from "./AiProgressHub";
-import { DownloadHub } from "./DownloadHub";
-import { IdleHub } from "./IdleHub";
-import { MultiTaskHub } from "./MultiTaskHub";
-import { MusicHub } from "./MusicHub";
-import { NotificationHub } from "./NotificationHub";
+import type { HubMode, HubTask, MusicState, NotificationState } from "../../../types/hub";
 
 type HubShellProps = {
   mode: HubMode;

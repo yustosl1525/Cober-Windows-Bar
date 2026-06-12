@@ -1,14 +1,16 @@
-﻿import { useCallback } from "react";
-import { Disc3, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+﻿import { Disc3, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
-import { sendMediaControl, type MediaControlAction } from "@/runtime/mediaControlRuntime";
-import type { DesktopMediaState } from "@/types/hub";
+
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusRail } from "./StatusRail";
 import { StatusToast as StatusToastView } from "./StatusToast";
+
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { sendMediaControl, type MediaControlAction } from "@/runtime/mediaControlRuntime";
+import type { DesktopMediaState } from "@/types/hub";
 
 type MediaStatusTemplateProps = {
   state: DesktopMediaState;
@@ -18,7 +20,8 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
   const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
   const isPlaying = state.playbackStatus === "playing";
-  const isUnavailable = state.playbackStatus === "unavailable" || state.playbackStatus === "unsupported";
+  const isUnavailable =
+    state.playbackStatus === "unavailable" || state.playbackStatus === "unsupported";
   const { toast, showToast } = useStatusToast();
 
   const handleMediaAction = useCallback(

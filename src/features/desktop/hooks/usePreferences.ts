@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+
 import { listenStatusCenterSettings } from "@/runtime/desktopProductRuntime";
 import { getTauriInvoke } from "@/runtime/tauriRuntime";
 import type { DesktopStatusPreferences, DesktopStatusPreferencesPayload } from "@/types/hub";

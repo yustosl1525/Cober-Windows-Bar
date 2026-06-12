@@ -1,8 +1,8 @@
+import { scheduleDesktopStatus } from "./desktopStatusScheduler";
 import {
   DESKTOP_STATUS_TEMPLATE_ORDER,
   createDesktopStatusStateTemplates,
 } from "../data/desktopStatusConfig";
-import { scheduleDesktopStatus } from "./desktopStatusScheduler";
 import type {
   DesktopStatusKind,
   DesktopStatusResolverInput,

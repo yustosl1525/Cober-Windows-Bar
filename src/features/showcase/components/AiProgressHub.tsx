@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Bot } from "lucide-react";
+
 import type { HubTask } from "../../../types/hub";
 
 type AiProgressHubProps = {

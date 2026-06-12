@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+
 import { correctStatusWindowPosition } from "@/runtime/statusWindowRuntime";
 import { getTauriInvoke } from "@/runtime/tauriRuntime";
 

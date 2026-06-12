@@ -1,5 +1,6 @@
-import { getTauriInvoke, type TauriInvoke } from "./tauriRuntime";
 import { listen } from "@tauri-apps/api/event";
+
+import { getTauriInvoke, type TauriInvoke } from "./tauriRuntime";
 
 const FOCUS_ASSIST_COMMAND = "get_focus_assist_state";
 const NOTIFICATION_SUMMARY_COMMAND = "get_notification_summary";

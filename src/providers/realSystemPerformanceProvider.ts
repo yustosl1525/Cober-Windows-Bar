@@ -1,11 +1,11 @@
-import type { HubEvent } from "../types/hub";
-import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import { createProviderShell } from "./providerShell";
+import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import {
   loadSystemPerformanceStatus,
   type SystemStatusDiagnostic,
 } from "../runtime/systemPerformanceRuntime";
 import { getTauriInvoke } from "../runtime/tauriRuntime";
+import type { HubEvent } from "../types/hub";
 import type { SystemPerformanceSnapshot } from "../types/hub";
 
 const PROVIDER_ID = "real-system-performance-provider";

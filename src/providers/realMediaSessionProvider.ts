@@ -1,12 +1,12 @@
-import type { HubEvent } from "../types/hub";
-import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import { createProviderShell } from "./providerShell";
-import { loadTauriMediaSessionStatus, type TauriMediaSessionStatus } from "../runtime/tauriRuntime";
+import type { HubProvider, HubProviderCapability, HubProviderMetadata } from "./types";
 import {
   onMediaSessionChanged,
   type MediaSessionChangedPayload,
 } from "../runtime/systemMonitorRuntime";
+import { loadTauriMediaSessionStatus, type TauriMediaSessionStatus } from "../runtime/tauriRuntime";
 import { MEDIA_DISPLAY_WINDOW_MS, formatMediaTime } from "../shared/mediaTime";
+import type { HubEvent } from "../types/hub";
 
 const PROVIDER_ID = "real-media-session-provider";
 const POLL_FALLBACK_MS = 30_000;

@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getDesktopStatusShellCopy } from "../../data/desktopStatusConfig";
-import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
-import {
-  getAutostartEnabled,
-  setAutostartEnabled as applyAutostart,
-} from "../../runtime/autostartRuntime";
-import { resolveDesktopStatusState } from "../../state/desktopStatusState";
-import { getSafeCurrentWindow, type TauriAppWindow } from "../../shared/tauriWindow";
-import type { DesktopStatusKind } from "../../types/hub";
+
 import { SettingsPanel } from "./components/SettingsPanel";
 import {
   useContextMenu,
@@ -26,6 +18,15 @@ import { MediaStatusTemplate } from "./templates/MediaStatusTemplate";
 import { NotificationStatusTemplate } from "./templates/NotificationStatusTemplate";
 import { ResidentStatusTemplate } from "./templates/ResidentStatusTemplate";
 import { UpdateStatusTemplate } from "./templates/UpdateStatusTemplate";
+import { getDesktopStatusShellCopy } from "../../data/desktopStatusConfig";
+import {
+  getAutostartEnabled,
+  setAutostartEnabled as applyAutostart,
+} from "../../runtime/autostartRuntime";
+import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRuntime";
+import { getSafeCurrentWindow, type TauriAppWindow } from "../../shared/tauriWindow";
+import { type resolveDesktopStatusState } from "../../state/desktopStatusState";
+import type { DesktopStatusKind } from "../../types/hub";
 
 const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
 const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
@@ -190,7 +191,10 @@ export function DesktopPage() {
     }
   }, [autostartEnabled]);
 
-  const handleMenuAction = useCallback(
+  // Reserved for a future native context-menu integration that pipes
+  // menu actions through here. The Settings panel already exposes the
+  // same toggles directly, so this handler is currently a no-op.
+  const _handleMenuAction = useCallback(
     async (action: string, checked?: boolean) => {
       switch (action) {
         case "refresh-data":

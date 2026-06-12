@@ -2,13 +2,15 @@ import { RefreshCw } from "lucide-react";
 import { Download } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
-import { installUpdate } from "@/runtime/updateInstallRuntime";
-import type { DesktopUpdateState } from "@/types/hub";
+
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusToast as StatusToastView } from "./StatusToast";
+
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { installUpdate } from "@/runtime/updateInstallRuntime";
+import type { DesktopUpdateState } from "@/types/hub";
 
 type UpdateStatusTemplateProps = {
   state: DesktopUpdateState;

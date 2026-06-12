@@ -1,13 +1,15 @@
 import { Bell, X } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
-import { dismissNotification } from "@/runtime/notificationDismissRuntime";
-import type { DesktopNotificationState } from "@/types/hub";
+
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusToast as StatusToastView } from "./StatusToast";
+
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { dismissNotification } from "@/runtime/notificationDismissRuntime";
+import type { DesktopNotificationState } from "@/types/hub";
 
 type NotificationStatusTemplateProps = {
   state: DesktopNotificationState;

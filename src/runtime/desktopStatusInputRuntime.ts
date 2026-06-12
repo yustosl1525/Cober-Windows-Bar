@@ -1,15 +1,16 @@
-import { mockHubEvents } from "../data/mockHubData";
-import { isRecord, parseHubEvents, snapshotHubEvent } from "../shared/runtimeGuards";
-import { createHubEventBus, type HubEventBus } from "../state/hubState";
-import type { HubEvent, HubStoreState } from "../types/hub";
+import type { Event, UnlistenFn } from "@tauri-apps/api/event";
+import { listen } from "@tauri-apps/api/event";
+
 import {
   getTauriInvoke,
   loadTauriFixtureHubEvents,
   type TauriInvoke,
   type TauriRuntimeDiagnostic,
 } from "./tauriRuntime";
-import type { Event, UnlistenFn } from "@tauri-apps/api/event";
-import { listen } from "@tauri-apps/api/event";
+import { mockHubEvents } from "../data/mockHubData";
+import { isRecord, parseHubEvents, snapshotHubEvent } from "../shared/runtimeGuards";
+import { createHubEventBus, type HubEventBus } from "../state/hubState";
+import type { HubEvent, HubStoreState } from "../types/hub";
 
 export const DESKTOP_STATUS_INPUT_EVENT = "status-center://hub-events";
 

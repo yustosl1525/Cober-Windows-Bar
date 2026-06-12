@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
+
 import { FluentIconChip } from "./ShowcaseFluentTokens";
 
 export function IdleHub() {

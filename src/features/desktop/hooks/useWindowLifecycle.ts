@@ -1,9 +1,10 @@
 import { useCallback, type RefObject } from "react";
-import { getTauriInvoke } from "@/runtime/tauriRuntime";
+
 import {
   correctStatusWindowPosition,
   STATUS_WINDOW_CORRECT_POSITION_COMMAND,
 } from "@/runtime/statusWindowRuntime";
+import { getTauriInvoke } from "@/runtime/tauriRuntime";
 import { getSafeCurrentWindow, type TauriAppWindow } from "@/shared/tauriWindow";
 
 const QUIT_STATUS_CENTER_COMMAND = "quit_status_center";

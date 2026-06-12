@@ -1,5 +1,3 @@
-import { snapshotHubEvent } from "../shared/runtimeGuards";
-import type { HubEvent } from "../types/hub";
 import type {
   HubProvider,
   HubProviderCapability,
@@ -8,6 +6,8 @@ import type {
   HubProviderMetadata,
   MockProviderOptions,
 } from "./types";
+import { snapshotHubEvent } from "../shared/runtimeGuards";
+import type { HubEvent } from "../types/hub";
 
 type MockProviderConfig = {
   metadata: HubProviderMetadata;

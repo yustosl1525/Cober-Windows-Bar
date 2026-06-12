@@ -1,7 +1,7 @@
 import i18n from "../i18n";
-import { clampProgress, dedupeKinds } from "../shared/runtimeGuards";
-import { formatMediaTime } from "../shared/mediaTime";
 import { createHubStoreState, getActiveHubEvents } from "./hubState";
+import { formatMediaTime } from "../shared/mediaTime";
+import { clampProgress, dedupeKinds } from "../shared/runtimeGuards";
 import type {
   ClipboardPayload,
   DesktopClipboardState,
@@ -21,8 +21,6 @@ import type {
   HubTask,
   MediaSessionPayload,
   MusicState,
-  NotificationState,
-  SystemPerformanceMetric,
 } from "../types/hub";
 
 const DESKTOP_STATUS_AVAILABLE_KINDS: DesktopStatusKind[] = [
