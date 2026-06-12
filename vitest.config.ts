@@ -15,8 +15,20 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.vitest.{ts,tsx}"],
+    // Two setup files: setup.ts initializes i18n + jest-dom matchers;
+    // legacy-test-shim.ts installs a global test() that delegates to
+    // vitest's it() so the 14 legacy .test.ts files run unmodified.
+    setupFiles: [
+      "./src/test/setup.ts",
+      "./src/test/legacy-test-shim.ts",
+    ],
+    // Pick up both naming conventions. The .vitest.* files use vitest's
+    // native it()/expect(); the .test.* files use the legacy custom
+    // test() helper that's now provided by legacy-test-shim.ts.
+    include: [
+      "src/**/*.vitest.{ts,tsx}",
+      "src/**/*.test.{ts,tsx}",
+    ],
     globals: false,
     css: false,
   },
