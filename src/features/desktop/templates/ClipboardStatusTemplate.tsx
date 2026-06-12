@@ -1,11 +1,13 @@
 import { Clipboard, ExternalLink } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
-import type { DesktopClipboardState } from "../../../types/hub";
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import type { DesktopClipboardState } from "@/types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { useStatusToast } from "./hooks/useStatusToast";
+import { StatusToast as StatusToastView } from "./StatusToast";
 
 type ClipboardStatusTemplateProps = {
   state: DesktopClipboardState;
@@ -28,16 +30,16 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
   const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
   const url = useMemo(() => detectUrl(state.copiedText), [state.copiedText]);
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, showToast } = useStatusToast();
 
   const handleOpenUrl = useCallback(async () => {
     if (!url) return;
     try {
       await invoke("open_url_in_browser", { url });
     } catch {
-      setToast(t("clipboard.openFailed"));
+      showToast(t("clipboard.openFailed"));
     }
-  }, [url, t]);
+  }, [showToast, url, t]);
 
   return (
     <>
@@ -73,11 +75,7 @@ export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps)
       >
         <span className="product-status-clipboard-text">{state.copiedText}</span>
       </DesktopStatusTemplateFrame>
-      {toast ? (
-        <div className="product-status-toast" role="status" aria-live="polite">
-          {toast}
-        </div>
-      ) : null}
+      {toast ? <StatusToastView>{toast}</StatusToastView> : null}
     </>
   );
 }

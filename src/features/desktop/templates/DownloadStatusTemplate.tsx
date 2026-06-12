@@ -1,13 +1,15 @@
 import { Download } from "lucide-react";
 import { Pause, Play, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
-import { sendDownloadControl } from "../../../runtime/downloadControlRuntime";
-import type { DesktopDownloadState } from "../../../types/hub";
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { sendDownloadControl } from "@/runtime/downloadControlRuntime";
+import type { DesktopDownloadState } from "@/types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusRail } from "./StatusRail";
+import { StatusToast as StatusToastView } from "./StatusToast";
 
 type DownloadStatusTemplateProps = {
   state: DesktopDownloadState;
@@ -26,22 +28,16 @@ export function DownloadStatusTemplate({ state }: DownloadStatusTemplateProps) {
   const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
   const [paused, togglePaused] = useDownloadPaused();
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 1600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+  const { toast, showToast } = useStatusToast();
 
   const handleControl = useCallback(
     async (action: "pause" | "resume" | "cancel") => {
       const result = await sendDownloadControl(action);
       if (result && !result.success) {
-        setToast(t("download.controlFailed"));
+        showToast(t("download.controlFailed"));
       }
     },
-    [t],
+    [showToast, t],
   );
 
   return (
@@ -96,11 +92,7 @@ export function DownloadStatusTemplate({ state }: DownloadStatusTemplateProps) {
           active={!paused}
         />
       </DesktopStatusTemplateFrame>
-      {toast ? (
-        <div className="product-status-toast" role="status" aria-live="polite">
-          {toast}
-        </div>
-      ) : null}
+      {toast ? <StatusToastView>{toast}</StatusToastView> : null}
     </>
   );
 }

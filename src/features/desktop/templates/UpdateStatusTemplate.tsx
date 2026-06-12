@@ -1,12 +1,14 @@
 import { RefreshCw } from "lucide-react";
 import { Download } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
-import { installUpdate } from "../../../runtime/updateInstallRuntime";
-import type { DesktopUpdateState } from "../../../types/hub";
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { installUpdate } from "@/runtime/updateInstallRuntime";
+import type { DesktopUpdateState } from "@/types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { useStatusToast } from "./hooks/useStatusToast";
+import { StatusToast as StatusToastView } from "./StatusToast";
 
 type UpdateStatusTemplateProps = {
   state: DesktopUpdateState;
@@ -15,20 +17,14 @@ type UpdateStatusTemplateProps = {
 export function UpdateStatusTemplate({ state }: UpdateStatusTemplateProps) {
   const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 1600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+  const { toast, showToast } = useStatusToast();
 
   const handleInstall = useCallback(async () => {
     const result = await installUpdate();
     if (result && !result.success) {
-      setToast(t("update.installFailed"));
+      showToast(t("update.installFailed"));
     }
-  }, [t]);
+  }, [showToast, t]);
 
   return (
     <>
@@ -57,11 +53,7 @@ export function UpdateStatusTemplate({ state }: UpdateStatusTemplateProps) {
           </span>
         }
       />
-      {toast ? (
-        <div className="product-status-toast" role="status" aria-live="polite">
-          {toast}
-        </div>
-      ) : null}
+      {toast ? <StatusToastView>{toast}</StatusToastView> : null}
     </>
   );
 }

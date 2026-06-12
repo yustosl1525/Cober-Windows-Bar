@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// Side-effect import: pulls in the showcase-only CSS so the /showcase
+// route renders the wallpaper, mockup window, and Mica/Acrylic panels.
+// Vite emits this as a separate chunk that loads only when the user
+// navigates to /showcase — the main bundle stays free of ~7KB of
+// showcase-only gzipped styles.
+import "../../styles/showcase.css";
 import { HubShell } from "./components/HubShell";
 import { EventPlaygroundPanel } from "./components/EventPlaygroundPanel";
 import { FluentStyleGuide } from "./components/FluentStyleGuide";

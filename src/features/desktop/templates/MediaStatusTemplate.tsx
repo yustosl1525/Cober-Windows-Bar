@@ -1,12 +1,14 @@
-﻿import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback } from "react";
 import { Disc3, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
-import { sendMediaControl, type MediaControlAction } from "../../../runtime/mediaControlRuntime";
-import type { DesktopMediaState } from "../../../types/hub";
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { sendMediaControl, type MediaControlAction } from "@/runtime/mediaControlRuntime";
+import type { DesktopMediaState } from "@/types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { useStatusToast } from "./hooks/useStatusToast";
 import { StatusRail } from "./StatusRail";
+import { StatusToast as StatusToastView } from "./StatusToast";
 
 type MediaStatusTemplateProps = {
   state: DesktopMediaState;
@@ -17,22 +19,16 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
   const copy = getDesktopStatusTemplateChromeCopy();
   const isPlaying = state.playbackStatus === "playing";
   const isUnavailable = state.playbackStatus === "unavailable" || state.playbackStatus === "unsupported";
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 1600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+  const { toast, showToast } = useStatusToast();
 
   const handleMediaAction = useCallback(
     async (action: MediaControlAction) => {
       const result = await sendMediaControl(action);
       if (result && !result.success) {
-        setToast(t("media.controlFailed"));
+        showToast(t("media.controlFailed"));
       }
     },
-    [t],
+    [showToast, t],
   );
 
   return (
@@ -109,11 +105,7 @@ export function MediaStatusTemplate({ state }: MediaStatusTemplateProps) {
           </button>
         </div>
       </DesktopStatusTemplateFrame>
-      {toast ? (
-        <div className="product-status-toast" role="status" aria-live="polite">
-          {toast}
-        </div>
-      ) : null}
+      {toast ? <StatusToastView>{toast}</StatusToastView> : null}
     </>
   );
 }

@@ -1,11 +1,13 @@
 import { MoonStar } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
-import { stopFocusSession } from "../../../runtime/focusStopRuntime";
-import type { DesktopFocusState } from "../../../types/hub";
+import { getDesktopStatusTemplateChromeCopy } from "@/data/desktopStatusConfig";
+import { stopFocusSession } from "@/runtime/focusStopRuntime";
+import type { DesktopFocusState } from "@/types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
+import { useStatusToast } from "./hooks/useStatusToast";
+import { StatusToast as StatusToastView } from "./StatusToast";
 
 type FocusStatusTemplateProps = {
   state: DesktopFocusState;
@@ -14,20 +16,14 @@ type FocusStatusTemplateProps = {
 export function FocusStatusTemplate({ state }: FocusStatusTemplateProps) {
   const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 1600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+  const { toast, showToast } = useStatusToast();
 
   const handleStop = useCallback(async () => {
     const result = await stopFocusSession();
     if (result && !result.success) {
-      setToast(t("focus.stopFailed"));
+      showToast(t("focus.stopFailed"));
     }
-  }, [t]);
+  }, [showToast, t]);
 
   return (
     <>
@@ -57,11 +53,7 @@ export function FocusStatusTemplate({ state }: FocusStatusTemplateProps) {
           </span>
         }
       />
-      {toast ? (
-        <div className="product-status-toast" role="status" aria-live="polite">
-          {toast}
-        </div>
-      ) : null}
+      {toast ? <StatusToastView>{toast}</StatusToastView> : null}
     </>
   );
 }
