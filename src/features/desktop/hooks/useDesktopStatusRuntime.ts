@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import i18n from "../../../i18n";
+import i18n from "@/i18n";
 
 /** Clipboard auto-expiry: switch back to resident after 5 seconds */
 const CLIPBOARD_DISPLAY_WINDOW_MS = 5_000;
@@ -16,10 +16,10 @@ import {
   getDesktopStatusRuntime,
   type DesktopStatusRuntime,
   type DesktopStatusRuntimeSnapshot,
-} from "../../../runtime/desktopStatusInputRuntime";
-import { aggregateDesktopStatusInput } from "../../../state/desktopStatusAggregation";
-import { resolveDesktopStatusState } from "../../../state/desktopStatusState";
-import { DESKTOP_STATUS_PREFERRED_WINDOW_MS } from "../../../state/desktopStatusScheduler";
+} from "@/runtime/desktopStatusInputRuntime";
+import { aggregateDesktopStatusInput } from "@/state/desktopStatusAggregation";
+import { resolveDesktopStatusState } from "@/state/desktopStatusState";
+import { DESKTOP_STATUS_PREFERRED_WINDOW_MS } from "@/state/desktopStatusScheduler";
 import type {
   DesktopStatusKind,
   DesktopStatusState,
@@ -27,10 +27,10 @@ import type {
   HubStoreState,
   SystemPerformanceMetric,
   SystemPerformancePayload,
-} from "../../../types/hub";
-import { DESKTOP_STATUS_TEMPLATE_ORDER } from "../../../data/desktopStatusConfig";
-import { createHubEventBus } from "../../../state/hubState";
-import { createProviderManager, type ProviderManager } from "../../../providers/providerManager";
+} from "@/types/hub";
+import { DESKTOP_STATUS_TEMPLATE_ORDER } from "@/data/desktopStatusConfig";
+import { createHubEventBus } from "@/state/hubState";
+import { createProviderManager, type ProviderManager } from "@/providers/providerManager";
 
 export type UseDesktopStatusRuntimeResult = {
   resolvedState: DesktopStatusState;

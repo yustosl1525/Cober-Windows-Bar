@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { useDesktopStatusRuntime } from "./useDesktopStatusRuntime";
-import { mockMetrics } from "../../../test/fixtures";
+import { mockMetrics } from "@/test/fixtures";
 import type { SystemPerformanceMetric } from "../../types/hub";
 
 // We don't want the real ProviderManager wiring up Tauri listeners in
@@ -9,7 +9,7 @@ import type { SystemPerformanceMetric } from "../../types/hub";
 // onClipboardChanged / onFocusAssistChanged / onMediaSessionChanged
 // bridges all return rejected promises, and we don't want real timers
 // or intervals to leak between tests. Mock the entire runtime surface.
-vi.mock("../../../runtime/tauriRuntime", () => ({
+vi.mock("@/runtime/tauriRuntime", () => ({
   getTauriInvoke: vi.fn(() => undefined),
   loadTauriMediaSessionStatus: vi.fn().mockResolvedValue({
     ok: false,
@@ -21,7 +21,7 @@ vi.mock("../../../runtime/tauriRuntime", () => ({
   }),
 }));
 
-vi.mock("../../../runtime/systemMonitorRuntime", () => ({
+vi.mock("@/runtime/systemMonitorRuntime", () => ({
   onClipboardChanged: vi.fn(() => Promise.resolve(() => undefined)),
   onFocusAssistChanged: vi.fn(() => Promise.resolve(() => undefined)),
   onMediaSessionChanged: vi.fn(() => Promise.resolve(() => undefined)),

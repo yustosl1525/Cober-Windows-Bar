@@ -9,9 +9,9 @@ import {
   STATUS_WINDOW_DISPLAY_CHANGE_DEBOUNCE_MS,
   STATUS_WINDOW_SCALE_CHANGE_DEBOUNCE_MS,
   type StatusWindowOverlayState,
-} from "../../../runtime/statusWindowRuntime";
-import { getTauriInvoke } from "../../../runtime/tauriRuntime";
-import { getSafeCurrentWindow, type TauriAppWindow } from "../../../shared/tauriWindow";
+} from "@/runtime/statusWindowRuntime";
+import { getTauriInvoke } from "@/runtime/tauriRuntime";
+import { getSafeCurrentWindow, type TauriAppWindow } from "@/shared/tauriWindow";
 
 const OVERLAY_POLICY_MS = 700;
 

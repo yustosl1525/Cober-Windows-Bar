@@ -25,11 +25,11 @@ import {
 import {
   getDesktopStatusTemplateDescriptors,
   getDesktopStatusSettingsCopy,
-} from "../../../data/desktopStatusConfig";
+} from "@/data/desktopStatusConfig";
 import type {
   DesktopStatusKind,
   DesktopStatusPreferences,
-} from "../../../types/hub";
+} from "@/types/hub";
 
 export type SettingsPanelProps = {
   preferences: DesktopStatusPreferences;

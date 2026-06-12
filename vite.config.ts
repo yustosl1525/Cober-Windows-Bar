@@ -1,5 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { resolve } from "node:path";
+
+const srcPath = resolve("./src").replace(/\\/g, "/");
 
 const UTF8_SCRIPT_PATTERN = /\.(?:[cm]?[jt]sx?|css)(?:$|\?)/i;
 
@@ -58,4 +61,11 @@ function enforceUtf8ContentType() {
 
 export default defineConfig({
   plugins: [react(), enforceUtf8ContentType()],
+  resolve: {
+    alias: {
+      // Mirror the @/* path alias declared in tsconfig.app.json so
+      // editors and Vite agree on the same module resolution.
+      "@": srcPath,
+    },
+  },
 });
