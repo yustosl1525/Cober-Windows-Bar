@@ -68,4 +68,34 @@ export default defineConfig({
       "@": srcPath,
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the main bundle into the four logical pieces: the
+        // React runtime, the animation library, the i18n runtime, and
+        // everything else (the app code itself). All four are loaded
+        // on the /desktop first-paint, but chunking them makes
+        // long-term caching friendlier (an app-only change doesn't
+        // bust the react-vendor cache) and gives the bundler
+        // visibility into which packages we should treat as
+        // "infrastructure" rather than "feature code".
+        manualChunks: {
+          "react-vendor": [
+            "react",
+            "react-dom",
+            "react-dom/client",
+            "scheduler",
+          ],
+          animation: [
+            "framer-motion",
+          ],
+          i18n: [
+            "i18next",
+            "react-i18next",
+            "i18next-browser-languagedetector",
+          ],
+        },
+      },
+    },
+  },
 });
