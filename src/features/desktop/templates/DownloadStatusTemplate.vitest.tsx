@@ -40,4 +40,24 @@ describe("DownloadStatusTemplate", () => {
     // Math.max(12, Math.min(100, 5)) = 12
     expect(trackFill.style.width).toBe("12%");
   });
+
+  it("renders the download icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<DownloadStatusTemplate state={mockDownloadState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
+
+  it("renders the action button icons with the shared 14/2.4 sizing", () => {
+    const { container } = render(<DownloadStatusTemplate state={mockDownloadState()} />);
+    const svgs = container.querySelectorAll(".product-status-guest-btn svg");
+    expect(svgs.length).toBeGreaterThan(0);
+    svgs.forEach((svg) => {
+      expect(svg.getAttribute("width")).toBe("14");
+      expect(svg.getAttribute("height")).toBe("14");
+      expect(svg.getAttribute("stroke-width")).toBe("2.4");
+    });
+  });
 });

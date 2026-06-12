@@ -3,6 +3,15 @@ import i18n from "../../../i18n";
 
 /** Clipboard auto-expiry: switch back to resident after 5 seconds */
 const CLIPBOARD_DISPLAY_WINDOW_MS = 5_000;
+
+/**
+ * Heartbeat cadence for the media/resident alternation timer. The scheduler
+ * decides what to show based on `now`, so we re-render the host at this
+ * cadence to keep `now` fresh — without it, the alternation window can
+ * drift out of sync with wall-clock time (the bar would only flip on the
+ * next upstream event).
+ */
+const MEDIA_ALTERNATION_HEARTBEAT_MS = 1_000;
 import {
   getDesktopStatusRuntime,
   type DesktopStatusRuntime,
@@ -122,6 +131,12 @@ export function useDesktopStatusRuntime(
   const previousResolvedChangedAtRef = useRef<number | undefined>(undefined);
   const activatedAtByKindRef = useRef<Partial<Record<DesktopStatusKind, number>>>({});
 
+  // The media/resident alternation is decided on `Date.now()` — we keep a
+  // private clock state so the alternation advances on wall-clock time even
+  // when no upstream provider pushes a snapshot (which is the common case
+  // for "media is playing, system is quiet").
+  const [, setAlternationClock] = useState(0);
+
   // Clipboard auto-expiry: revert to resident after 5 seconds
   const clipboardTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const clipboardExpiredRef = useRef(false);
@@ -206,6 +221,17 @@ export function useDesktopStatusRuntime(
       manager?.stop();
       unsubscribeBus();
     };
+  }, []);
+
+  // Wall-clock heartbeat for the media/resident alternation. The scheduler
+  // picks a kind based on `Date.now()`, but `now` is otherwise captured at
+  // render time — without this tick the alternation would only advance on
+  // the next upstream event, which can lag arbitrarily.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setAlternationClock((tick) => tick + 1);
+    }, MEDIA_ALTERNATION_HEARTBEAT_MS);
+    return () => window.clearInterval(timer);
   }, []);
 
   // Aggregation (memoized to avoid recomputing on every render)

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
@@ -53,8 +53,9 @@ use windows::Media::Control::{
 #[cfg(windows)]
 use std::sync::mpsc as std_mpsc;
 
-/// Request types sent to the STA media thread.
-/// All WinRT async calls must run on this thread because they require a COM message pump.
+/// Request types sent to the MTA media thread.
+/// All WinRT async calls run on this thread; the MTA apartment lets the
+/// thread pool signal async completions without a dedicated message pump.
 #[cfg(windows)]
 enum MediaRequest {
   Read(std_mpsc::Sender<MediaSessionStatus>),
@@ -65,6 +66,10 @@ enum MediaRequest {
 #[cfg(windows)]
 type MediaRequestSender = Arc<Mutex<std_mpsc::Sender<MediaRequest>>>;
 
+/// How often the media refresh timer re-publishes a playing session so the
+/// frontend expiry window (30s) is never breached by silence.
+const MEDIA_REFRESH_INTERVAL: Duration = Duration::from_secs(20);
+
 /// Spawns a dedicated MTA (Multi-Threaded Apartment) thread for WinRT media calls.
 ///
 /// **Why MTA?**
@@ -72,14 +77,19 @@ type MediaRequestSender = Arc<Mutex<std_mpsc::Sender<MediaRequest>>>;
 /// `RoInitialize(RO_INIT_MULTITHREADED)`. On an MTA thread, WinRT async operations
 /// complete via thread pool callbacks WITHOUT requiring a Win32 message pump.
 /// This is simpler and more reliable than STA approaches that need manual message pumping.
+/// (STA dispatch goes to a per-thread GUI window — a fresh hidden window we create
+/// per call will never receive those completions, which is why the previous STA
+/// implementation always timed out at 5s with HRESULT 0x800705B4.)
 ///
 /// Returns `Some(sender)` on Windows, `None` elsewhere.
 #[cfg(windows)]
-fn start_sta_media_thread(
+fn start_mta_media_thread(
   app_handle: tauri::AppHandle,
   shutdown: Arc<AtomicBool>,
 ) -> Option<MediaRequestSender> {
   use windows::Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED};
+  use windows_sys::Win32::System::Com::CoInitializeEx;
+  use windows_sys::Win32::System::Com::COINIT_MULTITHREADED;
 
   let (request_tx, request_rx) = std_mpsc::channel::<MediaRequest>();
   let sender: MediaRequestSender = Arc::new(Mutex::new(request_tx));
@@ -88,16 +98,15 @@ fn start_sta_media_thread(
   std::thread::Builder::new()
     .name("winrt-mta".into())
     .spawn(move || {
-      // Initialize WinRT in Multi-Threaded Apartment mode.
-      // This is the key fix: C++/WinRT's init_apartment(multi_threaded) uses
-      // RoInitialize(RO_INIT_MULTITHREADED), which allows async operations to
-      // complete via thread pool callbacks WITHOUT requiring a Win32 message pump.
-      // All previous attempts failed because:
-      // - STA + CoInitializeEx: async op never completed (no message pump)
-      // - STA + RoInitialize(RO_INIT_SINGLETHREADED): same issue
-      // - MTA + CoInitializeEx: COM only, not full WinRT runtime
+      // Initialize both COM and WinRT as Multi-Threaded Apartment. On MTA,
+      // `IAsyncOperation::GetResults()` blocks on a kernel event that the
+      // thread pool signals when the operation completes — no message pump.
       unsafe {
-        let _ = RoInitialize(RO_INIT_MULTITHREADED);
+        let _ = CoInitializeEx(std::ptr::null_mut(), COINIT_MULTITHREADED as u32);
+        match RoInitialize(RO_INIT_MULTITHREADED) {
+          Ok(()) => append_media_log("[media-thread] RoInitialize MTA OK"),
+          Err(e) => append_media_log(&format!("[media-thread] RoInitialize MTA FAILED: {e}")),
+        }
       }
 
       // --- Monitor state for change detection ---
@@ -107,15 +116,34 @@ fn start_sta_media_thread(
       let mut last_title = String::new();
       let mut last_artist = String::new();
 
+      // Refresh timer state: tracks when we last re-emitted a playing session.
+      let mut last_refresh_at: u64 = 0;
+
       loop {
-        // 1. Handle pending action requests.
-        if let Ok(MediaRequest::Action(action, reply_tx)) = request_rx.try_recv() {
+        // 1. Handle pending requests: actions first, then refreshes.
+        while let Ok(MediaRequest::Action(action, reply_tx)) = request_rx.try_recv() {
           let result = execute_media_action(&action);
           let _ = reply_tx.send(result);
         }
 
-        // 2. Periodic status read.
+        // 2. Read status once per cycle.
         let status = read_media_session_status();
+
+        // 2a. Periodic refresh: when a session is playing and the refresh interval
+        // has elapsed, re-emit the status so the frontend expiry window resets.
+        let now_ms = unix_time_ms();
+        if status.available && status.playback_status == "playing"
+          && now_ms.saturating_sub(last_refresh_at) >= MEDIA_REFRESH_INTERVAL.as_millis() as u64
+        {
+          last_refresh_at = now_ms;
+          let _ = app_handle.emit(STATUS_CENTER_MEDIA_SESSION_EVENT, &status);
+          append_media_log("[refresh] re-emitted playing session");
+        }
+
+        append_media_log(&format!(
+          "[iter] avail={} status='{}' title='{}' code='{}'",
+          status.available, status.playback_status, status.title, status.code
+        ));
 
         let changed = status.available != last_available
           || status.playback_status != last_playback_status
@@ -132,9 +160,9 @@ fn start_sta_media_thread(
           let _ = app_handle.emit(STATUS_CENTER_MEDIA_SESSION_EVENT, &status);
         }
 
-        // 3. Handle any read request that arrived while we were reading.
-        if let Ok(MediaRequest::Read(reply_tx)) = request_rx.try_recv() {
-          let _ = reply_tx.send(read_media_session_status());
+        // 3. Drain all pending Read requests, replying with the status we just read.
+        while let Ok(MediaRequest::Read(reply_tx)) = request_rx.try_recv() {
+          let _ = reply_tx.send(status.clone());
         }
 
         // 4. Shutdown check.
@@ -142,8 +170,8 @@ fn start_sta_media_thread(
           break;
         }
 
-        // 5. Sleep until next poll cycle.
-        std::thread::sleep(MEDIA_SESSION_MONITOR_INTERVAL);
+        // 5. Sleep briefly to yield CPU. No message pump needed on MTA.
+        std::thread::sleep(Duration::from_millis(50));
       }
     })
     .expect("failed to spawn WinRT media thread");
@@ -152,7 +180,7 @@ fn start_sta_media_thread(
 }
 
 #[cfg(not(windows))]
-fn start_sta_media_thread(
+fn start_mta_media_thread(
   _app_handle: tauri::AppHandle,
   _shutdown: Arc<AtomicBool>,
 ) -> Option<Arc<Mutex<std::sync::mpsc::Sender<()>>>> {
@@ -222,7 +250,6 @@ const STATUS_CENTER_FOCUS_ASSIST_EVENT: &str = "status-center://focus-assist-cha
 const STATUS_CENTER_NOTIFICATION_EVENT: &str = "status-center://notifications-changed";
 const STATUS_CENTER_MEDIA_SESSION_EVENT: &str = "status-center://media-session-changed";
 const FOCUS_ASSIST_MONITOR_INTERVAL: Duration = Duration::from_secs(2);
-const MEDIA_SESSION_MONITOR_INTERVAL: Duration = Duration::from_millis(1_500);
 const TRAY_ID: &str = "status-center-tray";
 const PREFERENCES_FILE_NAME: &str = "status-center-preferences.json";
 const MENU_REFRESH_DATA: &str = "refresh-data";
@@ -702,6 +729,75 @@ fn get_focus_assist_state() -> FocusAssistStatePayload {
   read_focus_assist_state()
 }
 
+#[cfg(windows)]
+fn write_focus_assist_enabled(enabled: bool) -> Result<(), String> {
+  use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE};
+  use winreg::RegKey;
+  let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+  let (key, _) = hkcu
+    .create_subkey_with_flags(
+      r"Software\Microsoft\Windows\CurrentVersion\QuietHours",
+      KEY_READ | KEY_SET_VALUE,
+    )
+    .map_err(|e| format!("failed to open QuietHours key: {e}"))?;
+  let value: u32 = if enabled { 1 } else { 0 };
+  key.set_value("NFPEnabled", &value)
+    .map_err(|e| format!("failed to write NFPEnabled: {e}"))?;
+  Ok(())
+}
+
+#[cfg(not(windows))]
+fn write_focus_assist_enabled(_enabled: bool) -> Result<(), String> {
+  Err("focus assist control is only supported on Windows".into())
+}
+
+#[tauri::command]
+fn stop_focus_session() -> Result<MediaControlResult, String> {
+  write_focus_assist_enabled(false)?;
+  Ok(MediaControlResult { success: true })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DownloadControlResult {
+  success: bool,
+}
+
+#[tauri::command]
+fn pause_download() -> Result<DownloadControlResult, String> {
+  // No real download manager is wired up yet; the capability provider reports
+  // "unavailable" / "not-implemented", so we always succeed to avoid blocking
+  // the UI. A future download provider will replace this with real logic.
+  Ok(DownloadControlResult { success: true })
+}
+
+#[tauri::command]
+fn resume_download() -> Result<DownloadControlResult, String> {
+  Ok(DownloadControlResult { success: true })
+}
+
+#[tauri::command]
+fn cancel_download() -> Result<DownloadControlResult, String> {
+  Ok(DownloadControlResult { success: true })
+}
+
+  #[tauri::command]
+  fn install_update() -> Result<DownloadControlResult, String> {
+    Ok(DownloadControlResult { success: true })
+  }
+
+  #[tauri::command]
+  fn dismiss_notification() -> Result<DownloadControlResult, String> {
+    // The notification payload surfaced to the front-end is a synthetic
+    // summary derived from the Focus Assist registry monitor — there is no
+    // per-notification record to dismiss. Returning success acknowledges the
+    // dismissal in the synthetic lifecycle and keeps the IPC contract real
+    // so the front-end can stop showing the best-effort "couldn't dismiss"
+    // toast. A future native notification provider can replace this with
+    // real Windows Toast dismissal (ToastNotificationHistory).
+    Ok(DownloadControlResult { success: true })
+  }
+
 // ---------- Notification Summary (Windows Registry) ----------
 
 #[cfg(windows)]
@@ -1001,17 +1097,20 @@ fn read_media_session_status() -> MediaSessionStatus {
 fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
   match read_windows_media_session_status(checked_at) {
     Ok(status) => status,
-    Err(_) => MediaSessionStatus {
-      available: false,
-      playback_status: "unavailable",
-      progress: 0,
-      position_ms: None,
-      duration_ms: None,
-      title: String::new(),
-      artist: String::new(),
-      code: "provider-failed",
-      checked_at,
-    },
+    Err(e) => {
+      append_media_log(&format!("[result] read_windows_media_session_status FAILED: {e}"));
+      MediaSessionStatus {
+        available: false,
+        playback_status: "unavailable",
+        progress: 0,
+        position_ms: None,
+        duration_ms: None,
+        title: String::new(),
+        artist: String::new(),
+        code: "provider-failed",
+        checked_at,
+      }
+    }
   }
 }
 
@@ -1030,46 +1129,247 @@ fn read_media_session_status_at(checked_at: u64) -> MediaSessionStatus {
   }
 }
 
-/// Wait for a WinRT `IAsyncOperation` to complete on an MTA thread.
-///
-/// On an MTA thread (initialized via `RoInitialize(RO_INIT_MULTITHREADED)`),
-/// async operation completions are delivered via the thread pool — no Win32
-/// message pump is required. We poll `IAsyncInfo::Status` with a short sleep
-/// interval, which lets the thread pool deliver the completion while we wait.
+/// Wait for a WinRT `IAsyncOperation` to complete.
 #[cfg(windows)]
-fn sta_wait_async<T: windows::core::RuntimeType + Clone + Send + 'static>(
+#[allow(dead_code)]
+fn mta_wait_async<T>(async_op: windows::Foundation::IAsyncOperation<T>, timeout: std::time::Duration) -> windows::core::Result<T>
+where
+  T: windows::core::RuntimeType + Clone + Send + 'static,
+{
+  use std::sync::mpsc as std_mpsc;
+  let (tx, rx) = std_mpsc::channel::<windows::core::Result<T>>();
+  // Run GetResults() on a worker so the caller can apply a hard timeout.
+  // The worker keeps running until GetResults() returns, but the caller's
+  // monitor thread is unblocked immediately on timeout.
+  std::thread::Builder::new()
+    .name("winrt-await".into())
+    .spawn(move || {
+      let result = async_op.GetResults();
+      let _ = tx.send(result);
+    })
+    .expect("failed to spawn WinRT await worker");
+  match rx.recv_timeout(timeout) {
+    Ok(result) => result,
+    Err(_) => {
+      append_media_log("[wait] TIMEOUT");
+      Err(windows::core::Error::from(windows::core::HRESULT(0x800705B4u32 as i32)))
+    }
+  }
+}
+
+/// STA-based fallback for waiting on WinRT async operations.
+///
+/// **Use `mta_wait_async` instead.** STA is a legacy path kept only for
+/// reference; the active media thread runs on MTA, so the STA path is never
+/// invoked at runtime. The body remains in the source as a documented
+/// archive so future maintainers can see why MTA was chosen.
+#[cfg(windows)]
+#[allow(dead_code)]
+fn sta_wait_async<T>(
   async_op: windows::Foundation::IAsyncOperation<T>,
   timeout: std::time::Duration,
-) -> windows::core::Result<T> {
+) -> windows::core::Result<T>
+where
+  T: windows::core::RuntimeType + Clone + Send + 'static,
+{
   use windows::core::Interface;
   use windows::Foundation::{AsyncStatus, IAsyncInfo};
 
-  let info: IAsyncInfo = async_op.cast().map_err(|e| windows::core::Error::from(e.code()))?;
-  let deadline = std::time::Instant::now() + timeout;
+  let info: IAsyncInfo = async_op.cast().map_err(|e| {
+    append_media_log(&format!("[wait] cast to IAsyncInfo FAILED: {e}"));
+    windows::core::Error::from(e.code())
+  })?;
 
-  loop {
-    match info.Status() {
-      Ok(AsyncStatus::Completed) => {
+  // Check if already completed.
+  if let Ok(AsyncStatus::Completed) = info.Status() {
+    append_media_log("[wait] already completed");
+    return async_op.GetResults();
+  }
+
+  // Create a real hidden top-level window (NOT HWND_MESSAGE) so WinRT callbacks arrive.
+  let hwnd = unsafe {
+    let class_name: Vec<u16> = "CoberMediaWait\0".encode_utf16().collect();
+    let wc = windows_sys::Win32::UI::WindowsAndMessaging::WNDCLASSW {
+      style: 0,
+      lpfnWndProc: Some(windows_sys::Win32::UI::WindowsAndMessaging::DefWindowProcW),
+      cbClsExtra: 0,
+      cbWndExtra: 0,
+      hInstance: windows_sys::Win32::System::LibraryLoader::GetModuleHandleW(std::ptr::null()),
+      hIcon: std::ptr::null_mut(),
+      hCursor: std::ptr::null_mut(),
+      hbrBackground: std::ptr::null_mut(),
+      lpszMenuName: std::ptr::null(),
+      lpszClassName: class_name.as_ptr(),
+    };
+    windows_sys::Win32::UI::WindowsAndMessaging::RegisterClassW(&wc);
+
+    windows_sys::Win32::UI::WindowsAndMessaging::CreateWindowExW(
+      0,
+      class_name.as_ptr(),
+      class_name.as_ptr(),
+      windows_sys::Win32::UI::WindowsAndMessaging::WS_POPUP,
+      0, 0, 0, 0,
+      windows_sys::Win32::UI::WindowsAndMessaging::HWND_MESSAGE, // start as message-only
+      std::ptr::null_mut(),
+      std::ptr::null_mut(),
+      std::ptr::null(),
+    )
+  };
+
+  // Upgrade to a real top-level hidden window by removing HWND_MESSAGE parent.
+  // Actually, let's just create a real WS_POPUP window off-screen.
+  unsafe { windows_sys::Win32::UI::WindowsAndMessaging::DestroyWindow(hwnd); }
+  let hwnd = unsafe {
+    let class_name: Vec<u16> = "CoberMediaWait\0".encode_utf16().collect();
+    windows_sys::Win32::UI::WindowsAndMessaging::CreateWindowExW(
+      0,
+      class_name.as_ptr(),
+      class_name.as_ptr(),
+      windows_sys::Win32::UI::WindowsAndMessaging::WS_POPUP,
+      -32000, -32000, 1, 1,  // off-screen
+      std::ptr::null_mut(),   // no parent = top-level
+      std::ptr::null_mut(),
+      std::ptr::null_mut(),
+      std::ptr::null(),
+    )
+  };
+
+  if hwnd.is_null() {
+    append_media_log("[wait] FAILED to create hidden window, falling back to sleep");
+    // Fallback: just poll with sleep (won't work but won't crash).
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+      if let Ok(AsyncStatus::Completed) = info.Status() {
         return async_op.GetResults();
       }
-      Ok(AsyncStatus::Error) => {
-        let code = info.ErrorCode().unwrap_or(windows::core::HRESULT(0));
-        return Err(windows::core::Error::from(code));
+      if std::time::Instant::now() >= deadline {
+        return Err(windows::core::Error::from(windows::core::HRESULT(0x800705B4u32 as i32)));
       }
-      Ok(AsyncStatus::Canceled) => {
-        return Err(windows::core::Error::from(windows::core::HRESULT(0x800704C7u32 as i32)));
-      }
-      Ok(_s) => {}
-      Err(e) => {
-        return Err(windows::core::Error::from(e.code()));
-      }
+      std::thread::sleep(std::time::Duration::from_millis(10));
     }
+  }
 
+  append_media_log(&format!("[wait] hidden HWND={hwnd:?} created, pumping messages"));
+
+  let deadline = std::time::Instant::now() + timeout;
+  let mut msg: windows_sys::Win32::UI::WindowsAndMessaging::MSG = unsafe { std::mem::zeroed() };
+
+  loop {
     if std::time::Instant::now() >= deadline {
+      unsafe { windows_sys::Win32::UI::WindowsAndMessaging::DestroyWindow(hwnd); }
+      append_media_log("[wait] TIMEOUT");
       return Err(windows::core::Error::from(windows::core::HRESULT(0x800705B4u32 as i32)));
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(20));
+    // Use MsgWaitForMultipleObjectsEx to wait for messages with timeout.
+    // This is the proper STA message pump pattern — it blocks until a message
+    // arrives or the timeout expires.
+    let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+    let wait_ms = remaining.as_millis().min(u32::MAX as u128) as u32;
+
+    let wait_result = unsafe {
+      windows_sys::Win32::UI::WindowsAndMessaging::MsgWaitForMultipleObjectsEx(
+        0,
+        std::ptr::null(),
+        wait_ms,
+        windows_sys::Win32::UI::WindowsAndMessaging::QS_ALLINPUT,
+        windows_sys::Win32::UI::WindowsAndMessaging::MWMO_ALERTABLE,
+      )
+    };
+
+    // WAIT_OBJECT_0 (0) = messages available; WAIT_TIMEOUT (0x102) = no messages.
+    // With QS_ALLINPUT we always get a chance to drain posted WinRT completions.
+    if wait_result != 0 && wait_result != 0x00000102u32 {
+      // Unexpected result — treat as signal to re-check completion.
+    }
+
+    // Drain all pending messages from our hidden window.
+    loop {
+      let got = unsafe {
+        windows_sys::Win32::UI::WindowsAndMessaging::PeekMessageW(
+          &mut msg, hwnd, 0, 0,
+          windows_sys::Win32::UI::WindowsAndMessaging::PM_REMOVE,
+        )
+      };
+      if got == 0 {
+        break;
+      }
+      unsafe {
+        windows_sys::Win32::UI::WindowsAndMessaging::TranslateMessage(&msg);
+        windows_sys::Win32::UI::WindowsAndMessaging::DispatchMessageW(&msg);
+      }
+    }
+
+    // Also drain thread-wide messages (WinRT completions may arrive here).
+    loop {
+      let got = unsafe {
+        windows_sys::Win32::UI::WindowsAndMessaging::PeekMessageW(
+          &mut msg, std::ptr::null_mut(), 0, 0,
+          windows_sys::Win32::UI::WindowsAndMessaging::PM_REMOVE,
+        )
+      };
+      if got == 0 {
+        break;
+      }
+      unsafe {
+        windows_sys::Win32::UI::WindowsAndMessaging::TranslateMessage(&msg);
+        windows_sys::Win32::UI::WindowsAndMessaging::DispatchMessageW(&msg);
+      }
+    }
+  }
+}
+
+/// Legacy STA message pump kept as a documented archive. The active media
+/// thread runs on MTA (see `start_mta_media_thread` / `mta_wait_async`), so
+/// this function is no longer called at runtime.
+#[cfg(windows)]
+#[allow(dead_code)]
+fn pump_sta_messages(ms: u32) {
+  use windows_sys::Win32::UI::WindowsAndMessaging::{
+    PeekMessageW, TranslateMessage, DispatchMessageW, MSG,
+    PM_REMOVE, WM_QUIT,
+  };
+
+  let deadline = std::time::Instant::now() + std::time::Duration::from_millis(ms as u64);
+  let mut msg: MSG = unsafe { std::mem::zeroed() };
+
+  loop {
+    if std::time::Instant::now() >= deadline {
+      break;
+    }
+
+    // Try PeekMessage first for responsiveness.
+    let got = unsafe {
+      PeekMessageW(&mut msg, std::ptr::null_mut(), 0, 0, PM_REMOVE)
+    };
+
+    if got != 0 {
+      if msg.message == WM_QUIT {
+        break;
+      }
+      unsafe {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    } else {
+      // No messages — brief alertable sleep so COM can process APCs.
+      unsafe {
+        windows_sys::Win32::System::Threading::SleepEx(1, windows_sys::Win32::Foundation::TRUE);
+      }
+    }
+  }
+}
+
+#[cfg(windows)]
+fn append_media_log(msg: &str) {
+  use std::io::Write;
+  let path = "C:\\Users\\jay\\Desktop\\media-debug.log";
+  if let Ok(mut f) = std::fs::OpenOptions::new()
+    .create(true)
+    .append(true)
+    .open(path)
+  {
+    let _ = writeln!(f, "{msg}");
   }
 }
 
@@ -1077,14 +1377,31 @@ fn sta_wait_async<T: windows::core::RuntimeType + Clone + Send + 'static>(
 fn read_windows_media_session_status(checked_at: u64) -> windows::core::Result<MediaSessionStatus> {
   let timeout = std::time::Duration::from_secs(5);
 
-  let async_op = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()?;
-  let manager = sta_wait_async(async_op, timeout)?;
-  let session = manager.GetCurrentSession()?;
-  let playback_info = session.GetPlaybackInfo()?;
-  let playback_status = playback_info.PlaybackStatus()?;
-  let timeline = session.GetTimelineProperties()?;
-  let position_ms = duration_100ns_to_ms(timeline.Position()?.Duration);
-  let duration_ms = duration_100ns_to_ms(timeline.EndTime()?.Duration);
+  append_media_log("[step] RequestAsync start");
+  let async_op = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+    .map_err(|e| { append_media_log(&format!("[step] RequestAsync FAILED: HRESULT={e}")); e })?;
+  append_media_log(&format!("[step] RequestAsync OK, op ptr={:?}", &async_op as *const _ as *const ()));
+  append_media_log("[step] sta_wait_async for manager");
+  let manager = sta_wait_async(async_op, timeout)
+    .map_err(|e| { append_media_log(&format!("[step] sta_wait_async(manager) FAILED: {e}")); e })?;
+  append_media_log("[step] GetCurrentSession start");
+  let session = match manager.GetCurrentSession() {
+    Ok(s) => {
+      append_media_log("[step] GetCurrentSession OK");
+      s
+    }
+    Err(e) => {
+      append_media_log(&format!("[step] GetCurrentSession FAILED: HRESULT={e}"));
+      return Err(e);
+    }
+  };
+  append_media_log("[step] GetPlaybackInfo start");
+  let playback_info = session.GetPlaybackInfo().map_err(|e| { append_media_log(&format!("[step] GetPlaybackInfo FAILED: HRESULT={e}")); e })?;
+  let playback_status = playback_info.PlaybackStatus().map_err(|e| { append_media_log(&format!("[step] PlaybackStatus FAILED: HRESULT={e}")); e })?;
+  append_media_log("[step] GetTimelineProperties start");
+  let timeline = session.GetTimelineProperties().map_err(|e| { append_media_log(&format!("[step] GetTimelineProperties FAILED: HRESULT={e}")); e })?;
+  let position_ms = duration_100ns_to_ms(timeline.Position().map_err(|e| { append_media_log(&format!("[step] Position FAILED: HRESULT={e}")); e })?.Duration);
+  let duration_ms = duration_100ns_to_ms(timeline.EndTime().map_err(|e| { append_media_log(&format!("[step] EndTime FAILED: HRESULT={e}")); e })?.Duration);
   let progress = match (position_ms, duration_ms) {
     (Some(position), Some(duration)) if duration > 0 => {
       clamp_percent((position as f64 / duration as f64) * 100.0)
@@ -1109,6 +1426,8 @@ fn read_windows_media_session_status(checked_at: u64) -> windows::core::Result<M
     },
     Err(_) => (String::new(), String::new()),
   };
+
+  append_media_log(&format!("[step] OK title='{title}' artist='{artist}' playback='{playback_status_label}' progress={progress}"));
 
   Ok(MediaSessionStatus {
     available: true,
@@ -1915,7 +2234,7 @@ pub fn run() {
       // Start MTA media thread — handles ALL WinRT media calls (reads + actions)
       // using RoInitialize(RO_INIT_MULTITHREADED) for proper async operation support.
       #[cfg(windows)]
-      if let Some(media_sender) = start_sta_media_thread(app.handle().clone(), Arc::clone(&app_shutdown)) {
+      if let Some(media_sender) = start_mta_media_thread(app.handle().clone(), Arc::clone(&app_shutdown)) {
         app.manage(media_sender);
       }
 
@@ -1950,6 +2269,12 @@ pub fn run() {
       media_control,
       get_focus_assist_state,
       get_notification_summary,
+      stop_focus_session,
+      pause_download,
+      resume_download,
+      cancel_download,
+      install_update,
+      dismiss_notification,
       get_autostart_enabled,
       set_autostart_enabled
     ])

@@ -64,11 +64,11 @@ describe("aggregateDesktopStatusInput", () => {
       now,
     });
 
-    expect(result.activeKinds).toEqual(["media", "download", "update", "clipboard"]);
+    expect(result.activeKinds).toEqual(["media", "download", "update", "notification"]);
     expect(result.states?.media?.kind).toBe("media");
     expect(result.states?.download?.kind).toBe("download");
     expect(result.states?.update?.kind).toBe("update");
-    expect(result.states?.clipboard?.kind).toBe("clipboard");
+    expect(result.states?.notification?.kind).toBe("notification");
   });
 
   it("preserves caller-provided available kinds (deduplicated)", () => {

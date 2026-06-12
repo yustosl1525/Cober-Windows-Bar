@@ -15,7 +15,7 @@ The next major milestone is wrapping the existing native data sources (system pe
 - **Stage 2: Architecture Planning** — Done (v0.4). Documented runtime boundaries and future Tauri/Windows architecture needs.
 - **Stage 3: Mock Provider SDK** — Done (v0.5/v0.6). Provider lifecycle, registry, mock providers, adapter, and tests all implemented and aligned.
 - **Stage 4: Tauri Desktop Shell** — Done (v0.7+). Full Tauri 2 integration delivered: Rust backend, IPC boundary, window management, system tray, global hotkey, system performance metrics, media session integration, preferences persistence.
-- **Stage 5: First Real Providers** — **In Progress** (v0.8). System performance and media session data flow end-to-end through Tauri IPC. Next: wrap as Provider SDK implementations, implement Focus/Clipboard/Download/Notification providers.
+- **Stage 5: First Real Providers** — **In Progress** (v0.8). System performance and media session data flow end-to-end through Tauri IPC. Next: wrap as Provider SDK implementations, implement Focus/Clipboard/Download/Notification providers. See [Stage 5 WIP landing](./STAGE5_WIP_LANDING.md) for the 7-state product surface (resident + media + download + update + clipboard + focus + notification), the 15s media↔resident alternation, and the 5 new IPC commands (`stop_focus_session`, `pause_download` / `resume_download` / `cancel_download`, `install_update`, `dismiss_notification`).
 - **Stage 6: Developer Hub** — Planned (v0.9+). Add Git, Docker, WSL, Maven, Gradle, npm/pnpm, Cargo, and developer workflow surfaces.
 - **Stage 7: AI Agent Hub** — Planned (v1.0). Add Codex, Claude, GPT/OpenCode/Gemini-style agent status, queue state, progress, and multi-agent visibility.
 

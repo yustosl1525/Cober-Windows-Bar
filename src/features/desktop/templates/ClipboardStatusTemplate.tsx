@@ -1,7 +1,10 @@
 import { Clipboard, ExternalLink } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
 import type { DesktopClipboardState } from "../../../types/hub";
+import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
 
 type ClipboardStatusTemplateProps = {
@@ -9,7 +12,6 @@ type ClipboardStatusTemplateProps = {
 };
 
 function detectUrl(text: string): string | null {
-  // Remove ellipsis that may have been added by preview truncation
   const cleaned = text.replace(/\u2026$/, "").trim();
   try {
     const url = new URL(cleaned);
@@ -23,46 +25,59 @@ function detectUrl(text: string): string | null {
 }
 
 export function ClipboardStatusTemplate({ state }: ClipboardStatusTemplateProps) {
+  const { t } = useTranslation();
+  const copy = getDesktopStatusTemplateChromeCopy();
   const url = useMemo(() => detectUrl(state.copiedText), [state.copiedText]);
+  const [toast, setToast] = useState<string | null>(null);
 
   const handleOpenUrl = useCallback(async () => {
     if (!url) return;
     try {
       await invoke("open_url_in_browser", { url });
-    } catch (e) {
-      console.error("Failed to open URL:", e);
+    } catch {
+      setToast(t("clipboard.openFailed"));
     }
-  }, [url]);
+  }, [url, t]);
 
   return (
     <>
-      <div className="product-status-icon product-status-icon-clipboard" aria-hidden="true">
+      <div
+        className="product-status-icon product-status-icon-clipboard"
+        aria-hidden="true"
+      >
         <Clipboard size={20} strokeWidth={2.2} />
         <GuestSourceHealthIndicator sourceHealth={state.sourceHealth} />
       </div>
-
-      <div className="product-status-metrics">
-        <div className="product-status-metric" aria-label={state.copiedText} title={state.copiedText}>
-          <div className="product-status-label">
-            <span className="product-status-label-name">{state.title}</span>
-          </div>
-          <span className="product-status-clipboard-text">{state.copiedText}</span>
+      <DesktopStatusTemplateFrame
+        eyebrow={copy.clipboardEyebrow}
+        title={state.title}
+        subtitle={state.subtitle}
+        meta={
+          url ? (
+            <span className="product-status-template-meta-actions">
+              <span>{state.detail}</span>
+              <button
+                type="button"
+                className="product-status-guest-btn product-status-guest-btn-primary"
+                aria-label={t("clipboard.openInBrowser")}
+                onClick={() => void handleOpenUrl()}
+                title={t("clipboard.openInBrowser")}
+              >
+                <ExternalLink size={14} strokeWidth={2.4} />
+              </button>
+            </span>
+          ) : (
+            <span>{state.detail}</span>
+          )
+        }
+      >
+        <span className="product-status-clipboard-text">{state.copiedText}</span>
+      </DesktopStatusTemplateFrame>
+      {toast ? (
+        <div className="product-status-toast" role="status" aria-live="polite">
+          {toast}
         </div>
-
-        {url ? (
-          <div className="product-status-metric product-status-metric-clipboard-action">
-            <button
-              type="button"
-              className="product-status-clipboard-open"
-              aria-label="Open in browser"
-              onClick={() => void handleOpenUrl()}
-            >
-              <ExternalLink size={13} strokeWidth={2.2} />
-              <span>打开</span>
-            </button>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
     </>
   );
 }

@@ -102,7 +102,7 @@ export type TauriMediaSessionStatus = {
   durationMs?: number;
   title?: string;
   artist?: string;
-  code: "available" | "not-playing" | "unsupported" | "provider-failed";
+  code: "available" | "not-playing" | "unsupported" | "provider-failed" | "sta-timeout";
   checkedAt: number;
 };
 
@@ -692,7 +692,7 @@ function isMediaPlaybackStatus(value: unknown): value is TauriMediaSessionStatus
 }
 
 function isMediaSessionCode(value: unknown): value is TauriMediaSessionStatus["code"] {
-  return value === "available" || value === "not-playing" || value === "unsupported" || value === "provider-failed";
+  return value === "available" || value === "not-playing" || value === "unsupported" || value === "provider-failed" || value === "sta-timeout";
 }
 
 function isConfiguredShellWindow(value: unknown): value is TauriConfiguredShellWindow {

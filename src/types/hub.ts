@@ -40,7 +40,8 @@ export type DesktopStatusKind =
   | "download"
   | "update"
   | "clipboard"
-  | "focus";
+  | "focus"
+  | "notification";
 
 export type DesktopGuestStatusKind = Exclude<DesktopStatusKind, "resident">;
 
@@ -129,13 +130,22 @@ export type DesktopFocusState = DesktopStatusBaseState & {
   accent: DesktopStatusAccentTone;
 };
 
+export type DesktopNotificationState = DesktopStatusBaseState & {
+  kind: "notification";
+  app: string;
+  sender: string;
+  message: string;
+  accent: DesktopStatusAccentTone;
+};
+
 export type DesktopStatusState =
   | DesktopResidentState
   | DesktopMediaState
   | DesktopDownloadState
   | DesktopUpdateState
   | DesktopClipboardState
-  | DesktopFocusState;
+  | DesktopFocusState
+  | DesktopNotificationState;
 
 export type DesktopStatusStateMap = {
   resident: DesktopResidentState;
@@ -144,6 +154,7 @@ export type DesktopStatusStateMap = {
   update: DesktopUpdateState;
   clipboard: DesktopClipboardState;
   focus: DesktopFocusState;
+  notification: DesktopNotificationState;
 };
 
 export type DesktopStatusResolverInput = {
@@ -164,7 +175,6 @@ export type DesktopStatusResolverInput = {
   lastGuestKind?: DesktopStatusKind;
   lastShownAtByKind?: Partial<Record<DesktopStatusKind, number>>;
 };
-
 export type DesktopStatusSchedulerInput = Omit<
   DesktopStatusResolverInput,
   "metrics" | "systemPerformanceSourceStatus" | "states" | "sourceHealthByKind"

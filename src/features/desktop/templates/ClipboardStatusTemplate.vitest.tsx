@@ -49,4 +49,23 @@ describe("ClipboardStatusTemplate", () => {
 
     expect(screen.getByText("App")).toBeInTheDocument();
   });
+
+  it("renders the clipboard icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<ClipboardStatusTemplate state={mockClipboardState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
+
+  it("renders the open-in-browser icon with the shared 14/2.4 sizing", () => {
+    const { container } = render(<ClipboardStatusTemplate state={mockClipboardState()} />);
+    const btn = screen.getByRole("button", { name: /open in browser/i });
+    const svg = btn.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    expect(svg?.getAttribute("width")).toBe("14");
+    expect(svg?.getAttribute("height")).toBe("14");
+    expect(svg?.getAttribute("stroke-width")).toBe("2.4");
+  });
 });

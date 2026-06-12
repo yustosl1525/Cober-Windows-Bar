@@ -143,18 +143,20 @@ Status: **in progress.** System performance and media session data already flow 
 What is real today:
 
 - CPU, memory, and network metrics from `sysinfo` crate, displayed in `ResidentStatusTemplate`
-- Windows Media Session (GSMTC) playback status in `MediaStatusTemplate`
+- Windows Media Session (GSMTC) playback status in `MediaStatusTemplate`, with play/pause/next/prev controls routed through `media_control` IPC and a 15s media↔resident alternation
+- Focus Assist state via `NFPEnabled` registry monitor in `FocusStatusTemplate`, with a stop-session action routed through `stop_focus_session` IPC
+- Clipboard watcher in `ClipboardStatusTemplate` with a URL-open action routed through `open_url_in_browser` IPC
+- Notification summary in `NotificationStatusTemplate` (mock fallback, pending a real Windows Notification Listener provider) with a dismiss action routed through `dismiss_notification` IPC
+- Download / update control IPC stubs (`pause_download` / `resume_download` / `cancel_download` / `install_update`) wired in the templates; the real download and update providers are still pending
 - Full frontend polling loop (every 1800ms) with graceful fallback to mock data
 - Provider health monitoring via `GuestProviderSourceHealth` in UI
+- Clipboard, Focus, and System Performance are registered as first-class `HubProvider` implementations in `ProviderManager`; media + system performance still flow through the runtime layer directly and are queued for the Stage 5+2 Provider migration
 
 What remains:
 
-- Wrap system performance and media session as `HubProvider` implementations registered in `ProviderRegistry`
-- Remove direct polling from `DesktopPage.tsx`, route through provider adapter → event bus → store → resolver
-- Focus mode provider (Windows Focus Assist API)
-- Clipboard watcher provider (Windows `AddClipboardFormatListener`)
-- Download watcher provider (file system monitor or browser integration)
-- Notification provider (Windows Notification Listener API)
+- Wrap system performance and media session as `HubProvider` implementations registered in `ProviderRegistry` and remove the direct listener in `useDesktopStatusRuntime` (Stage 5+2 — see [Stage 5 WIP landing plan](../plans/STAGE5_WIP_LANDING.md))
+- Download watcher provider (file system monitor or browser integration) — IPC stubs in place, no real provider yet
+- Native notification provider (Windows Notification Listener API) — synthetic dismissal in place, real toast listener pending
 
 ## Stage 6: Developer Hub
 

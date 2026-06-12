@@ -9,6 +9,7 @@ import type {
   DesktopDownloadState,
   DesktopFocusState,
   DesktopMediaState,
+  DesktopNotificationState,
   DesktopResidentState,
   DesktopUpdateState,
   GuestProviderSourceHealth,
@@ -125,6 +126,23 @@ export function mockFocusState(overrides?: Partial<DesktopFocusState>): DesktopF
     detail: "12 min remaining",
     accent: "pink",
     sourceHealth: mockSourceHealth({ kind: "focus", quality: "native" }),
+    ...overrides,
+  };
+}
+
+export function mockNotificationState(
+  overrides?: Partial<DesktopNotificationState>,
+): DesktopNotificationState {
+  return {
+    kind: "notification",
+    title: "New message",
+    subtitle: "Notification",
+    source: "mock",
+    app: "Cober",
+    sender: "Mock Provider",
+    message: "npm run qa passed",
+    accent: "orange",
+    sourceHealth: mockSourceHealth({ kind: "notification", quality: "mock" }),
     ...overrides,
   };
 }

@@ -72,3 +72,113 @@ describe("MediaStatusTemplate", () => {
     expect(screen.getByText("Native")).toBeInTheDocument();
   });
 });
+ 
+ describe("MediaStatusTemplate UI details", () => {
+   it("applies the shared frame class to the state container", () => {
+     const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+     expect(container.querySelector(".product-status-state")).toBeInTheDocument();
+   });
+ 
+   it("adds is-playing class to icon when playback is active", () => {
+     const { container } = render(
+       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />,
+     );
+     const icon = container.querySelector(".product-status-icon-media");
+     expect(icon).toHaveClass("is-playing");
+   });
+ 
+   it("omits is-playing class when paused", () => {
+     const { container } = render(
+       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "paused" })} />,
+     );
+     const icon = container.querySelector(".product-status-icon-media");
+     expect(icon).not.toHaveClass("is-playing");
+   });
+ 
+   it("progressbar label includes the i18n 'Media progress' prefix", () => {
+     const state = mockMediaState({ progress: 48 });
+     render(<MediaStatusTemplate state={state} />);
+     const progressBar = screen.getByRole("progressbar");
+     expect(progressBar.getAttribute("aria-label")).toBe("Media progress 48%");
+   });
+ 
+   it("media control buttons expose title tooltips for hover", () => {
+     render(<MediaStatusTemplate state={mockMediaState({ playbackStatus: "playing" })} />);
+     expect(screen.getByLabelText("Previous")).toHaveAttribute("title", "Previous");
+     expect(screen.getByLabelText("Pause")).toHaveAttribute("title", "Pause");
+     expect(screen.getByLabelText("Next")).toHaveAttribute("title", "Next");
+   });
+ 
+   it("shows the unavailable badge and disables controls when no player is detected", () => {
+     const { container } = render(
+       <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
+     );
+     expect(container.querySelector(".product-status-media-unavailable-badge")).toBeInTheDocument();
+     const prev = screen.getByLabelText("Previous");
+     const next = screen.getByLabelText("Next");
+     expect(prev).toBeDisabled();
+     expect(next).toBeDisabled();
+   });
+ 
+  it("hides the controls and progressbar when no player is detected", () => {
+    const { container } = render(
+      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
+    );
+    // Controls stay rendered but are disabled when no player is detected
+    const playBtn = screen.getByLabelText("Play");
+    expect(playBtn).toBeDisabled();
+    // Shimmer should be hidden (only active when playing and 0 < value < 100)
+    expect(container.querySelector(".product-status-track-shimmer")).not.toBeInTheDocument();
+    // Progressbar is still rendered (progress may be 0)
+    expect(container.querySelectorAll('[role="progressbar"]').length).toBeGreaterThan(0);
+  });
+ });
+
+describe("MediaStatusTemplate UI tokens", () => {
+  it("applies the shared guest-btn / guest-btn-primary class hooks", () => {
+    const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+    const primary = screen.getByLabelText("Pause").closest("button");
+    expect(primary).toHaveClass("product-status-guest-btn");
+    expect(primary).toHaveClass("product-status-guest-btn-primary");
+    const prev = screen.getByLabelText("Previous").closest("button");
+    expect(prev).toHaveClass("product-status-guest-btn");
+    expect(prev).not.toHaveClass("product-status-guest-btn-primary");
+  });
+
+  it("renders the state container, body and meta wrappers consistently with other guest templates", () => {
+    const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+    expect(container.querySelector(".product-status-state")).toBeInTheDocument();
+    expect(container.querySelector(".product-status-state-copy")).toBeInTheDocument();
+    expect(container.querySelector(".product-status-state-body")).toBeInTheDocument();
+    expect(container.querySelector(".product-status-template-meta")).toBeInTheDocument();
+  });
+
+  it("disables the primary play/pause button when source is unavailable", () => {
+    render(
+      <MediaStatusTemplate state={mockMediaState({ playbackStatus: "unavailable" })} />,
+    );
+    const playBtn = screen.getByLabelText("Play");
+    expect(playBtn).toBeDisabled();
+    expect(playBtn).toHaveClass("product-status-guest-btn-primary");
+  });
+
+  it("renders the disc icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
+
+  it("renders the control button icons with the shared 14/2.4 sizing", () => {
+    const { container } = render(<MediaStatusTemplate state={mockMediaState()} />);
+    const svgs = container.querySelectorAll(".product-status-guest-btn svg");
+    expect(svgs.length).toBeGreaterThan(0);
+    svgs.forEach((svg) => {
+      expect(svg.getAttribute("width")).toBe("14");
+      expect(svg.getAttribute("height")).toBe("14");
+      expect(svg.getAttribute("stroke-width")).toBe("2.4");
+    });
+  });
+});

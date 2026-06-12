@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -96,7 +96,7 @@ button {
       inset 0 -1px 0 rgba(120, 137, 166, 0.08);
   }
 
-  /* 鈹€鈹€ Multi-status layout 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+  /* ── Multi-status layout ────────────────────────────────────────── */
 
   .product-status-center.has-indicators {
     display: flex;
@@ -298,6 +298,39 @@ button {
     transition: width 320ms cubic-bezier(0.2, 0.8, 0.2, 1), background 220ms ease, box-shadow 220ms ease;
   }
 
+  /* ── Shimmer overlay for active progress ── */
+  .product-status-track > .product-status-track-shimmer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 28%;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.42) 48%,
+      rgba(255, 255, 255, 0.62) 50%,
+      rgba(255, 255, 255, 0.42) 52%,
+      transparent 100%
+    );
+    filter: blur(1px);
+    pointer-events: none;
+    animation: product-status-shimmer 2.2s linear infinite;
+  }
+
+  @keyframes product-status-shimmer {
+    from { transform: translateX(-360%); }
+    to { transform: translateX(360%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-status-track > .product-status-track-shimmer {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
   /* Network speed rows (download / upload) */
   .product-status-metric-network {
     display: flex;
@@ -396,7 +429,7 @@ button {
 
   .product-status-state-body {
     display: grid;
-    gap: 6px;
+    gap: 7px;
     min-width: 0;
   }
 
@@ -417,6 +450,22 @@ button {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .product-status-template-meta-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .product-status-template-meta-actions > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .product-status-track-violet span {
@@ -432,7 +481,103 @@ button {
   }
 
   .product-status-icon-media {
-    color: #7457f7;
+    color: #c026d3;
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.92), transparent 42%),
+      linear-gradient(145deg, rgba(252, 231, 243, 0.98) 0%, rgba(233, 213, 255, 0.94) 55%, rgba(216, 196, 255, 0.92) 100%);
+  }
+
+  .product-status-icon-media::after {
+    background: rgba(192, 38, 211, 0.18);
+  }
+
+  .product-status-icon-media.is-playing {
+    animation: product-status-icon-pulse 3.4s ease-in-out infinite;
+    box-shadow:
+      0 0 0 2px rgba(192, 38, 211, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      inset 0 -8px 16px rgba(97, 88, 232, 0.08);
+  }
+
+  @keyframes product-status-icon-pulse {
+    0%, 100% { opacity: 0.94; }
+    50% { opacity: 1; }
+  }
+
+  /* The Disc3 SVG spins slowly while playing to telegraph the live state. */
+  .product-status-icon-media.is-playing svg {
+    animation: product-status-icon-spin 6.4s linear infinite;
+    transform-origin: 50% 50%;
+  }
+
+  @keyframes product-status-icon-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-status-icon-media.is-playing svg {
+      animation: none;
+    }
+  }
+
+  /* Three-bar audio visualizer that sits beside the artist in the meta row. */
+  .product-status-media-visualizer {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 1.5px;
+    width: 11px;
+    height: 10px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    flex-shrink: 0;
+  }
+
+  .product-status-media-visualizer > span {
+    width: 2px;
+    min-height: 2px;
+    border-radius: 1px;
+    background: #c026d3;
+    opacity: 0.78;
+    transform-origin: bottom center;
+    animation-duration: 900ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  }
+
+  .product-status-media-visualizer > span:nth-child(1) {
+    animation-name: product-status-media-bar-1;
+  }
+
+  .product-status-media-visualizer > span:nth-child(2) {
+    animation-name: product-status-media-bar-2;
+  }
+
+  .product-status-media-visualizer > span:nth-child(3) {
+    animation-name: product-status-media-bar-3;
+  }
+
+  @keyframes product-status-media-bar-1 {
+    0%, 100% { height: 28%; }
+    50%      { height: 88%; }
+  }
+
+  @keyframes product-status-media-bar-2 {
+    0%, 100% { height: 72%; }
+    50%      { height: 32%; }
+  }
+
+  @keyframes product-status-media-bar-3 {
+    0%, 100% { height: 50%; }
+    50%      { height: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-status-media-visualizer > span {
+      animation: none;
+      height: 60%;
+    }
   }
 
   .product-status-icon-download {
@@ -451,92 +596,149 @@ button {
     color: #db2777;
   }
 
-  .product-status-media-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 4px;
+  .product-status-icon-notification {
+    color: #e11d48;
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.92), transparent 42%),
+      linear-gradient(145deg, rgba(255, 241, 242, 0.98) 0%, rgba(255, 228, 230, 0.94) 55%, rgba(254, 205, 211, 0.92) 100%);
   }
 
-  .product-status-media-btn {
+  .product-status-icon-notification::after {
+    background: rgba(225, 29, 72, 0.18);
+  }
+
+  .product-status-guest-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0;
+  }
+
+  .product-status-guest-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border: none;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(109, 93, 252, 0.06);
+    color: #5f6f88;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
     padding: 0;
   }
 
-  .product-status-media-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+  .product-status-guest-btn:hover {
+    background: rgba(109, 93, 252, 0.12);
+    color: #0f172a;
   }
 
-  .product-status-media-btn-primary {
-    width: 30px;
-    height: 30px;
-    background: rgba(116, 87, 247, 0.2);
-    color: #a78bfa;
+  .product-status-guest-btn-primary {
+    width: 28px;
+    height: 28px;
+    background: rgba(192, 38, 211, 0.16);
+    color: #c026d3;
   }
 
-  .product-status-media-btn-primary:hover {
-    background: rgba(116, 87, 247, 0.35);
-    color: #c4b5fd;
+  .product-status-guest-btn-primary:hover {
+    background: rgba(192, 38, 211, 0.24);
+    color: #a21caf;
+    transform: translateY(-1px);
   }
 
-  .product-status-clipboard-copy {
+  .product-status-guest-btn {
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+  }
+
+  .product-status-guest-btn-primary {
+    transition: background 0.15s, color 0.15s, transform 0.15s,
+      box-shadow 0.15s;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .product-status-guest-btn-primary:hover {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.62),
+      0 4px 10px rgba(192, 38, 211, 0.22);
+  }
+
+  .product-status-guest-btn:focus-visible {
+    outline: 2px solid #c026d3;
+    outline-offset: 2px;
+  }
+
+  .product-status-guest-btn-primary:focus-visible {
+    outline: 2px solid #c026d3;
+    outline-offset: 2px;
+  }
+
+  .product-status-guest-btn:disabled,
+  .product-status-guest-btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .product-status-guest-btn:disabled:hover,
+  .product-status-guest-btn-primary:disabled:hover {
+    background: rgba(192, 38, 211, 0.16);
+    color: #c026d3;
+  }
+
+  .product-status-media-unavailable-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 8px;
-    border: 1px solid rgba(37, 99, 235, 0.18);
-    border-radius: 6px;
-    background: rgba(37, 99, 235, 0.06);
-    color: #2563eb;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(100, 116, 139, 0.18);
+    color: #475569;
     font-size: 10px;
-    font-weight: 680;
-    cursor: pointer;
+    font-weight: 720;
+    line-height: 1.1;
     white-space: nowrap;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
 
-  .product-status-clipboard-copy:hover {
-    background: rgba(37, 99, 235, 0.12);
-    border-color: rgba(37, 99, 235, 0.3);
+  .product-status-media-unavailable-badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #94a3b8;
+    flex-shrink: 0;
   }
 
-  .product-status-clipboard-copy.is-copied {
-    color: #16a34a;
-    border-color: rgba(22, 163, 74, 0.3);
-    background: rgba(74, 222, 128, 0.08);
-  }
-
-  .product-status-clipboard-open {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border: 1px solid rgba(16, 185, 129, 0.25);
+  /* ── IPC failure toast ── */
+  .product-status-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 50;
+    padding: 5px 11px;
     border-radius: 6px;
-    background: rgba(16, 185, 129, 0.08);
-    color: #059669;
-    font-size: 10px;
-    font-weight: 680;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    font-size: 11px;
+    font-weight: 640;
+    line-height: 1.2;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.32);
+    pointer-events: none;
+    animation: product-status-toast-flash 1.6s ease forwards;
   }
 
-  .product-status-clipboard-open:hover {
-    background: rgba(16, 185, 129, 0.16);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: #047857;
+  @keyframes product-status-toast-flash {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    82%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-status-toast {
+      animation-duration: 0.01ms;
+    }
   }
 
   .product-status-clipboard-text {
@@ -550,24 +752,6 @@ button {
     min-width: 0;
   }
 
-  .product-status-clipboard-source {
-    color: #0f172a;
-    font-size: 12px;
-    font-weight: 780;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .product-status-metric-clipboard-action {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 0 0 7px;
-  }
-
-
   /* ---- Win11 Settings Panel (matches SettingsPanel.tsx) ---- */
 
   @keyframes win11-panel-enter {
@@ -575,7 +759,7 @@ button {
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* 鈹€鈹€ Panel shell 鈹€鈹€ */
+  /* ── Panel shell ── */
 
   .win11-settings-panel {
     --win11-accent: #0078D4;
@@ -613,7 +797,7 @@ button {
     font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   }
 
-  /* 鈹€鈹€ Header 鈹€鈹€ */
+  /* ── Header ── */
 
   .win11-settings-header {
     display: flex;
@@ -660,7 +844,7 @@ button {
     color: var(--win11-text);
   }
 
-  /* 鈹€鈹€ Scrollable body 鈹€鈹€ */
+  /* ── Scrollable body ── */
 
   .win11-settings-body {
     flex: 1;
@@ -681,7 +865,7 @@ button {
     background: rgba(0, 0, 0, 0.28);
   }
 
-  /* 鈹€鈹€ Sections 鈹€鈹€ */
+  /* ── Sections ── */
 
   .win11-settings-section {
     display: grid;
@@ -697,7 +881,7 @@ button {
     letter-spacing: 0;
   }
 
-  /* 鈹€鈹€ Card container 鈹€鈹€ */
+  /* ── Card container ── */
 
   .win11-settings-card {
     background: var(--win11-card);
@@ -706,7 +890,7 @@ button {
     overflow: hidden;
   }
 
-  /* 鈹€鈹€ Setting row 鈹€鈹€ */
+  /* ── Setting row ── */
 
   .win11-setting-row {
     display: flex;
@@ -768,7 +952,7 @@ button {
     align-items: center;
   }
 
-  /* 鈹€鈹€ Row overlay button (for language rows) 鈹€鈹€ */
+  /* ── Row overlay button (for language rows) ── */
 
   .win11-row-overlay {
     position: absolute;
@@ -794,7 +978,7 @@ button {
     color: #fff;
   }
 
-  /* 鈹€鈹€ Win11 Toggle Switch 鈹€鈹€ */
+  /* ── Win11 Toggle Switch ── */
 
   .win11-toggle {
     position: relative;
@@ -863,7 +1047,7 @@ button {
     outline-offset: 2px;
   }
 
-  /* 鈹€鈹€ Template grid 鈹€鈹€ */
+  /* ── Template grid ── */
 
   .win11-template-grid {
     display: grid;
@@ -938,7 +1122,7 @@ button {
     place-items: center;
   }
 
-  /* 鈹€鈹€ Action buttons grid 鈹€鈹€ */
+  /* ── Action buttons grid ── */
 
   .win11-actions-grid {
     display: grid;
@@ -982,7 +1166,7 @@ button {
     white-space: nowrap;
   }
 
-  /* 鈹€鈹€ Focus visible for all interactive elements 鈹€鈹€ */
+  /* ── Focus visible for all interactive elements ── */
 
   .win11-template-card:focus-visible,
   .win11-action-btn:focus-visible,

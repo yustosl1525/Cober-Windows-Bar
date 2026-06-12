@@ -23,6 +23,7 @@ import { ClipboardStatusTemplate } from "./templates/ClipboardStatusTemplate";
 import { DownloadStatusTemplate } from "./templates/DownloadStatusTemplate";
 import { FocusStatusTemplate } from "./templates/FocusStatusTemplate";
 import { MediaStatusTemplate } from "./templates/MediaStatusTemplate";
+import { NotificationStatusTemplate } from "./templates/NotificationStatusTemplate";
 import { ResidentStatusTemplate } from "./templates/ResidentStatusTemplate";
 import { UpdateStatusTemplate } from "./templates/UpdateStatusTemplate";
 
@@ -44,6 +45,8 @@ function renderDesktopStatusTemplate(state: ReturnType<typeof resolveDesktopStat
       return <ClipboardStatusTemplate state={state} />;
     case "focus":
       return <FocusStatusTemplate state={state} />;
+    case "notification":
+      return <NotificationStatusTemplate state={state} />;
   }
 }
 

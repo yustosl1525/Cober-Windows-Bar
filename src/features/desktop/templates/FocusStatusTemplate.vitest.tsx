@@ -44,4 +44,23 @@ describe("FocusStatusTemplate", () => {
     expect(screen.getByText("Priority only")).toBeInTheDocument();
     expect(screen.getByText("Until 6:00 PM")).toBeInTheDocument();
   });
+
+  it("renders the moon icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<FocusStatusTemplate state={mockFocusState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
+
+  it("renders the stop-focus action icon with the shared 14/2.4 sizing", () => {
+    const { container } = render(<FocusStatusTemplate state={mockFocusState()} />);
+    const btn = screen.getByRole("button", { name: /stop session/i });
+    const svg = btn.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    expect(svg?.getAttribute("width")).toBe("14");
+    expect(svg?.getAttribute("height")).toBe("14");
+    expect(svg?.getAttribute("stroke-width")).toBe("2.4");
+  });
 });

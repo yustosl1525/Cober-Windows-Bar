@@ -8,6 +8,7 @@ import type {
   DesktopDownloadState,
   DesktopFocusState,
   DesktopMediaState,
+  DesktopNotificationState,
   DesktopStatusAggregationInput,
   DesktopStatusAggregationResult,
   DesktopStatusKind,
@@ -20,6 +21,7 @@ import type {
   HubTask,
   MediaSessionPayload,
   MusicState,
+  NotificationState,
   SystemPerformanceMetric,
 } from "../types/hub";
 
@@ -30,6 +32,7 @@ const DESKTOP_STATUS_AVAILABLE_KINDS: DesktopStatusKind[] = [
   "update",
   "clipboard",
   "focus",
+  "notification",
 ];
 
 
@@ -154,18 +157,19 @@ function snapshotAiTask(task: HubTask): DesktopUpdateState {
   };
 }
 
-function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | DesktopFocusState | undefined {
+function snapshotNotificationEvent(event: HubEvent): DesktopClipboardState | DesktopFocusState | DesktopNotificationState | undefined {
   if (event.source === "notification") {
     const payload = event.payload && "message" in event.payload ? event.payload : undefined;
 
     return {
-      kind: "clipboard",
+      kind: "notification",
       title: payload?.app ?? i18n.t("aggregation.desktopNotification"),
       subtitle: i18n.t("aggregation.recentMessage"),
-      source: "mock",
-      copiedText: payload?.message ?? i18n.t("aggregation.newNotificationReceived"),
-      detail: payload?.sender ?? i18n.t("aggregation.notificationCenter"),
-      accent: "blue",
+      source: "system",
+      app: payload?.app ?? i18n.t("aggregation.notificationCenter"),
+      sender: payload?.sender ?? i18n.t("aggregation.systemStatus"),
+      message: payload?.message ?? i18n.t("aggregation.newNotificationReceived"),
+      accent: "orange",
     };
   }
 
@@ -224,14 +228,17 @@ function deriveStateOverrides(hubState: HubStoreState): Partial<DesktopStatusSta
   }
 
   // --- Notification (mock provider fallback) ---
-  // Only use mock notification events if no real clipboard/focus data is present
-  if (!overrides.clipboard) {
+  // Notification events (mock or real provider) map to the dedicated
+  // "notification" kind. If a real clipboard event is also present, that
+  // wins because it represents a more actionable user action (text on the
+  // clipboard is directly usable).
+  if (!overrides.clipboard && !overrides.notification) {
     const latestNotification = hubState.events.find(
       (event) => event.type === "notification" && event.source === "notification",
     );
     const notificationState = latestNotification ? snapshotNotificationEvent(latestNotification) : undefined;
-    if (notificationState?.kind === "clipboard") {
-      overrides.clipboard = notificationState;
+    if (notificationState?.kind === "notification") {
+      overrides.notification = notificationState;
     }
   }
 
@@ -279,8 +286,11 @@ function deriveActiveKinds(hubState: HubStoreState, events: HubEvent[]): Desktop
   // Clipboard (real provider or mock notification)
   if (hubState.clipboard) {
     activeKinds.push("clipboard");
-  } else if (events.some((event) => event.type === "notification" && event.source === "notification")) {
-    activeKinds.push("clipboard");
+  }
+
+  // Notification (mock or real provider)
+  if (events.some((event) => event.type === "notification" && event.source === "notification")) {
+    activeKinds.push("notification");
   }
 
   // Focus (real provider or mock)

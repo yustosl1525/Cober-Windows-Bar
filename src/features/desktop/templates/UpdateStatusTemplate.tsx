@@ -1,5 +1,9 @@
 import { RefreshCw } from "lucide-react";
+import { Download } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
+import { installUpdate } from "../../../runtime/updateInstallRuntime";
 import type { DesktopUpdateState } from "../../../types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
@@ -9,12 +13,27 @@ type UpdateStatusTemplateProps = {
 };
 
 export function UpdateStatusTemplate({ state }: UpdateStatusTemplateProps) {
+  const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleInstall = useCallback(async () => {
+    const result = await installUpdate();
+    if (result && !result.success) {
+      setToast(t("update.installFailed"));
+    }
+  }, [t]);
 
   return (
     <>
       <div className="product-status-icon product-status-icon-update" aria-hidden="true">
-        <RefreshCw size={18} strokeWidth={2.1} />
+        <RefreshCw size={20} strokeWidth={2.2} />
         <GuestSourceHealthIndicator sourceHealth={state.sourceHealth} />
       </div>
       <DesktopStatusTemplateFrame
@@ -22,11 +41,27 @@ export function UpdateStatusTemplate({ state }: UpdateStatusTemplateProps) {
         title={state.title}
         subtitle={state.subtitle}
         meta={
-          <>
-            <span>{state.detail}</span>
-          </>
+          <span className="product-status-template-meta-actions">
+            <span>
+              <span>{state.detail}</span>
+            </span>
+            <button
+              type="button"
+              className="product-status-guest-btn product-status-guest-btn-primary"
+              aria-label={t("update.installNow")}
+              title={t("update.installNow")}
+              onClick={() => void handleInstall()}
+            >
+              <Download size={14} strokeWidth={2.4} />
+            </button>
+          </span>
         }
       />
+      {toast ? (
+        <div className="product-status-toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      ) : null}
     </>
   );
 }

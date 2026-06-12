@@ -21,11 +21,13 @@ export const DESKTOP_STATUS_TEMPLATE_ORDER: DesktopStatusKind[] = [
   "update",
   "clipboard",
   "focus",
+  "notification",
 ];
 
 export const DESKTOP_STATUS_PRIORITY_ORDER: DesktopStatusKind[] = [
   "focus",
   "update",
+  "notification",
   "download",
   "media",
   "clipboard",
@@ -124,6 +126,16 @@ export function createDesktopStatusStateTemplates(
       detail: t("states.focus.detail"),
       accent: "pink",
     },
+    notification: {
+      kind: "notification",
+      title: t("states.notification.title"),
+      subtitle: t("states.notification.subtitle"),
+      source: "mock",
+      app: t("states.notification.app"),
+      sender: t("states.notification.sender"),
+      message: t("states.notification.message"),
+      accent: "orange",
+    },
   };
 }
 
@@ -136,6 +148,7 @@ export function getDesktopStatusTemplateChromeCopy() {
     updateEyebrow: t("template.update.eyebrow"),
     clipboardEyebrow: t("template.clipboard.eyebrow"),
     focusEyebrow: t("template.focus.eyebrow"),
+    notificationEyebrow: t("template.notification.eyebrow"),
     mediaProgress: t("template.media.progress"),
     downloadProgress: t("template.download.progress"),
     updateProgress: t("template.update.progress"),

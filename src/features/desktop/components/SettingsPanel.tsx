@@ -18,6 +18,7 @@ import {
   Clipboard,
   Eye,
   ArrowRight,
+  Bell,
   Check,
   type LucideIcon,
 } from "lucide-react";
@@ -53,6 +54,7 @@ const TEMPLATE_ICON_MAP: Record<DesktopStatusKind, LucideIcon> = {
   update: HardDrive,
   clipboard: Clipboard,
   focus: Eye,
+  notification: Bell,
 };
 
 /* ─── Win11-style pill toggle switch ─── */

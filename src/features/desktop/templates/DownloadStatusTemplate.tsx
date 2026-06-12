@@ -1,5 +1,9 @@
 import { Download } from "lucide-react";
+import { Pause, Play, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getDesktopStatusTemplateChromeCopy } from "../../../data/desktopStatusConfig";
+import { sendDownloadControl } from "../../../runtime/downloadControlRuntime";
 import type { DesktopDownloadState } from "../../../types/hub";
 import { DesktopStatusTemplateFrame } from "./DesktopStatusTemplateFrame";
 import { GuestSourceHealthIndicator } from "./GuestSourceHealthIndicator";
@@ -9,13 +13,41 @@ type DownloadStatusTemplateProps = {
   state: DesktopDownloadState;
 };
 
+// Download state has no live pause/resume flag from the capability provider
+// (it reports "unavailable" / "not-implemented"). We expose a single
+// Pause/Resume toggle so the button is always actionable.
+function useDownloadPaused(): [boolean, () => void] {
+  const [paused, setPaused] = useState(false);
+  const toggle = useCallback(() => setPaused((p) => !p), []);
+  return [paused, toggle];
+}
+
 export function DownloadStatusTemplate({ state }: DownloadStatusTemplateProps) {
+  const { t } = useTranslation();
   const copy = getDesktopStatusTemplateChromeCopy();
+  const [paused, togglePaused] = useDownloadPaused();
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleControl = useCallback(
+    async (action: "pause" | "resume" | "cancel") => {
+      const result = await sendDownloadControl(action);
+      if (result && !result.success) {
+        setToast(t("download.controlFailed"));
+      }
+    },
+    [t],
+  );
 
   return (
     <>
       <div className="product-status-icon product-status-icon-download" aria-hidden="true">
-        <Download size={18} strokeWidth={2.1} />
+        <Download size={20} strokeWidth={2.2} />
         <GuestSourceHealthIndicator sourceHealth={state.sourceHealth} />
       </div>
       <DesktopStatusTemplateFrame
@@ -23,14 +55,52 @@ export function DownloadStatusTemplate({ state }: DownloadStatusTemplateProps) {
         title={state.title}
         subtitle={state.subtitle}
         meta={
-          <>
-            <span>{state.detail}</span>
-            <span>{state.progress}%</span>
-          </>
+          <span className="product-status-template-meta-actions">
+            <span>
+              <span>{state.detail}</span>
+              <span>{state.progress}%</span>
+            </span>
+            <button
+              type="button"
+              className="product-status-guest-btn"
+              aria-label={paused ? t("download.resume") : t("download.pause")}
+              title={paused ? t("download.resume") : t("download.pause")}
+              aria-pressed={paused}
+              onClick={() => {
+                togglePaused();
+                void handleControl(paused ? "resume" : "pause");
+              }}
+            >
+              {paused ? (
+                <Play size={14} strokeWidth={2.4} fill="currentColor" />
+              ) : (
+                <Pause size={14} strokeWidth={2.4} />
+              )}
+            </button>
+            <button
+              type="button"
+              className="product-status-guest-btn"
+              aria-label={t("download.cancel")}
+              title={t("download.cancel")}
+              onClick={() => void handleControl("cancel")}
+            >
+              <X size={14} strokeWidth={2.4} />
+            </button>
+          </span>
         }
       >
-        <StatusRail value={state.progress} label={`${copy.downloadProgress} ${state.progress}%`} accent="green" />
+        <StatusRail
+          value={paused ? 0 : state.progress}
+          label={`${copy.downloadProgress} ${paused ? 0 : state.progress}%`}
+          accent="green"
+          active={!paused}
+        />
       </DesktopStatusTemplateFrame>
+      {toast ? (
+        <div className="product-status-toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      ) : null}
     </>
   );
 }

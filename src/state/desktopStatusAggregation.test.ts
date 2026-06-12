@@ -72,12 +72,12 @@ test("desktop status aggregation keeps multiple active kinds without doing prior
     now,
   });
 
-  assert.deepEqual(result.activeKinds, ["media", "download", "update", "clipboard"]);
+  assert.deepEqual(result.activeKinds, ["media", "download", "update", "notification"]);
   assert.equal(result.states?.media?.kind, "media");
   assert.equal(result.states?.download?.kind, "download");
   assert.equal(result.states?.update?.kind, "update");
-  assert.equal(result.states?.clipboard?.kind, "clipboard");
-  assert.equal(result.states?.clipboard?.subtitle, i18n.t("aggregation.recentMessage"));
+  assert.equal(result.states?.notification?.kind, "notification");
+  assert.equal(result.states?.notification?.subtitle, i18n.t("aggregation.recentMessage"));
 });
 
 test("desktop status aggregation preserves caller-provided available kinds as scheduler input", () => {

@@ -41,6 +41,11 @@
       "label": "Focus",
       "description": "Shows focus mode or timer status.",
       "eyebrow": "Focus"
+    },
+    "notification": {
+      "label": "Notification",
+      "description": "Shows the latest notification from a foreground app.",
+      "eyebrow": "Notification"
     }
   },
   "metrics": {
@@ -82,6 +87,13 @@
       "subtitle": "Active",
       "sessionLabel": "Deep work 25 min",
       "detail": "12 min remaining"
+    },
+    "notification": {
+      "title": "New message",
+      "subtitle": "Notification",
+      "app": "Cober",
+      "sender": "Mock Provider",
+      "message": "npm run qa passed"
     }
   },
   "settings": {
@@ -169,13 +181,37 @@
     "play": "Play",
     "pause": "Pause",
     "playPause": "Play/Pause",
-    "next": "Next"
+    "next": "Next",
+    "unavailable": {
+      "badge": "No player detected"
+    },
+    "controlFailed": "Couldn't control playback"
   },
   "clipboard": {
-    "copyToClipboard": "Copy to clipboard"
+    "copyToClipboard": "Copy to clipboard",
+    "openInBrowser": "Open in browser",
+    "openFailed": "Couldn't open in browser"
   },
   "notFound": {
     "title": "Cober page not found",
     "openDesktop": "Open /desktop"
+  },
+  "focus": {
+    "stop": "Stop session",
+    "stopFailed": "Couldn't stop focus session"
+  },
+  "download": {
+    "pause": "Pause download",
+    "resume": "Resume download",
+    "cancel": "Cancel download",
+    "controlFailed": "Download control failed"
+  },
+  "update": {
+    "installNow": "Install now",
+    "installFailed": "Couldn't install update"
+  },
+  "notification": {
+    "dismiss": "Dismiss notification",
+    "dismissFailed": "Couldn't dismiss notification"
   }
 }

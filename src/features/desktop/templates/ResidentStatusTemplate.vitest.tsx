@@ -54,4 +54,13 @@ describe("ResidentStatusTemplate", () => {
     const indicator = container.querySelector(".product-status-source-health");
     expect(indicator).toHaveClass("is-stale");
   });
+
+  it("renders the CPU icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<ResidentStatusTemplate state={mockResidentState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
 });

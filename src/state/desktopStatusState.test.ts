@@ -100,10 +100,10 @@ test("desktop status resolver keeps source status high-level and drops diagnosti
   assert.equal("rawPayload" in state.sourceStatus!, false);
 });
 
-test("desktop status state listing exposes all six status templates in product order", () => {
+test("desktop status state listing exposes all seven status templates in product order", () => {
   assert.deepEqual(
     listDesktopStatusStates(metrics).map((state) => state.kind),
-    ["resident", "media", "download", "update", "clipboard", "focus"],
+    ["resident", "media", "download", "update", "clipboard", "focus", "notification"],
   );
 });
 

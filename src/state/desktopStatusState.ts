@@ -27,6 +27,7 @@ function cloneStateMap(states: DesktopStatusStateMap): DesktopStatusStateMap {
     update: { ...states.update },
     clipboard: { ...states.clipboard },
     focus: { ...states.focus },
+    notification: { ...states.notification },
   };
 }
 

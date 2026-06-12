@@ -28,4 +28,23 @@ describe("UpdateStatusTemplate", () => {
     const eyebrow = container.querySelector(".product-status-state-eyebrow");
     expect(eyebrow).toHaveTextContent("Update");
   });
+
+  it("renders the refresh icon with the shared 20/2.2 sizing", () => {
+    const { container } = render(<UpdateStatusTemplate state={mockUpdateState()} />);
+    const icon = container.querySelector(".product-status-icon svg");
+    expect(icon).toBeInTheDocument();
+    expect(icon?.getAttribute("width")).toBe("20");
+    expect(icon?.getAttribute("height")).toBe("20");
+    expect(icon?.getAttribute("stroke-width")).toBe("2.2");
+  });
+
+  it("renders the install action icon with the shared 14/2.4 sizing", () => {
+    const { container } = render(<UpdateStatusTemplate state={mockUpdateState()} />);
+    const btn = screen.getByRole("button", { name: /install now/i });
+    const svg = btn.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    expect(svg?.getAttribute("width")).toBe("14");
+    expect(svg?.getAttribute("height")).toBe("14");
+    expect(svg?.getAttribute("stroke-width")).toBe("2.4");
+  });
 });
