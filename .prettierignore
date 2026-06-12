@@ -1,0 +1,7 @@
+dist
+node_modules
+package-lock.json
+src-tauri
+src/styles/globals.css.head
+*.min.js
+*.min.css
