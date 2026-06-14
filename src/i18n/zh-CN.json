@@ -146,6 +146,15 @@
       "title": "语言",
       "zh-CN": "简体中文",
       "en": "English"
+    },
+    "providers": {
+      "title": "Provider 状态",
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "unhealthy": "Unhealthy",
+      "stopped": "Stopped",
+      "attentionTitle": "需要关注",
+      "showAll": "显示全部 Provider"
     }
   },
   "aggregation": {
@@ -213,5 +222,12 @@
   "notFound": {
     "title": "Cober 页面未找到",
     "openDesktop": "打开 /desktop"
+  },
+  "git": {
+    "branch": "分支",
+    "modified": "{count} 个文件已修改",
+    "noRepo": "非 Git 仓库",
+    "noGitCli": "未找到 git 命令行",
+    "unavailable": "Git 状态不可用"
   }
 }

@@ -146,6 +146,15 @@
       "title": "Language",
       "zh-CN": "简体中文",
       "en": "English"
+    },
+    "providers": {
+      "title": "Provider Status",
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "unhealthy": "Unhealthy",
+      "stopped": "Stopped",
+      "attentionTitle": "Needs Attention",
+      "showAll": "Show All Providers"
     }
   },
   "aggregation": {
@@ -213,5 +222,12 @@
   "notification": {
     "dismiss": "Dismiss notification",
     "dismissFailed": "Couldn't dismiss notification"
+  },
+  "git": {
+    "branch": "Branch",
+    "modified": "{count} modified",
+    "noRepo": "Not a git repository",
+    "noGitCli": "git CLI not found",
+    "unavailable": "Git status unavailable"
   }
 }
