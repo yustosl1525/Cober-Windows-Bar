@@ -23,16 +23,20 @@ import {
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ProviderStatusPanel } from "./ProviderStatusPanel";
+
 import {
   getDesktopStatusTemplateDescriptors,
   getDesktopStatusSettingsCopy,
 } from "@/data/desktopStatusConfig";
+import type { ProviderRegistryRecord } from "@/providers/providerRegistry";
 import type { DesktopStatusKind, DesktopStatusPreferences } from "@/types/hub";
 
 export type SettingsPanelProps = {
   preferences: DesktopStatusPreferences;
   activeStatusKind: DesktopStatusKind | null;
   autostartEnabled: boolean;
+  providerRecords: ProviderRegistryRecord[];
   onToggleAlwaysFloat: () => void;
   onToggleAvoidFullscreen: () => void;
   onToggleLockPosition: () => void;
@@ -85,6 +89,7 @@ export function SettingsPanel({
   preferences,
   activeStatusKind,
   autostartEnabled,
+  providerRecords,
   onToggleAlwaysFloat,
   onToggleAvoidFullscreen,
   onToggleLockPosition,
@@ -258,6 +263,9 @@ export function SettingsPanel({
             </SettingRow>
           </div>
         </section>
+
+        {/* ── Provider Status ── */}
+        <ProviderStatusPanel records={providerRecords ?? []} />
 
         {/* ── Quick Controls ── */}
         <section className="win11-settings-section">
