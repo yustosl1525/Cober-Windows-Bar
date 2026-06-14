@@ -197,11 +197,13 @@ export function getTauriInvoke(globalScope: unknown = globalThis): TauriInvoke |
   return undefined;
 }
 
-export async function loadTauriFixtureHubEvents({
-  invoke = getTauriInvoke(),
-}: {
-  invoke?: TauriInvoke;
-} = {}): Promise<TauriRuntimeResult> {
+export async function publishTauriFixtureEvents(
+  eventBus: HubEventPublisher,
+  options: {
+    invoke?: TauriInvoke;
+  } = {},
+): Promise<TauriRuntimeResult> {
+  const invoke = options.invoke ?? getTauriInvoke();
   if (!invoke) {
     return {
       ok: false,
@@ -213,37 +215,9 @@ export async function loadTauriFixtureHubEvents({
     };
   }
 
+  let value: unknown;
   try {
-    const value = await invoke(TAURI_FIXTURE_COMMAND);
-
-    if (!Array.isArray(value)) {
-      return {
-        ok: false,
-        diagnostic: {
-          ...fixtureEventsDiagnosticContext,
-          code: "malformed",
-          message: "Tauri runtime returned malformed HubEvent fixtures.",
-        },
-      };
-    }
-
-    const events = parseHubEvents(value).map(snapshotHubEvent);
-
-    if (events.length !== value.length) {
-      return {
-        ok: false,
-        diagnostic: {
-          ...fixtureEventsDiagnosticContext,
-          code: "malformed",
-          message: "Tauri runtime returned malformed HubEvent fixtures.",
-        },
-      };
-    }
-
-    return {
-      ok: true,
-      events,
-    };
+    value = await invoke(TAURI_FIXTURE_COMMAND);
   } catch (error) {
     return {
       ok: false,
@@ -255,21 +229,32 @@ export async function loadTauriFixtureHubEvents({
       },
     };
   }
-}
 
-export async function publishTauriFixtureEvents(
-  eventBus: HubEventPublisher,
-  options: {
-    invoke?: TauriInvoke;
-  } = {},
-): Promise<TauriRuntimeResult> {
-  const result = await loadTauriFixtureHubEvents(options);
-
-  if (!result.ok) {
-    return result;
+  if (!Array.isArray(value)) {
+    return {
+      ok: false,
+      diagnostic: {
+        ...fixtureEventsDiagnosticContext,
+        code: "malformed",
+        message: "Tauri runtime returned malformed HubEvent fixtures.",
+      },
+    };
   }
 
-  for (const event of result.events) {
+  const events = parseHubEvents(value).map(snapshotHubEvent);
+
+  if (events.length !== value.length) {
+    return {
+      ok: false,
+      diagnostic: {
+        ...fixtureEventsDiagnosticContext,
+        code: "malformed",
+        message: "Tauri runtime returned malformed HubEvent fixtures.",
+      },
+    };
+  }
+
+  for (const event of events) {
     try {
       eventBus.publishHubEvent(snapshotHubEvent(event));
     } catch {
@@ -277,7 +262,7 @@ export async function publishTauriFixtureEvents(
     }
   }
 
-  return result;
+  return { ok: true, events };
 }
 
 export async function emitTauriFixtureEvents({

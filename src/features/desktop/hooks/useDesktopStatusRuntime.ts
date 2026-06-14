@@ -4,11 +4,6 @@ import { DESKTOP_STATUS_TEMPLATE_ORDER } from "@/data/desktopStatusConfig";
 import i18n from "@/i18n";
 import { createProviderManager, type ProviderManager } from "@/providers/providerManager";
 import type { ProviderRegistryRecord } from "@/providers/providerRegistry";
-import {
-  getDesktopStatusRuntime,
-  type DesktopStatusRuntime,
-  type DesktopStatusRuntimeSnapshot,
-} from "@/runtime/desktopStatusInputRuntime";
 import { aggregateDesktopStatusInput } from "@/state/desktopStatusAggregation";
 import { DESKTOP_STATUS_PREFERRED_WINDOW_MS } from "@/state/desktopStatusScheduler";
 import { resolveDesktopStatusState } from "@/state/desktopStatusState";
@@ -52,19 +47,6 @@ export type UseDesktopStatusRuntimeResult = {
   providerRecords: ProviderRegistryRecord[];
 };
 
-function applyDesktopStatusSnapshot(
-  snapshot: DesktopStatusRuntimeSnapshot,
-  setter: (updater: (prev: HubStoreState) => HubStoreState) => void,
-) {
-  setter((prev) => ({
-    ...snapshot.state,
-    clipboard: prev.clipboard ?? snapshot.state.clipboard,
-    focus: prev.focus ?? snapshot.state.focus,
-    systemPerformance: prev.systemPerformance ?? snapshot.state.systemPerformance,
-    events: [...prev.events.filter((e) => e.type === "media"), ...(snapshot.state.events ?? [])],
-  }));
-}
-
 /**
  * Convert SystemPerformancePayload from the bus back into SystemPerformanceMetric[]
  * for the resident status template.
@@ -87,9 +69,6 @@ export function useDesktopStatusRuntime(
   metrics: SystemPerformanceMetric[],
   systemPerformanceSourceQuality: string,
 ): UseDesktopStatusRuntimeResult {
-  const runtimeRef = useRef<DesktopStatusRuntime>(getDesktopStatusRuntime());
-  const initialSnapshot = runtimeRef.current.getSnapshot();
-
   // Create a shared HubEventBus and ProviderManager for the unified pipeline.
   // After the W1 migration, ALL real providers (clipboard, focus, media
   // session, system performance) publish through this bus — there is no
@@ -105,7 +84,11 @@ export function useDesktopStatusRuntime(
     });
   }
 
-  const [hubState, setHubState] = useState<HubStoreState>(initialSnapshot.state);
+  const [hubState, setHubState] = useState<HubStoreState>({
+    events: [],
+    mode: "idle",
+    tasks: [],
+  });
   const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
   const [preferredUntil, setPreferredUntil] = useState<number | undefined>(undefined);
 
@@ -135,20 +118,6 @@ export function useDesktopStatusRuntime(
   const prevClipboardCopiedAtRef = useRef<number | undefined>(undefined);
   const [, setClipboardTick] = useState(0);
 
-  // Subscribe to runtime changes + initial refresh (legacy pipeline for hub events)
-  useEffect(() => {
-    const runtime = runtimeRef.current;
-    const unsubscribe = runtime.subscribe((snapshot) => {
-      applyDesktopStatusSnapshot(snapshot, setHubState);
-    });
-
-    void runtime.refresh().then((snapshot) => {
-      applyDesktopStatusSnapshot(snapshot, setHubState);
-    });
-
-    return unsubscribe;
-  }, []);
-
   // Start the unified ProviderManager for clipboard, focus, media, and
   // system perf. All four providers publish into the shared HubEventBus;
   // the bus subscriber merges each new state slice into our hubState.
@@ -163,9 +132,7 @@ export function useDesktopStatusRuntime(
         focus: busState.focus ?? prev.focus,
         systemPerformance: busState.systemPerformance ?? prev.systemPerformance,
         // Merge any media events the provider published so the aggregation
-        // layer can pick them up. Old `type === "music"` events (from the
-        // desktopStatusInputRuntime path) are dropped — they represented the
-        // same surface in a different shape.
+        // layer can pick them up.
         events: [
           ...busState.events.filter((event) => event.type === "media"),
           ...prev.events.filter((event) => event.type !== "music"),
@@ -315,8 +282,6 @@ export function useDesktopStatusRuntime(
     : resolvedState;
 
   const refreshRuntime = useCallback(async () => {
-    const snapshot = await runtimeRef.current.refresh();
-    applyDesktopStatusSnapshot(snapshot, setHubState);
     refreshProviderRecords();
   }, [refreshProviderRecords]);
 

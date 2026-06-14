@@ -1,6 +1,5 @@
 import { createSystemPerformanceMetricSnapshot } from "./desktopStatusConfig";
 import type {
-  HubEvent,
   HubTask,
   MusicState,
   NotificationState,
@@ -72,44 +71,4 @@ export const showcaseSteps: ShowcaseStep[] = [
     caption: "Auto collapse after 3s",
   },
   { id: "multi", mode: "multiTask", label: "6. Multi-task stack", caption: "Expanded" },
-];
-
-const demoStart = Date.now();
-
-export const mockHubEvents: HubEvent[] = [
-  {
-    id: "event-music",
-    type: "music",
-    source: "mock",
-    createdAt: demoStart,
-    expiresAt: demoStart + 120_000,
-    progress: musicState.progress,
-    payload: musicState,
-  },
-  {
-    id: aiTask.id,
-    type: "ai",
-    source: "mock",
-    createdAt: demoStart + 1000,
-    expiresAt: demoStart + 120_000,
-    progress: aiTask.progress,
-    payload: aiTask,
-  },
-  {
-    id: downloadTask.id,
-    type: "download",
-    source: "mock",
-    createdAt: demoStart + 2000,
-    expiresAt: demoStart + 120_000,
-    progress: downloadTask.progress,
-    payload: downloadTask,
-  },
-  {
-    id: "event-notification",
-    type: "notification",
-    source: "mock",
-    createdAt: demoStart + 3000,
-    expiresAt: demoStart + 30_000,
-    payload: notificationState,
-  },
 ];

@@ -4,7 +4,7 @@ import {
   loadTauriGuestProviderCapabilities,
   loadTauriMediaSessionStatus,
   loadTauriRuntimeCapabilities,
-  loadTauriFixtureHubEvents,
+  publishTauriFixtureEvents,
   publishTauriFixtureEvents,
   TAURI_EMIT_FIXTURE_EVENTS_COMMAND,
   TAURI_FIXTURE_COMMAND,
@@ -310,7 +310,8 @@ describe("tauriRuntime.test", () => {
   }
 
   it("detects unavailable Tauri invoke", async () => {
-    const result = await loadTauriFixtureHubEvents();
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus);
 
     assert.equal(result.ok, false);
     assert.equal(result.diagnostic.code, "unavailable");
@@ -327,7 +328,8 @@ describe("tauriRuntime.test", () => {
   });
 
   it("returns malformed diagnostic for non-canonical fixture payloads", async () => {
-    const result = await loadTauriFixtureHubEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       invoke: async () => [
         {
           id: "bad",
@@ -347,7 +349,8 @@ describe("tauriRuntime.test", () => {
   });
 
   it("returns malformed diagnostic for non-finite fixture numbers", async () => {
-    const result = await loadTauriFixtureHubEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       invoke: async () => [
         fixtureEvent({ createdAt: Number.NaN, progress: Number.POSITIVE_INFINITY }),
       ],
@@ -362,7 +365,8 @@ describe("tauriRuntime.test", () => {
   });
 
   it("returns invoke-failed diagnostic when command rejects", async () => {
-    const result = await loadTauriFixtureHubEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       invoke: async () => {
         throw new Error("native boundary failed");
       },
@@ -379,7 +383,8 @@ describe("tauriRuntime.test", () => {
 
   it("loads canonical fixture events through the configured command", async () => {
     const calls: string[] = [];
-    const result = await loadTauriFixtureHubEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       invoke: async (command) => {
         calls.push(command);
         return [fixtureEvent()];
@@ -400,7 +405,8 @@ describe("tauriRuntime.test", () => {
     const fixture = fixtureEvent();
     const payload = fixture.payload as { title: string };
     const metadata = fixture.metadata as { runtime: string };
-    const result = await loadTauriFixtureHubEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       invoke: async () => [fixture],
     });
 
@@ -501,7 +507,8 @@ describe("tauriRuntime.test", () => {
 
   it("does not publish when Tauri invoke is unavailable", async () => {
     const publishedEvents: HubEvent[] = [];
-    const result = await publishTauriFixtureEvents({
+    const eventBus = { publishHubEvent: () => {} };
+    const result = await publishTauriFixtureEvents(eventBus, {
       publishHubEvent(event) {
         publishedEvents.push(event);
       },
