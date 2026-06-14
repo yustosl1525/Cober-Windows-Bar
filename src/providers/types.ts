@@ -23,7 +23,9 @@ export type HubProviderKind =
   | "media"
   | "clipboard"
   | "focus"
-  | "system";
+  | "system"
+  | "update"
+  | "git";
 
 export type HubProviderMetadata = {
   id: string;

@@ -6,7 +6,7 @@ import type {
   HubProviderStatus,
 } from "./types";
 
-type ProviderRegistryRecord = {
+export type ProviderRegistryRecord = {
   id: string;
   name: string;
   kind: HubProviderKind;
@@ -27,7 +27,7 @@ type ProviderRegistryRegisterResult =
       id: string;
     };
 
-type ProviderRegistryCapabilitySupportRecord = {
+export type ProviderRegistryCapabilitySupportRecord = {
   providerId: string;
   providerName: string;
   providerKind: HubProviderKind;
@@ -110,6 +110,23 @@ function summarizeCapabilitySupportRecords(
   }));
 }
 
+function sortByOrigin(
+  records: ProviderRegistryCapabilitySupportRecord[],
+): ProviderRegistryCapabilitySupportRecord[] {
+  const order: Record<string, number> = { real: 0, native: 1, mock: 2 };
+
+  return [...records].sort((a, b) => {
+    const aOrder = order[a.capability.origin] ?? 99;
+    const bOrder = order[b.capability.origin] ?? 99;
+
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
+
+    return a.providerId.localeCompare(b.providerId);
+  });
+}
+
 export function createProviderRegistry() {
   const entries = new Map<string, ProviderRegistryEntry>();
   let nextRegistrationOrder = 0;
@@ -160,6 +177,37 @@ export function createProviderRegistry() {
 
     summarizeCapabilitySupport() {
       return summarizeCapabilitySupportRecords(listCapabilitySupport());
+    },
+
+    listProvidersByKind(kind: HubProviderKind): ProviderRegistryRecord[] {
+      return [...entries.values()]
+        .filter((e) => e.provider.metadata.kind === kind)
+        .map(snapshotProvider)
+        .sort((a, b) => a.registrationOrder - b.registrationOrder);
+    },
+
+    listRealProviders(): ProviderRegistryRecord[] {
+      return [...entries.values()]
+        .filter((e) =>
+          e.provider.capabilities.some(
+            (c) => c.origin === "real" || c.origin === "native",
+          ),
+        )
+        .map(snapshotProvider);
+    },
+
+    listMockProviders(): ProviderRegistryRecord[] {
+      return [...entries.values()]
+        .filter((e) => e.provider.capabilities.every((c) => c.origin === "mock"))
+        .map(snapshotProvider);
+    },
+
+    listAvailableCapabilities(): ProviderRegistryCapabilitySupportRecord[] {
+      return sortByOrigin(
+        [...entries.values()]
+          .flatMap(snapshotCapabilitySupport)
+          .filter((r) => r.capability.support === "available"),
+      );
     },
 
     unregister(providerId: string) {
