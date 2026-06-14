@@ -8,6 +8,7 @@ import {
   useOverlayPolicy,
   usePreferences,
   useSettingsActions,
+  useSettingsUI,
   useSystemPerformance,
   useWindowLifecycle,
 } from "./hooks";
@@ -27,9 +28,6 @@ import { emitTauriFixtureEvents, getTauriInvoke } from "../../runtime/tauriRunti
 import { getSafeCurrentWindow, type TauriAppWindow } from "../../shared/tauriWindow";
 import { type resolveDesktopStatusState } from "../../state/desktopStatusState";
 import type { DesktopStatusKind } from "../../types/hub";
-
-const STATUS_CENTER_CONTEXT_MENU_COMMAND = "show_status_center_context_menu";
-const OPEN_STATUS_CENTER_SETTINGS_COMMAND = "open_status_center_settings";
 
 function renderDesktopStatusTemplate(state: ReturnType<typeof resolveDesktopStatusState>) {
   switch (state.kind) {
@@ -53,7 +51,6 @@ function renderDesktopStatusTemplate(state: ReturnType<typeof resolveDesktopStat
 export function DesktopPage() {
   const appWindowRef = useRef<TauriAppWindow | undefined>(getSafeCurrentWindow());
   const shellCopy = getDesktopStatusShellCopy();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [autostartEnabled, setAutostartEnabled] = useState(false);
 
   // Load initial autostart state
@@ -85,6 +82,7 @@ export function DesktopPage() {
     setPreferredUntil,
     refreshRuntime,
     preferredWindowMs,
+    providerRecords,
   } = useDesktopStatusRuntime(metrics, diagnostic.quality);
 
   // Preferences
@@ -155,25 +153,9 @@ export function DesktopPage() {
     await Promise.all([refreshMetrics(), refreshRuntime()]);
   }, [refreshMetrics, refreshRuntime, isDraggingRef]);
 
-  const showNativeContextMenu = useCallback(
-    async (x: number, y: number) => {
-      const invoke = getTauriInvoke();
-      if (!invoke || isDraggingRef.current) {
-        return;
-      }
-
-      await invoke(STATUS_CENTER_CONTEXT_MENU_COMMAND, { x, y });
-    },
-    [isDraggingRef],
-  );
-
-  const openSettings = useCallback(() => {
-    setSettingsOpen(true);
-  }, []);
-
-  const closeSettings = useCallback(() => {
-    setSettingsOpen(false);
-  }, []);
+  // Settings panel open state + native context menu + native settings launch
+  const { settingsOpen, openSettings, closeSettings, showNativeContextMenu, handleOpenSettingsClick } =
+    useSettingsUI({ isDraggingRef });
 
   const handleKindSelect = useCallback(
     (kind: DesktopStatusKind) => {
@@ -221,16 +203,6 @@ export function DesktopPage() {
     [refresh, toggleFromMenu, resetPosition, openSettings, quitStatusCenter],
   );
 
-  const handleOpenSettingsClick = useCallback(async () => {
-    const invoke = getTauriInvoke();
-    if (!invoke) {
-      openSettings();
-      return;
-    }
-
-    await invoke(OPEN_STATUS_CENTER_SETTINGS_COMMAND);
-  }, [openSettings]);
-
   // Global context menu + Escape key
   useContextMenu({ settingsOpen, closeSettings, showNativeContextMenu });
 
@@ -249,6 +221,7 @@ export function DesktopPage() {
           preferences={preferences}
           activeStatusKind={activeStatusKind}
           autostartEnabled={autostartEnabled}
+          providerRecords={providerRecords}
           onToggleAlwaysFloat={toggleAlwaysFloat}
           onToggleAvoidFullscreen={toggleAvoidFullscreen}
           onToggleLockPosition={toggleLockPosition}

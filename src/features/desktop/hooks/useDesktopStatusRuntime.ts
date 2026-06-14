@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DESKTOP_STATUS_TEMPLATE_ORDER } from "@/data/desktopStatusConfig";
 import i18n from "@/i18n";
 import { createProviderManager, type ProviderManager } from "@/providers/providerManager";
+import type { ProviderRegistryRecord } from "@/providers/providerRegistry";
 import {
   getDesktopStatusRuntime,
   type DesktopStatusRuntime,
@@ -41,6 +42,14 @@ export type UseDesktopStatusRuntimeResult = {
   setPreferredUntil: (until: number | undefined) => void;
   refreshRuntime: () => Promise<void>;
   preferredWindowMs: number;
+  /** The unified ProviderManager — expose it so consumer hooks (e.g.
+   *  useProviderStatus) can read provider health without spinning up
+   *  their own manager. */
+  providerManager: ProviderManager | undefined;
+  /** Snapshot of every registered provider's record. Refreshed whenever
+   *  the manager starts, stops, or is refreshed. The settings panel uses
+   *  this to drive the ProviderStatusPanel summary. */
+  providerRecords: ProviderRegistryRecord[];
 };
 
 function applyDesktopStatusSnapshot(
@@ -100,6 +109,16 @@ export function useDesktopStatusRuntime(
   const [activeStatusKind, setActiveStatusKind] = useState<DesktopStatusKind | null>(null);
   const [preferredUntil, setPreferredUntil] = useState<number | undefined>(undefined);
 
+  // Snapshot the registry so UI consumers (SettingsPanel's
+  // ProviderStatusPanel) can render the current provider set without
+  // reaching into the manager directly.
+  const [providerRecords, setProviderRecords] = useState<ProviderRegistryRecord[]>(() =>
+    managerRef.current?.registry.list() ?? [],
+  );
+  const refreshProviderRecords = useCallback(() => {
+    setProviderRecords(managerRef.current?.registry.list() ?? []);
+  }, []);
+
   const previousResolvedKindRef = useRef<DesktopStatusKind | undefined>(undefined);
   const previousResolvedChangedAtRef = useRef<number | undefined>(undefined);
   const activatedAtByKindRef = useRef<Partial<Record<DesktopStatusKind, number>>>({});
@@ -155,12 +174,14 @@ export function useDesktopStatusRuntime(
     });
 
     manager?.start();
+    refreshProviderRecords();
 
     return () => {
       manager?.stop();
+      refreshProviderRecords();
       unsubscribeBus();
     };
-  }, []);
+  }, [refreshProviderRecords]);
 
   // Wall-clock heartbeat for the media/resident alternation. The scheduler
   // picks a kind based on `Date.now()`, but `now` is otherwise captured at
@@ -296,7 +317,8 @@ export function useDesktopStatusRuntime(
   const refreshRuntime = useCallback(async () => {
     const snapshot = await runtimeRef.current.refresh();
     applyDesktopStatusSnapshot(snapshot, setHubState);
-  }, []);
+    refreshProviderRecords();
+  }, [refreshProviderRecords]);
 
   return {
     resolvedState: finalResolvedState,
@@ -307,5 +329,7 @@ export function useDesktopStatusRuntime(
     setPreferredUntil,
     refreshRuntime,
     preferredWindowMs: DESKTOP_STATUS_PREFERRED_WINDOW_MS,
+    providerManager: managerRef.current,
+    providerRecords,
   };
 }
